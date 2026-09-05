@@ -1,14 +1,11 @@
-cmake_minimum_required(VERSION 3.15)
-project(ladx_decomp C CXX)
+cmake_minimum_required(VERSION 3.16)
+project(ladxdc C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter")
 
+# Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -22,6 +19,10 @@ set(LADX_CORE_SOURCES
     src/home/lcd.c
     src/home/entities.c
     src/home/audio.c
+    src/home/dialog.c
+    src/home/room.c
+    src/home/link.c
+    src/home/vfx.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -37,6 +38,10 @@ add_executable(ladx_tests
     tests/test_lcd.c
     tests/test_entities.c
     tests/test_audio.c
+    tests/test_dialog.c
+    tests/test_room.c
+    tests/test_link.c
+    tests/test_vfx.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

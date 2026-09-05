@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 3.0%
-* **Number of Verified Functions**: 36
-* **Number of Decompiled Functions**: 36
+* **Current Overall Progress**: 3.9%
+* **Number of Verified Functions**: 47
+* **Number of Decompiled Functions**: 47
 * **Number Remaining**: ~1200+ functions
-* **Current Subsystem**: Bank 0 - Entity & Audio Utilities + LCD Control (10 functions)
-* **Current Task**: Completed and verified Bank 0 utilities batch
-* **Last Completed Task**: Decompiled and verified `LCDOff`, `IsZero`, `GetEntitySlowTransitionCountdown`, `GetEntityPrivateCountdown1`, `GetEntityTransitionCountdown`, `DecrementEntityIgnoreHitsCountdown`, `PlayWrongAnswerJingle`, `AlertSwordMoblins`, `PlayBombExplosionSfx`, and `CopySirenInstrumentTiles`
+* **Current Subsystem**: Bank 0 - Dialog Tables, Room Triggers, Link State & VFX Utilities (11 functions)
+* **Current Task**: Completed and verified Bank 0 dialog, room, link state, and VFX utilities batch
+* **Last Completed Task**: Decompiled and verified `ReadValueInDialogsBank`, `ReadTileValueFromAsciiTable`, `ReadTileValueFromDiacriticsTable`, `MarkTriggerAsResolved`, `ApplyMapFadeOutTransitionWithNoise`, `ApplyMapFadeOutTransition`, `ApplyMapFadeOutTransitionWithSound`, `ResetSpinAttack`, `ResetPegasusBoots`, `CopyLinkFinalPositionToPosition`, and `AddTranscientVfx`
 * **Next Task**: Identify and begin next unfinished Bank 0 subsystem
-* **Last Update Timestamp**: 2026-09-06T03:40:00+03:00
+* **Last Update Timestamp**: 2026-09-06T04:00:00+03:00
 
 ---
 
@@ -55,6 +55,17 @@
 | `AlertSwordMoblins` | VERIFIED | PASS | PASS | Sets wSwordMoblinAlertingSoundCounter to 4 (`00:0C50`) |
 | `PlayBombExplosionSfx` | VERIFIED | PASS | PASS | Writes NOISE_SFX_EXPLOSION to hNoiseSfx and alerts moblins (`00:0C4B`) |
 | `CopySirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies 4 tiles (64 bytes) from bank $0C to destination (`00:0C3A`) |
+| `ReadValueInDialogsBank` | VERIFIED | PASS | PASS | Reads byte at HL+BC in dialogs bank ($1C), restores bank 1 (`00:0C2D`) |
+| `ReadTileValueFromAsciiTable` | VERIFIED | PASS | PASS | Reads tile index from CodepointToTileMap in bank $1C (`00:0C25`) |
+| `ReadTileValueFromDiacriticsTable` | VERIFIED | PASS | PASS | Reads diacritic index from CodepointToDiacritic in bank $1C (`00:0C2A`) |
+| `MarkTriggerAsResolved` | VERIFIED | PASS | PASS | Resolves room puzzle trigger, plays puzzle solved jingle (`00:0C60`) |
+| `ApplyMapFadeOutTransitionWithNoise` | VERIFIED | PASS | PASS | Starts map fade out with timer $30 and stairs noise (`00:0C7D`) |
+| `ApplyMapFadeOutTransition` | VERIFIED | PASS | PASS | Starts map fade out with timer $30 without sound (`00:0C83`) |
+| `ApplyMapFadeOutTransitionWithSound` | VERIFIED | PASS | PASS | Starts map fade out, preserving music if indoors (`00:0C89`) |
+| `ResetSpinAttack` | VERIFIED | PASS | PASS | Clears spin attack & sword charge, then resets pegasus boots (`00:0CAF`) |
+| `ResetPegasusBoots` | VERIFIED | PASS | PASS | Clears pegasus boots charge meter & running flag (`00:0CB6`) |
+| `CopyLinkFinalPositionToPosition` | VERIFIED | PASS | PASS | Copies hLinkFinalPositionX/Y to hLinkPositionX/Y (`00:0CBE`) |
+| `AddTranscientVfx` | VERIFIED | PASS | PASS | Allocates slot and registers temporary visual effect sprite (`00:0CC7`) |
 
 ---
 
@@ -96,27 +107,31 @@
 - **`AlertSwordMoblins` (`00:0C50`)**: Status: `VERIFIED`.
 - **`PlayBombExplosionSfx` (`00:0C4B`)**: Status: `VERIFIED`.
 - **`CopySirenInstrumentTiles` (`00:0C3A`)**: Status: `VERIFIED`.
+- **`ReadValueInDialogsBank` (`00:0C2D`)**: Status: `VERIFIED`.
+- **`ReadTileValueFromAsciiTable` (`00:0C25`)**: Status: `VERIFIED`.
+- **`ReadTileValueFromDiacriticsTable` (`00:0C2A`)**: Status: `VERIFIED`.
+- **`MarkTriggerAsResolved` (`00:0C60`)**: Status: `VERIFIED`.
+- **`ApplyMapFadeOutTransitionWithNoise` (`00:0C7D`)**: Status: `VERIFIED`.
+- **`ApplyMapFadeOutTransition` (`00:0C83`)**: Status: `VERIFIED`.
+- **`ApplyMapFadeOutTransitionWithSound` (`00:0C89`)**: Status: `VERIFIED`.
+- **`ResetSpinAttack` (`00:0CAF`)**: Status: `VERIFIED`.
+- **`ResetPegasusBoots` (`00:0CB6`)**: Status: `VERIFIED`.
+- **`CopyLinkFinalPositionToPosition` (`00:0CBE`)**: Status: `VERIFIED`.
+- **`AddTranscientVfx` (`00:0CC7`)**: Status: `VERIFIED`.
 
 ---
 
 ## Technical Discoveries
 
 - **Assembly & Memory Verification**:
-  - `hInterrupts` is at `$FFD2` (5-byte array storing interrupt state).
-  - `LCDOff` preserves `rIE` into `hInterrupts`, clears `IEF_VBLANK` to prevent VBlank IRQ during disable, waits until `rLY == 145` (`SCRN_Y + 1`), clears `LCDCF_ON` in `rLCDC`, then restores `rIE` from `hInterrupts`.
-  - `wEntitiesTransitionCountdownTable` is at `$C2E0`.
-  - `wEntitiesPrivateCountdown1Table` is at `$C2F0`.
-  - `wEntitiesIgnoreHitsCountdownTable` is at `$C410`.
-  - `wEntitiesSlowTransitionCountdownTable` is at `$C450`.
-  - `wSwordMoblinAlertingSoundCounter` is at `$C502`.
-  - `hJingle` is at `$FFF2`, `JINGLE_WRONG_ANSWER` is `$1D`.
-  - `hNoiseSfx` is at `$FFF4`, `NOISE_SFX_EXPLOSION` is `$0C`.
-  - `PlayBombExplosionSfx` sets `hNoiseSfx` and directly falls through into `AlertSwordMoblins`.
-  - `BANK(SirenInstrumentsTiles)` is bank `$0C`.
-  - `CopySirenInstrumentTiles` copies 64 bytes ($40) using `CopyData` from bank $0C, then restores ROM bank 1.
+  - Dialog character tables: `BANK(CodepointToTileMap)` is `$1C`, `CodepointToTileMap` is `$4641`, `CodepointToDiacritic` is `$4741`.
+  - Room event resolution: `wRoomEventEffectExecuted` ($C18F), `wC1CF` ($C1CF), `wC5A6` ($C5A6), `wC19D` ($C19D), `JINGLE_PUZZLE_SOLVED` ($02).
+  - Map fade out & transitions: `hMusicFadeOutTimer` ($FFA8), `hContinueMusicAfterWarp` ($FFBC), `wWarp0MapCategory` ($D401), `wIsIndoor` ($DBA5), `wLinkMotionState` ($C11C), `wTransitionSequenceCounter` ($C16B), `wC16C` ($C16C), `wD478` ($D478), `LINK_MOTION_MAP_FADE_OUT` ($03), `NOISE_SFX_STAIRS` ($06).
+  - Link abilities: `wIsUsingSpinAttack` ($C121), `wSwordCharge` ($C122), `wPegasusBootsChargeMeter` ($C14B), `wIsRunningWithPegasusBoots` ($C14A), `hLinkFinalPositionX` ($FF9F), `hLinkFinalPositionY` ($FFA0), `hLinkPositionX` ($FF98), `hLinkPositionY` ($FF99).
+  - VFX sprite tables: `wTranscientVfxTypeTable` ($C510), `wTranscientVfxCountdownTable` ($C520), `wTranscientVfxPosXTable` ($C530), `wTranscientVfxPosYTable` ($C540), `wC5C0` ($C5C0).
 
 ---
 
 ## Verification Log
 
-- All 36 functions tested and verified with 100% pass rate.
+- All 47 functions tested and verified with 100% pass rate.

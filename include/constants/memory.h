@@ -11,10 +11,23 @@
 #define wStackTop               0xDFFF
 
 /* WRAM Gameplay Variables */
+#define wLinkMotionState        0xC11C
+#define wIsUsingSpinAttack      0xC121
+#define wSwordCharge            0xC122
 #define wActiveEntityIndex      0xC123
 #define wRoomTransitionState    0xC124
 #define wRoomTransitionDirection 0xC125
+#define wIsRunningWithPegasusBoots 0xC14A
+#define wPegasusBootsChargeMeter 0xC14B
+#define wTransitionSequenceCounter 0xC16B
+#define wC16C                   0xC16C
+#define wRoomEventEffectExecuted 0xC18F
+#define wC19D                   0xC19D
+#define wC1CF                   0xC1CF
+#define wWarp0MapCategory       0xD401
+#define wD478                   0xD478
 #define wGameplayType           0xDB95
+#define wIsIndoor               0xDBA5
 #define wCurrentBank            0xDBAF
 
 /* WRAM Entity Tables */
@@ -24,8 +37,22 @@
 #define wEntitiesSlowTransitionCountdownTable 0xC450
 #define wSwordMoblinAlertingSoundCounter      0xC502
 
+/* WRAM Transient VFX Tables */
+#define wTranscientVfxTypeTable      0xC510
+#define wTranscientVfxCountdownTable 0xC520
+#define wTranscientVfxPosXTable      0xC530
+#define wTranscientVfxPosYTable      0xC540
+#define wC5A6                        0xC5A6
+#define wC5C0                        0xC5C0
+
 /* HRAM Sections & Variables */
 #define hGameValuesSection      0xFF90
+#define hLinkPositionX          0xFF98
+#define hLinkPositionY          0xFF99
+#define hLinkFinalPositionX     0xFF9F
+#define hLinkFinalPositionY     0xFFA0
+#define hMusicFadeOutTimer      0xFFA8
+#define hContinueMusicAfterWarp 0xFFBC
 #define hNextDefaultMusicTrack  0xFFBF
 #define hInterrupts             0xFFD2
 #define hMultiPurpose0          0xFFD7

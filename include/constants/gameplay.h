@@ -38,4 +38,16 @@
 #define GAMEPLAY_INTRO_SEA              0x03
 #define GAMEPLAY_INTRO_LINK_FACE        0x04
 
+/* Values for wLinkMotionState */
+#define LINK_MOTION_DEFAULT             0x00
+#define LINK_MOTION_SWIMMING            0x01
+#define LINK_MOTION_UNSTUCKING          0x02
+#define LINK_MOTION_MAP_FADE_OUT        0x03
+#define LINK_MOTION_MAP_FADE_IN         0x04
+#define LINK_MOTION_REVOLVING_DOOR      0x05
+#define LINK_MOTION_FALLING_DOWN        0x06
+#define LINK_MOTION_PASS_OUT            0x07
+#define LINK_MOTION_RECOVER             0x08
+#define LINK_MOTION_TELEPORT            0x09
+
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */

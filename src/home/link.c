@@ -1,0 +1,65 @@
+#include "home/link.h"
+#include "constants/memory.h"
+#include "constants/gameplay.h"
+#include "constants/sfx.h"
+
+static void disableMovementInTransition(GBState *gb) {
+    gb_write(gb, wLinkMotionState, LINK_MOTION_MAP_FADE_OUT);
+    gb_write(gb, wTransitionSequenceCounter, 0);
+    gb_write(gb, wC16C, 0);
+    gb_write(gb, wD478, 0);
+}
+
+void ApplyMapFadeOutTransitionWithNoise(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, hMusicFadeOutTimer, 0x30);
+    gb_write(gb, hNoiseSfx, NOISE_SFX_STAIRS);
+    disableMovementInTransition(gb);
+}
+
+void ApplyMapFadeOutTransition(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, hMusicFadeOutTimer, 0x30);
+    disableMovementInTransition(gb);
+}
+
+void ApplyMapFadeOutTransitionWithSound(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t category = gb_read(gb, wWarp0MapCategory);
+    uint8_t indoor = gb_read(gb, wIsIndoor);
+
+    if (category == 1 && indoor != 0) {
+        gb_write(gb, hContinueMusicAfterWarp, 1);
+        gb_write(gb, hNoiseSfx, NOISE_SFX_STAIRS);
+        disableMovementInTransition(gb);
+    } else {
+        ApplyMapFadeOutTransitionWithNoise(gb);
+    }
+}
+
+void ResetPegasusBoots(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, wPegasusBootsChargeMeter, 0);
+    gb_write(gb, wIsRunningWithPegasusBoots, 0);
+}
+
+void ResetSpinAttack(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, wIsUsingSpinAttack, 0);
+    gb_write(gb, wSwordCharge, 0);
+    ResetPegasusBoots(gb);
+}
+
+void CopyLinkFinalPositionToPosition(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t x = gb_read(gb, hLinkFinalPositionX);
+    gb_write(gb, hLinkPositionX, x);
+    uint8_t y = gb_read(gb, hLinkFinalPositionY);
+    gb_write(gb, hLinkPositionY, y);
+}

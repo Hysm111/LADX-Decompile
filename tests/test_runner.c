@@ -7,6 +7,10 @@ extern int run_bank_tests(void);
 extern void run_lcd_tests(void);
 extern void run_entities_tests(void);
 extern void run_audio_tests(void);
+extern void run_dialog_tests(void);
+extern void run_room_tests(void);
+extern void run_link_tests(void);
+extern void run_vfx_tests(void);
 
 int main(void) {
     int total_failures = 0;
@@ -21,6 +25,10 @@ int main(void) {
     run_lcd_tests();
     run_entities_tests();
     run_audio_tests();
+    run_dialog_tests();
+    run_room_tests();
+    run_link_tests();
+    run_vfx_tests();
 
     printf("========================================\n");
     if (total_failures == 0) {
