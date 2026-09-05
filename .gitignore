@@ -1,0 +1,40 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake artifacts (in-source builds)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+ladx_tests
+
+# ROMs and binary assets (strictly do not commit copyrighted ROM files)
+*.gb
+*.gbc
+*.patch
+*.ips
+*.bps
+*.sym
+*.map
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Agent and AI scratch directories
+.agents/
+.gemini/
