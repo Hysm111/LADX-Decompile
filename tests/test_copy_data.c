@@ -452,6 +452,52 @@ static void test_copy_siren_instrument_tiles(void) {
     TEST_ASSERT(gb.rom_bank == 1, "ROM bank not restored to 1 after siren tiles copy");
 }
 
+static void test_func_bc5(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    uint8_t rom[0x20000];
+    memset(rom, 0, sizeof(rom));
+    for (int i = 0; i < 16; i++) {
+        rom[0x18000 + 0x200 + i] = (uint8_t)(i + 0x90);
+    }
+    gb_attach_rom(&gb, rom, sizeof(rom));
+
+    gb_write(&gb, w2_D16A, 0x06);
+    gb.rom_bank = 2;
+
+    func_BC5(&gb, 0xC500, 0x4200, 16);
+
+    for (int i = 0; i < 16; i++) {
+        TEST_ASSERT(gb_read(&gb, 0xC500 + i) == (uint8_t)(i + 0x90), "func_BC5 byte mismatch");
+    }
+
+    TEST_ASSERT(gb.rom_bank == 0x28, "func_BC5 did not restore ROM bank to 0x28");
+}
+
+static void test_copy_color_dungeon_symbols(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    uint8_t rom[0x100000];
+    memset(rom, 0, sizeof(rom));
+    for (int i = 0; i < 32; i++) {
+        rom[0xD4000 + 0xF00 + i] = (uint8_t)(i + 0x66);
+    }
+    gb_attach_rom(&gb, rom, sizeof(rom));
+
+    gb.rom_bank = 3;
+
+    CopyColorDungeonSymbols(&gb, 0x14);
+
+    for (int i = 0; i < 32; i++) {
+        TEST_ASSERT(gb_read(&gb, wAnimatedScrollingTilesStorage + i) == (uint8_t)(i + 0x66),
+                    "Color dungeon symbols byte mismatch");
+    }
+
+    TEST_ASSERT(gb.rom_bank == 0x14, "CopyColorDungeonSymbols did not restore stacked bank");
+}
+
 int run_copy_data_tests(void) {
     printf("[*] Running CopyData tests...\n");
     test_copy_data_basic();
@@ -494,6 +540,12 @@ int run_copy_data_tests(void) {
 
     printf("[*] Running CopySirenInstrumentTiles tests...\n");
     test_copy_siren_instrument_tiles();
+
+    printf("[*] Running func_BC5 tests...\n");
+    test_func_bc5();
+
+    printf("[*] Running CopyColorDungeonSymbols tests...\n");
+    test_copy_color_dungeon_symbols();
 
     if (failures == 0) {
         printf("  [PASS] All copy_data.asm functions verified successfully!\n");

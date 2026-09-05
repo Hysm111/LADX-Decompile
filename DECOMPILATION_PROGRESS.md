@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 3.9%
-* **Number of Verified Functions**: 47
-* **Number of Decompiled Functions**: 47
+* **Current Overall Progress**: 4.7%
+* **Number of Verified Functions**: 57
+* **Number of Decompiled Functions**: 57
 * **Number Remaining**: ~1200+ functions
-* **Current Subsystem**: Bank 0 - Dialog Tables, Room Triggers, Link State & VFX Utilities (11 functions)
-* **Current Task**: Completed and verified Bank 0 dialog, room, link state, and VFX utilities batch
-* **Last Completed Task**: Decompiled and verified `ReadValueInDialogsBank`, `ReadTileValueFromAsciiTable`, `ReadTileValueFromDiacriticsTable`, `MarkTriggerAsResolved`, `ApplyMapFadeOutTransitionWithNoise`, `ApplyMapFadeOutTransition`, `ApplyMapFadeOutTransitionWithSound`, `ResetSpinAttack`, `ResetPegasusBoots`, `CopyLinkFinalPositionToPosition`, and `AddTranscientVfx`
-* **Next Task**: Identify and begin next unfinished Bank 0 subsystem
-* **Last Update Timestamp**: 2026-09-06T04:00:00+03:00
+* **Current Subsystem**: Bank 0 - Foundational Routines
+* **Current Task**: Completed and verified Bank 0 bank restoration, farcall, object backup, and sword poke VFX routines
+* **Last Completed Task**: Decompiled and verified `RestoreBankAndReturn`, `LoadBank1AndReturn`, `RestoreStackedBankAndReturn`, `RestoreStackedBank`, `Farcall`, `func_BC5`, `CopyColorDungeonSymbols`, `BackupObjectInRAM2`, `label_D07`, and `label_D15`
+* **Next Task**: Select next unfinished Bank 0 or Bank 1 subsystem
+* **Last Update Timestamp**: 2026-09-06T04:20:00+03:00
 
 ---
 
@@ -66,6 +66,16 @@
 | `ResetPegasusBoots` | VERIFIED | PASS | PASS | Clears pegasus boots charge meter & running flag (`00:0CB6`) |
 | `CopyLinkFinalPositionToPosition` | VERIFIED | PASS | PASS | Copies hLinkFinalPositionX/Y to hLinkPositionX/Y (`00:0CBE`) |
 | `AddTranscientVfx` | VERIFIED | PASS | PASS | Allocates slot and registers temporary visual effect sprite (`00:0CC7`) |
+| `RestoreBankAndReturn` | VERIFIED | PASS | PASS | Restores wCurrentBank into rSelectROMBank (`00:08DF`) |
+| `LoadBank1AndReturn` | VERIFIED | PASS | PASS | Loads bank 1 into rSelectROMBank and returns (`00:0917`) |
+| `RestoreStackedBankAndReturn` | VERIFIED | PASS | PASS | Restores stacked bank into rSelectROMBank and returns (`00:0973`) |
+| `RestoreStackedBank` | VERIFIED | PASS | PASS | Switches bank and saves to wCurrentBank from stacked bank (`00:0AB0`) |
+| `Farcall` | VERIFIED | PASS | PASS | Dispatches call to wFarcallBank and returns to wFarcallReturnBank (`00:0BD7`) |
+| `func_BC5` | VERIFIED | PASS | PASS | Copies bytes using bank w2_D16A and restores bank $28 (`00:0BC5`) |
+| `CopyColorDungeonSymbols` | VERIFIED | PASS | PASS | Copies 32 bytes from ColorDungeonNpcTiles to animated tile buffer (`00:0A32`) |
+| `BackupObjectInRAM2` | VERIFIED | PASS | PASS | Backs up overworld object to WRAM bank 2 with ignore list filtering (`00:0B2F`) |
+| `label_D07` | VERIFIED | PASS | PASS | Sets up sword poke VFX position from wC140/wC142 minus 8 (`00:0D07`) |
+| `label_D15` | VERIFIED | PASS | PASS | Plays sword poking jingle and adds TRANSCIENT_VFX_SWORD_POKE (`00:0D15`) |
 
 ---
 
@@ -118,20 +128,31 @@
 - **`ResetPegasusBoots` (`00:0CB6`)**: Status: `VERIFIED`.
 - **`CopyLinkFinalPositionToPosition` (`00:0CBE`)**: Status: `VERIFIED`.
 - **`AddTranscientVfx` (`00:0CC7`)**: Status: `VERIFIED`.
+- **`RestoreBankAndReturn` (`00:08DF`)**: Status: `VERIFIED`.
+- **`LoadBank1AndReturn` (`00:0917`)**: Status: `VERIFIED`.
+- **`RestoreStackedBankAndReturn` (`00:0973`)**: Status: `VERIFIED`.
+- **`RestoreStackedBank` (`00:0AB0`)**: Status: `VERIFIED`.
+- **`Farcall` (`00:0BD7`)**: Status: `VERIFIED`.
+- **`func_BC5` (`00:0BC5`)**: Status: `VERIFIED`.
+- **`CopyColorDungeonSymbols` (`00:0A32`)**: Status: `VERIFIED`.
+- **`BackupObjectInRAM2` (`00:0B2F`)**: Status: `VERIFIED`.
+- **`label_D07` (`00:0D07`)**: Status: `VERIFIED`.
+- **`label_D15` (`00:0D15`)**: Status: `VERIFIED`.
 
 ---
 
 ## Technical Discoveries
 
 - **Assembly & Memory Verification**:
-  - Dialog character tables: `BANK(CodepointToTileMap)` is `$1C`, `CodepointToTileMap` is `$4641`, `CodepointToDiacritic` is `$4741`.
-  - Room event resolution: `wRoomEventEffectExecuted` ($C18F), `wC1CF` ($C1CF), `wC5A6` ($C5A6), `wC19D` ($C19D), `JINGLE_PUZZLE_SOLVED` ($02).
-  - Map fade out & transitions: `hMusicFadeOutTimer` ($FFA8), `hContinueMusicAfterWarp` ($FFBC), `wWarp0MapCategory` ($D401), `wIsIndoor` ($DBA5), `wLinkMotionState` ($C11C), `wTransitionSequenceCounter` ($C16B), `wC16C` ($C16C), `wD478` ($D478), `LINK_MOTION_MAP_FADE_OUT` ($03), `NOISE_SFX_STAIRS` ($06).
-  - Link abilities: `wIsUsingSpinAttack` ($C121), `wSwordCharge` ($C122), `wPegasusBootsChargeMeter` ($C14B), `wIsRunningWithPegasusBoots` ($C14A), `hLinkFinalPositionX` ($FF9F), `hLinkFinalPositionY` ($FFA0), `hLinkPositionX` ($FF98), `hLinkPositionY` ($FF99).
-  - VFX sprite tables: `wTranscientVfxTypeTable` ($C510), `wTranscientVfxCountdownTable` ($C520), `wTranscientVfxPosXTable` ($C530), `wTranscientVfxPosYTable` ($C540), `wC5C0` ($C5C0).
+  - Bank restoration & farcall: `RestoreBankAndReturn` reloads `wCurrentBank` into `rSelectROMBank`. `LoadBank1AndReturn` loads 1 into `rSelectROMBank`. `RestoreStackedBankAndReturn` pops stacked bank into `rSelectROMBank`. `RestoreStackedBank` pops stacked bank and calls `SwitchBank` (updating both `wCurrentBank` and `rSelectROMBank`).
+  - Farcall dispatch: `wFarcallBank` ($DE01), `wFarcallAdressHigh` ($DE02), `wFarcallAdressLow` ($DE03), `wFarcallReturnBank` ($DE04).
+  - Copy helpers: `func_BC5` reads ROM bank from `w2_D16A` ($D16A), copies `b` bytes from `hl` to `de`, and restores bank `$28`.
+  - Color dungeon symbol copy: `CopyColorDungeonSymbols` copies 32 bytes from `ColorDungeonNpcTiles + $F00` ($4F00 in bank $35) to `wAnimatedScrollingTilesStorage` ($DCC0), restoring the stacked bank.
+  - Object RAM2 backup: `BackupObjectInRAM2` checks `hIsGBC` and `wIsIndoor` (outdoor GBC only); if bit 7 of `a` is 0, checks `OverworldObjectIgnoreList` (14 bytes in bank 20: 0x03, 0x04, 0x09, 0x5E, 0x91, 0xA1, 0xAA, 0xC4, 0xC6, 0xCC, 0xDB, 0xE1, 0xE3, 0xE8); copies `[hl]` into WRAM bank 2 (`rSVBK = 2`), restores `rSVBK = 0`, and switches ROM bank to `a & 0x7F`.
+  - Sword poke VFX: `wC140` (X) - 8, `wC142` (Y) - 8; `label_D15` plays `JINGLE_SWORD_POKING` ($07) into `hJingle` and calls `AddTranscientVfx(TRANSCIENT_VFX_SWORD_POKE = 5)`.
 
 ---
 
 ## Verification Log
 
-- All 47 functions tested and verified with 100% pass rate.
+- 57 functions tested and verified with 100% pass rate.

@@ -67,6 +67,113 @@ static void test_reload_saved_bank(void) {
     TEST_ASSERT(gb.rom_bank == 0x14, "ReloadSavedBank did not restore wCurrentBank");
 }
 
+static void test_restore_bank_and_return(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wCurrentBank, 0x0D);
+    gb.rom_bank = 0x02;
+
+    RestoreBankAndReturn(&gb);
+    TEST_ASSERT(gb.rom_bank == 0x0D, "RestoreBankAndReturn did not reload wCurrentBank");
+}
+
+static void test_load_bank1_and_return(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb.rom_bank = 0x18;
+    LoadBank1AndReturn(&gb);
+    TEST_ASSERT(gb.rom_bank == 0x01, "LoadBank1AndReturn did not switch to bank 1");
+}
+
+static void test_restore_stacked_bank_and_return(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wCurrentBank, 0x03);
+    gb.rom_bank = 0x09;
+
+    RestoreStackedBankAndReturn(&gb, 0x11);
+    TEST_ASSERT(gb.rom_bank == 0x11, "RestoreStackedBankAndReturn did not set stacked bank");
+    /* wCurrentBank should remain unchanged */
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x03, "wCurrentBank should not be changed");
+}
+
+static void test_restore_stacked_bank(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wCurrentBank, 0x04);
+    gb.rom_bank = 0x09;
+
+    RestoreStackedBank(&gb, 0x15);
+    TEST_ASSERT(gb.rom_bank == 0x15, "RestoreStackedBank did not set stacked bank in rom_bank");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x15, "RestoreStackedBank did not update wCurrentBank");
+}
+
+static void dummy_farcall_target(GBState *gb) {
+    TEST_ASSERT(gb->rom_bank == 0x17, "ROM bank not switched to target during Farcall");
+    gb_write(gb, 0xC100, 0x55);
+}
+
+static void test_farcall(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wFarcallBank, 0x17);
+    gb_write(&gb, wFarcallReturnBank, 0x05);
+    gb.rom_bank = 0x02;
+
+    Farcall(&gb, dummy_farcall_target);
+
+    TEST_ASSERT(gb_read(&gb, 0xC100) == 0x55, "Farcall did not execute target function");
+    TEST_ASSERT(gb.rom_bank == 0x05, "Farcall did not switch back to wFarcallReturnBank");
+}
+
+static void test_backup_object_in_ram2(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. On DMG (hIsGBC = 0), returns immediately */
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 0);
+    gb.wram[1][0x500] = 0x03; /* Overworld object at $D500 */
+    gb.wram[2][0x500] = 0x00;
+    gb.rom_bank = 0x01;
+    BackupObjectInRAM2(&gb, 0xD500, 0x04);
+    TEST_ASSERT(gb.wram[2][0x500] == 0x00, "DMG should not backup object to RAM2");
+
+    /* 2. Indoors (wIsIndoor != 0), returns immediately */
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    BackupObjectInRAM2(&gb, 0xD500, 0x04);
+    TEST_ASSERT(gb.wram[2][0x500] == 0x00, "Indoors should not backup object to RAM2");
+
+    /* 3. GBC outdoors, object IS in ignore list (0x03) -> backed up */
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 0);
+    gb.wram[1][0x500] = 0x03;
+    BackupObjectInRAM2(&gb, 0xD500, 0x05);
+    TEST_ASSERT(gb.wram[2][0x500] == 0x03, "GBC in-list object was not backed up to RAM2");
+    TEST_ASSERT(gb.rom_bank == 0x05, "ROM bank not set to return_bank 0x05");
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose2) == 0x05, "hMultiPurpose2 not set");
+
+    /* 4. GBC outdoors, object NOT in ignore list (0x42), bit 7 clear -> skipped */
+    gb.wram[1][0x501] = 0x42;
+    gb.wram[2][0x501] = 0x00;
+    BackupObjectInRAM2(&gb, 0xD501, 0x06);
+    TEST_ASSERT(gb.wram[2][0x501] == 0x00, "Object not in ignore list should be skipped");
+    TEST_ASSERT(gb.rom_bank == 0x06, "ROM bank not restored when skipped");
+
+    /* 5. GBC outdoors, object NOT in ignore list (0x42), bit 7 set -> forced backup */
+    gb.wram[1][0x502] = 0x42;
+    gb.wram[2][0x502] = 0x00;
+    BackupObjectInRAM2(&gb, 0xD502, 0x87);
+    TEST_ASSERT(gb.wram[2][0x502] == 0x42, "Forced backup (bit 7 set) did not backup object");
+    TEST_ASSERT(gb.rom_bank == 0x07, "ROM bank not set to return_bank & 0x7F");
+}
+
 static void test_copy_objects_attributes_to_wram2(void) {
     GBState gb;
     gb_init(&gb);
@@ -114,11 +221,32 @@ int run_bank_tests(void) {
     printf("[*] Running ReloadSavedBank tests...\n");
     test_reload_saved_bank();
 
+    printf("[*] Running RestoreBankAndReturn tests...\n");
+    test_restore_bank_and_return();
+
+    printf("[*] Running LoadBank1AndReturn tests...\n");
+    test_load_bank1_and_return();
+
+    printf("[*] Running RestoreStackedBankAndReturn tests...\n");
+    test_restore_stacked_bank_and_return();
+
+    printf("[*] Running RestoreStackedBank tests...\n");
+    test_restore_stacked_bank();
+
+    printf("[*] Running Farcall tests...\n");
+    test_farcall();
+
+    printf("[*] Running BackupObjectInRAM2 tests...\n");
+    test_backup_object_in_ram2();
+
     printf("[*] Running CopyObjectsAttributesToWRAM2 tests...\n");
     test_copy_objects_attributes_to_wram2();
 
     if (failures == 0) {
         printf("  [PASS] All bank.asm functions verified successfully!\n");
+        return 0;
+    } else {
+        printf("  [FAIL] %d test failures in bank.asm tests.\n", failures);
+        return 1;
     }
-    return failures;
 }

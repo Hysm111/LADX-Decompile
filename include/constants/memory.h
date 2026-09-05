@@ -17,6 +17,8 @@
 #define wActiveEntityIndex      0xC123
 #define wRoomTransitionState    0xC124
 #define wRoomTransitionDirection 0xC125
+#define wC140                   0xC140
+#define wC142                   0xC142
 #define wIsRunningWithPegasusBoots 0xC14A
 #define wPegasusBootsChargeMeter 0xC14B
 #define wTransitionSequenceCounter 0xC16B
@@ -24,11 +26,17 @@
 #define wRoomEventEffectExecuted 0xC18F
 #define wC19D                   0xC19D
 #define wC1CF                   0xC1CF
+#define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
 #define wD478                   0xD478
 #define wGameplayType           0xDB95
 #define wIsIndoor               0xDBA5
 #define wCurrentBank            0xDBAF
+#define wAnimatedScrollingTilesStorage 0xDCC0
+#define wFarcallBank            0xDE01
+#define wFarcallAdressHigh      0xDE02
+#define wFarcallAdressLow       0xDE03
+#define wFarcallReturnBank      0xDE04
 
 /* WRAM Entity Tables */
 #define wEntitiesTransitionCountdownTable     0xC2E0

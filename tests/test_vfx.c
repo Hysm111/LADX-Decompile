@@ -4,6 +4,8 @@
 #include "gb.h"
 #include "home/vfx.h"
 #include "constants/memory.h"
+#include "constants/sfx.h"
+#include "constants/vfx.h"
 
 static int failures = 0;
 
@@ -67,9 +69,45 @@ static void test_add_transcient_vfx(void) {
     TEST_ASSERT(gb_read(&gb, wTranscientVfxTypeTable + 0x0F) == 0x0A, "Wrapped slot type mismatch");
 }
 
+static void test_label_d15(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, hMultiPurpose0, 0x40);
+    gb_write(&gb, hMultiPurpose1, 0x50);
+
+    uint8_t slot = label_D15(&gb);
+
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_SWORD_POKING, "hJingle not set to JINGLE_SWORD_POKING");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxTypeTable + slot) == TRANSCIENT_VFX_SWORD_POKE,
+                "VFX type not set to TRANSCIENT_VFX_SWORD_POKE");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxPosXTable + slot) == 0x40, "VFX X mismatch in label_D15");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxPosYTable + slot) == 0x50, "VFX Y mismatch in label_D15");
+}
+
+static void test_label_d07(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wC140, 0x30);
+    gb_write(&gb, wC142, 0x60);
+
+    uint8_t slot = label_D07(&gb);
+
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose0) == 0x28, "hMultiPurpose0 not wC140 - 8");
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose1) == 0x58, "hMultiPurpose1 not wC142 - 8");
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_SWORD_POKING, "hJingle not set to JINGLE_SWORD_POKING");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxTypeTable + slot) == TRANSCIENT_VFX_SWORD_POKE,
+                "VFX type not set to TRANSCIENT_VFX_SWORD_POKE");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxPosXTable + slot) == 0x28, "VFX X mismatch in label_D07");
+    TEST_ASSERT(gb_read(&gb, wTranscientVfxPosYTable + slot) == 0x58, "VFX Y mismatch in label_D07");
+}
+
 void run_vfx_tests(void) {
     printf("[*] Running Transient VFX tests...\n");
     test_add_transcient_vfx();
+    test_label_d15();
+    test_label_d07();
 
     if (failures == 0) {
         printf("  [PASS] All vfx.asm functions verified successfully!\n\n");

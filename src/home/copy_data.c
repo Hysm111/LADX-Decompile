@@ -239,3 +239,26 @@ void CopySirenInstrumentTiles(GBState *gb, uint16_t de, uint16_t hl) {
     CopyData(gb, de, hl, 0x40);
     gb_write(gb, rSelectROMBank, 0x01);
 }
+
+void func_BC5(GBState *gb, uint16_t de, uint16_t hl, uint8_t count) {
+    if (!gb) return;
+
+    uint8_t bank = gb_read(gb, w2_D16A);
+    gb_write(gb, rSelectROMBank, bank);
+
+    while (count > 0) {
+        uint8_t val = gb_read(gb, hl++);
+        gb_write(gb, de++, val);
+        count--;
+    }
+
+    gb_write(gb, rSelectROMBank, 0x28);
+}
+
+void CopyColorDungeonSymbols(GBState *gb, uint8_t stacked_bank) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x35);
+    CopyData(gb, wAnimatedScrollingTilesStorage, 0x4F00, 0x20);
+    gb_write(gb, rSelectROMBank, stacked_bank);
+}
