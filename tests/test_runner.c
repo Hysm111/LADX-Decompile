@@ -4,6 +4,9 @@
 extern int run_clear_memory_tests(void);
 extern int run_copy_data_tests(void);
 extern int run_bank_tests(void);
+extern void run_lcd_tests(void);
+extern void run_entities_tests(void);
+extern void run_audio_tests(void);
 
 int main(void) {
     int total_failures = 0;
@@ -13,12 +16,13 @@ int main(void) {
     printf("========================================\n\n");
 
     total_failures += run_clear_memory_tests();
-    printf("\n");
     total_failures += run_copy_data_tests();
-    printf("\n");
     total_failures += run_bank_tests();
+    run_lcd_tests();
+    run_entities_tests();
+    run_audio_tests();
 
-    printf("\n========================================\n");
+    printf("========================================\n");
     if (total_failures == 0) {
         printf("ALL TESTS PASSED SUCCESSFULLY!\n");
         printf("========================================\n");

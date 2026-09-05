@@ -19,6 +19,9 @@ set(LADX_CORE_SOURCES
     src/home/clear_memory.c
     src/home/copy_data.c
     src/home/bank.c
+    src/home/lcd.c
+    src/home/entities.c
+    src/home/audio.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -31,6 +34,9 @@ add_executable(ladx_tests
     tests/test_clear_memory.c
     tests/test_copy_data.c
     tests/test_bank.c
+    tests/test_lcd.c
+    tests/test_entities.c
+    tests/test_audio.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

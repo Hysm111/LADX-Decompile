@@ -130,6 +130,16 @@ void func_BB5(GBState *gb, uint16_t hl);
  */
 void CopyBGMapFromBank(GBState *gb, uint8_t src_bank, uint16_t hl);
 
+/**
+ * Copy 4 tiles (64 bytes / $40) of Siren Instruments Tiles from ROM bank $0C to destination DE.
+ * Restores ROM bank 1 upon return.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Destination address
+ * @param hl Source address in ROM bank $0C
+ */
+void CopySirenInstrumentTiles(GBState *gb, uint16_t de, uint16_t hl);
+
 #ifdef __cplusplus
 }
 #endif

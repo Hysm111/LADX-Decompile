@@ -425,6 +425,33 @@ static void test_copy_bg_map_from_bank(void) {
     TEST_ASSERT(gb.rom_bank == 0x22, "GBC return bank mismatch");
 }
 
+static void test_copy_siren_instrument_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* Bank $0C is offset 0x0C * 0x4000 = 0x30000 */
+    uint8_t rom[0x40000];
+    memset(rom, 0, sizeof(rom));
+    for (int i = 0; i < 0x40; i++) {
+        rom[0x30000 + 0xD00 + i] = (uint8_t)(i + 0x50);
+    }
+    gb_attach_rom(&gb, rom, sizeof(rom));
+
+    /* Initial bank is 7 */
+    gb.rom_bank = 7;
+
+    /* Destination 0x8D00, source in bank 0x0C at 0x4D00 */
+    CopySirenInstrumentTiles(&gb, 0x8D00, 0x4D00);
+
+    /* Verify 64 bytes copied */
+    for (int i = 0; i < 0x40; i++) {
+        TEST_ASSERT(gb_read(&gb, 0x8D00 + i) == (uint8_t)(i + 0x50), "Siren tiles byte mismatch");
+    }
+
+    /* Verify bank restored to 1 */
+    TEST_ASSERT(gb.rom_bank == 1, "ROM bank not restored to 1 after siren tiles copy");
+}
+
 int run_copy_data_tests(void) {
     printf("[*] Running CopyData tests...\n");
     test_copy_data_basic();
@@ -464,6 +491,9 @@ int run_copy_data_tests(void) {
 
     printf("[*] Running CopyBGMapFromBank tests...\n");
     test_copy_bg_map_from_bank();
+
+    printf("[*] Running CopySirenInstrumentTiles tests...\n");
+    test_copy_siren_instrument_tiles();
 
     if (failures == 0) {
         printf("  [PASS] All copy_data.asm functions verified successfully!\n");

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 2.1%
-* **Number of Verified Functions**: 26
-* **Number of Decompiled Functions**: 26
+* **Current Overall Progress**: 3.0%
+* **Number of Verified Functions**: 36
+* **Number of Decompiled Functions**: 36
 * **Number Remaining**: ~1200+ functions
-* **Current Subsystem**: Bank 0 - BGMap & ROM Bank Transfer Trampolines (`CopyData_trampoline`, `func_BB5`, `CopyBGMapFromBank` complete)
-* **Current Task**: Subsystem completed and verified
-* **Last Completed Task**: Verified `CopyData_trampoline`, `func_BB5`, and `CopyBGMapFromBank`
-* **Next Task**: Select next Bank 0 subsystem
-* **Last Update Timestamp**: 2026-09-06T03:20:00+03:00
+* **Current Subsystem**: Bank 0 - Entity & Audio Utilities + LCD Control (10 functions)
+* **Current Task**: Completed and verified Bank 0 utilities batch
+* **Last Completed Task**: Decompiled and verified `LCDOff`, `IsZero`, `GetEntitySlowTransitionCountdown`, `GetEntityPrivateCountdown1`, `GetEntityTransitionCountdown`, `DecrementEntityIgnoreHitsCountdown`, `PlayWrongAnswerJingle`, `AlertSwordMoblins`, `PlayBombExplosionSfx`, and `CopySirenInstrumentTiles`
+* **Next Task**: Identify and begin next unfinished Bank 0 subsystem
+* **Last Update Timestamp**: 2026-09-06T03:40:00+03:00
 
 ---
 
@@ -45,6 +45,16 @@
 | `CopyData_trampoline` | VERIFIED | PASS | PASS | Copies data from specified bank, restores bank $28 (`00:0B5D`) |
 | `func_BB5` | VERIFIED | PASS | PASS | Copies $168 (360) bytes to wIsFileSelectionArrowShifted ($D000) (`00:0BB5`) |
 | `CopyBGMapFromBank` | VERIFIED | PASS | PASS | Copies screen tiles & GBC attributes to vBGMap0, handles photo album (`00:0B69`) |
+| `LCDOff` | VERIFIED | PASS | PASS | Waits for VBlank line 145 and disables LCD safely (`00:28CF`) |
+| `IsZero` | VERIFIED | PASS | PASS | Checks whether byte at address HL+BC is zero (`00:0C08`) |
+| `GetEntitySlowTransitionCountdown` | VERIFIED | PASS | PASS | Reads slow transition countdown for entity (`00:0BFB`) |
+| `GetEntityPrivateCountdown1` | VERIFIED | PASS | PASS | Reads private countdown 1 for entity (`00:0C00`) |
+| `GetEntityTransitionCountdown` | VERIFIED | PASS | PASS | Reads transition countdown for entity (`00:0C05`) |
+| `DecrementEntityIgnoreHitsCountdown` | VERIFIED | PASS | PASS | Decrements ignore hits countdown for entity if nonzero (`00:0C56`) |
+| `PlayWrongAnswerJingle` | VERIFIED | PASS | PASS | Writes JINGLE_WRONG_ANSWER to hJingle (`00:0C20`) |
+| `AlertSwordMoblins` | VERIFIED | PASS | PASS | Sets wSwordMoblinAlertingSoundCounter to 4 (`00:0C50`) |
+| `PlayBombExplosionSfx` | VERIFIED | PASS | PASS | Writes NOISE_SFX_EXPLOSION to hNoiseSfx and alerts moblins (`00:0C4B`) |
+| `CopySirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies 4 tiles (64 bytes) from bank $0C to destination (`00:0C3A`) |
 
 ---
 
@@ -76,75 +86,37 @@
 - **`CopyData_trampoline` (`00:0B5D`)**: Status: `VERIFIED`.
 - **`func_BB5` (`00:0BB5`)**: Status: `VERIFIED`.
 - **`CopyBGMapFromBank` (`00:0B69`)**: Status: `VERIFIED`.
-
----
-
-## Current Work
-
-- **Task**: Selection of next Bank 0 subsystem
+- **`LCDOff` (`00:28CF`)**: Status: `VERIFIED`.
+- **`IsZero` (`00:0C08`)**: Status: `VERIFIED`.
+- **`GetEntitySlowTransitionCountdown` (`00:0BFB`)**: Status: `VERIFIED`.
+- **`GetEntityPrivateCountdown1` (`00:0C00`)**: Status: `VERIFIED`.
+- **`GetEntityTransitionCountdown` (`00:0C05`)**: Status: `VERIFIED`.
+- **`DecrementEntityIgnoreHitsCountdown` (`00:0C56`)**: Status: `VERIFIED`.
+- **`PlayWrongAnswerJingle` (`00:0C20`)**: Status: `VERIFIED`.
+- **`AlertSwordMoblins` (`00:0C50`)**: Status: `VERIFIED`.
+- **`PlayBombExplosionSfx` (`00:0C4B`)**: Status: `VERIFIED`.
+- **`CopySirenInstrumentTiles` (`00:0C3A`)**: Status: `VERIFIED`.
 
 ---
 
 ## Technical Discoveries
 
 - **Assembly & Memory Verification**:
-  - `wGameplayType` is at `$DB95`, `GAMEPLAY_PHOTO_ALBUM` is `$0D`.
-  - `wIsFileSelectionArrowShifted` is at `$D000`.
-  - `hMultiPurposeF` is at `$FFE6`.
-  - `CopyBGMapFromBank`: copies a full 20x18 screen of tiles and (on GBC) attributes stored immediately after the 360 tile indices at `hl + 0x168`.
-  - `wCurrentBank` is at `$DBAF`.
-  - `hMultiPurpose0` is at `$FFD7`.
-  - `AdjustBankNumberForGBC`: LADX uses banks `$00`-$`1F` for DMG and banks `$20`-$`3F` for GBC color/palette data and code. Bit 5 (`$20`) toggles the bank selection between DMG and GBC banks.
-  - `vBGMap0` is `$9800`, `vBGMap1` is `$9C00`.
-  - `CopyToBGMap0`: The Game Boy screen is 20x18 tiles (160x144 pixels). Each BG map row is 32 bytes (256 pixels). After copying 20 bytes, the code adds `$0C` (12 bytes) to `e` with carry to `d`. It iterates until `de == $9A40` (18 rows of 32 bytes = 576 bytes offset from `$9800`).
-  - `CopyDataToVRAM`: On CGB, sets `rHDMA1 = b`, `rHDMA2 = $00`, `rHDMA3 = c`, `rHDMA4 = $00`, `rHDMA5 = $0F` (GDMA 256 bytes).
-  - `FillBGMap`: Fills `bc` bytes at `vBGMap0` with value `a`.
-  - `FillBGMapBlack`: fills `$400` bytes (1 map = 1024 bytes) with `DIALOG_BG_TILE_DARK` (`$7E`).
-  - `FillBGMapWhite`: fills `$800` bytes (2 maps = 2048 bytes) with `$7F`.
-  - `wram0Section` starts at `$C000`.
-  - `wAudioSection` starts at `$D300`, so `wAudioSection - wram0Section = 0x1300`.
-  - `wDrawCommandsSection` starts at `$D600`, so `wDrawCommandsSection - wram0Section = 0x1600`.
-  - `$DF00 - wram0Section = 0x1F00`. Stack pointer is initialized at `wStackTop` (`$DFFF`), so WRAM clearing up to `$DF00` deliberately leaves the stack frame area intact!
-  - `hGameValuesSection` starts at `$FF90`.
-  - `hNextDefaultMusicTrack` is at `$FFBF`, difference = `0x2F` bytes.
-  - `hIsComputingFrame` is at `$FFFD`, difference = `0x6D` bytes.
-  - `hIsGBC` is located at `$FFFE`. In `ClearBytes`, the function explicitly reads `hIsGBC`, pushes AF, clears BC bytes in loop, pops AF, and writes back `hIsGBC`, preserving hardware identification even when HRAM blocks are wiped.
-  - `rSelectROMBank` is MBC1/MBC3/MBC5 register `$2100`. `CopyDataFromBank` writes bank, copies, then restores bank 1 with `ld a, $01; ld [rSelectROMBank], a`.
-  - Draw command format:
-    - Byte 0: Destination address high byte (`h`). If zero, terminates command list.
-    - Byte 1: Destination address low byte (`l`).
-    - Byte 2: Command byte `a` = `(mode << 6) | (length - 1)`. Bits 0-5 = actual count - 1. Bits 6-7 = command type.
-    - Bytes 3+: Payload data (for copy commands: `length` bytes; for fill commands: 1 byte).
-    - Wrapping behavior in row mode: If `(hl & 0x1F) == 0` after incrementing, it wraps back to start of current row (`hl -= 32`)!
-    - Column mode: Step is `+32` (`0x20`) per tile via `add hl, bc`.
-    - Room transition mode: Tile `$EE` is transparent and not written.
-- **ROM Verification**:
-  - Original ROM `azle.gbc` MD5 is `07c211479386825042efb4ad31bb525f`.
-  - `make azle.gbc` with RGBDS v1.0.3 successfully generates bit-identical ROM and symbol map `azle.sym`.
+  - `hInterrupts` is at `$FFD2` (5-byte array storing interrupt state).
+  - `LCDOff` preserves `rIE` into `hInterrupts`, clears `IEF_VBLANK` to prevent VBlank IRQ during disable, waits until `rLY == 145` (`SCRN_Y + 1`), clears `LCDCF_ON` in `rLCDC`, then restores `rIE` from `hInterrupts`.
+  - `wEntitiesTransitionCountdownTable` is at `$C2E0`.
+  - `wEntitiesPrivateCountdown1Table` is at `$C2F0`.
+  - `wEntitiesIgnoreHitsCountdownTable` is at `$C410`.
+  - `wEntitiesSlowTransitionCountdownTable` is at `$C450`.
+  - `wSwordMoblinAlertingSoundCounter` is at `$C502`.
+  - `hJingle` is at `$FFF2`, `JINGLE_WRONG_ANSWER` is `$1D`.
+  - `hNoiseSfx` is at `$FFF4`, `NOISE_SFX_EXPLOSION` is `$0C`.
+  - `PlayBombExplosionSfx` sets `hNoiseSfx` and directly falls through into `AlertSwordMoblins`.
+  - `BANK(SirenInstrumentsTiles)` is bank `$0C`.
+  - `CopySirenInstrumentTiles` copies 64 bytes ($40) using `CopyData` from bank $0C, then restores ROM bank 1.
 
 ---
 
 ## Verification Log
 
-- All 26 functions tested and verified.
-
----
-
-## Problems and Blockers
-
-- None currently.
-
----
-
-## Failed Attempts
-
-- None.
-
----
-
-## Decisions
-
-- **Architectural Design**:
-  - C/C++ decompilation is structured with explicit Game Boy architecture state (`GBState`), allowing each function to operate on a memory-mapped state directly or via clean C pointers/references.
-  - Memory offsets, constants, and label names strictly match `LADX-Disassembly/src/constants/` to maintain 1:1 mapping with original assembly.
-  - Comprehensive unit testing in `tests/` will validate memory alterations byte-for-byte against the assembly's documented preconditions and postconditions.
+- All 36 functions tested and verified with 100% pass rate.

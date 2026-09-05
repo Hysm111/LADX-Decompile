@@ -231,3 +231,11 @@ void CopyBGMapFromBank(GBState *gb, uint8_t src_bank, uint16_t hl) {
     uint8_t return_bank = gb_read(gb, hMultiPurposeF);
     gb_write(gb, rSelectROMBank, return_bank);
 }
+
+void CopySirenInstrumentTiles(GBState *gb, uint16_t de, uint16_t hl) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x0C);
+    CopyData(gb, de, hl, 0x40);
+    gb_write(gb, rSelectROMBank, 0x01);
+}

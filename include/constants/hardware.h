@@ -3,6 +3,12 @@
 
 #include "common.h"
 
+/* Screen dimensions */
+#define SCRN_X           160
+#define SCRN_Y           144
+#define SCRN_X_B         20
+#define SCRN_Y_B         18
+
 /* Memory map base addresses */
 #define ADDR_VRAM        0x8000
 #define ADDR_SCRN0       0x9800
@@ -75,6 +81,17 @@
 #define rOCPD            0xFF6B
 #define rSVBK            0xFF70
 #define rIE              0xFFFF
+
+/* rLCDC flags */
+#define LCDCF_OFF        0x00
+#define LCDCF_ON         0x80
+
+/* rIE flags */
+#define IEF_VBLANK       0x01
+#define IEF_LCDC         0x02
+#define IEF_TIMER        0x04
+#define IEF_SERIAL       0x08
+#define IEF_HILO         0x10
 
 /* MBC Bank selection registers */
 #define rSelectROMBank   0x2100
