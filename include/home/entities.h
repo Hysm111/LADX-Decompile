@@ -492,6 +492,102 @@ void RenderActiveEntitySpritesRectUsingAllOAM(GBState *gb, const uint8_t *displa
  */
 void func_015_7964_trampoline(GBState *gb, void (*func_015_7964)(GBState *));
 
+/**
+ * EntityInitMiniMoldorm_trampoline (00:3DAB)
+ */
+void EntityInitMiniMoldorm_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitMoldorm_trampoline (00:3DB6)
+ */
+void EntityInitMoldorm_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitFacade_trampoline (00:3DC1)
+ */
+void EntityInitFacade_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitSlimeEye_trampoline (00:3DCC)
+ */
+void EntityInitSlimeEye_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitGenie_trampoline (00:3DD7)
+ */
+void EntityInitGenie_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitSlimeEel_trampoline (00:3DE2)
+ */
+void EntityInitSlimeEel_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitDodongoSnake_trampoline (00:3DED)
+ */
+void EntityInitDodongoSnake_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitHotHead_trampoline (00:3DF8)
+ */
+void EntityInitHotHead_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * EntityInitEvilEagle_trampoline (00:3E03)
+ */
+void EntityInitEvilEagle_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * Entity67Handler_trampoline (00:3E0E)
+ */
+void Entity67Handler_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * CheckPositionForMapTransition_trampoline (00:3E19)
+ */
+void CheckPositionForMapTransition_trampoline(GBState *gb, void (*check_pos)(GBState *));
+
+/**
+ * GhiniMovement_trampoline (00:3E29)
+ */
+void GhiniMovement_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * SmashRock_trampoline (00:3E34)
+ */
+void SmashRock_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * LoadHeartsAndRupeesCount (00:3E3F)
+ */
+void LoadHeartsAndRupeesCount(GBState *gb, void (*load_rupees)(GBState *), void (*load_hearts)(GBState *));
+
+/**
+ * SpawnChestWithItemAndRestoreBank3 (00:3E4D)
+ */
+void SpawnChestWithItemAndRestoreBank3(GBState *gb, void (*spawn_chest)(GBState *));
+
+/**
+ * DrawABButtonSlots (00:3E5A)
+ */
+void DrawABButtonSlots(GBState *gb, void (*draw_slots)(GBState *, uint16_t bc, uint8_t e));
+
+/**
+ * GiveInventoryItem_trampoline (00:3E6B)
+ */
+void GiveInventoryItem_trampoline(GBState *gb, uint8_t item, void (*give_item)(GBState *, uint8_t item));
+
+/**
+ * func_006_783C_trampoline (00:3E76)
+ */
+void func_006_783C_trampoline(GBState *gb, void (*func)(GBState *));
+
+/**
+ * UnloadAllEntities (00:3E83)
+ * Clears all entity status slots (0..15) in wEntitiesStatusTable to 0.
+ */
+void UnloadAllEntities(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

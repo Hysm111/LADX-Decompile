@@ -170,6 +170,10 @@ static void mock_cb_19(GBState *gb) {
 static void mock_cb_03(GBState *gb) { mock_check_bank_cb(gb, 0x03); }
 static void mock_cb_14(GBState *gb) { mock_check_bank_cb(gb, 0x14); }
 static void mock_cb_15(GBState *gb) { mock_check_bank_cb(gb, 0x15); }
+static void mock_cb_04(GBState *gb) { mock_check_bank_cb(gb, 0x04); }
+static void mock_cb_05(GBState *gb) { mock_check_bank_cb(gb, 0x05); }
+static void mock_cb_06(GBState *gb) { mock_check_bank_cb(gb, 0x06); }
+static void mock_cb_36(GBState *gb) { mock_check_bank_cb(gb, 0x36); }
 static void mock_cb_01(GBState *gb) {
     mock_check_bank_cb(gb, 0x01);
     assert(gb_read(gb, wCurrentBank) == 0x01);
@@ -764,6 +768,217 @@ static void test_entity_rendering_routines(void) {
     assert(gb_read(&gb, wOAMBuffer + 3) == 0x02);
 }
 
+
+static int test_load_rupees_called = 0;
+static int test_load_hearts_called = 0;
+static void mock_load_rupees(GBState *gb) {
+    test_load_rupees_called++;
+    assert(gb->rom_bank == 0x02);
+}
+static void mock_load_hearts(GBState *gb) {
+    test_load_hearts_called++;
+    assert(gb->rom_bank == 0x02);
+}
+
+static uint16_t test_draw_slots_bc = 0;
+static uint8_t test_draw_slots_e = 0;
+static void mock_draw_slots(GBState *gb, uint16_t bc, uint8_t e) {
+    assert(gb->rom_bank == 0x20);
+    test_draw_slots_bc = bc;
+    test_draw_slots_e = e;
+}
+
+static uint8_t test_given_item = 0;
+static void mock_give_item(GBState *gb, uint8_t item) {
+    assert(gb->rom_bank == 0x03);
+    test_given_item = item;
+}
+
+static void test_boss_and_entity_init_trampolines(void) {
+    printf("[*] Running Boss & entity init trampolines and UnloadAllEntities (00:3DAB-00:3E8D)...\n");
+
+    GBState gb;
+
+    /* 1. EntityInitMiniMoldorm_trampoline (Bank $04) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitMiniMoldorm_trampoline(&gb, mock_cb_04);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 2. EntityInitMoldorm_trampoline (Bank $04) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitMoldorm_trampoline(&gb, mock_cb_04);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 3. EntityInitFacade_trampoline (Bank $04) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitFacade_trampoline(&gb, mock_cb_04);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 4. EntityInitSlimeEye_trampoline (Bank $04) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitSlimeEye_trampoline(&gb, mock_cb_04);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 5. EntityInitGenie_trampoline (Bank $36) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitGenie_trampoline(&gb, mock_cb_36);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 6. EntityInitSlimeEel_trampoline (Bank $05) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitSlimeEel_trampoline(&gb, mock_cb_05);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 7. EntityInitDodongoSnake_trampoline (Bank $05) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitDodongoSnake_trampoline(&gb, mock_cb_05);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 8. EntityInitHotHead_trampoline (Bank $05) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitHotHead_trampoline(&gb, mock_cb_05);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 9. EntityInitEvilEagle_trampoline (Bank $05) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    EntityInitEvilEagle_trampoline(&gb, mock_cb_05);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 10. Entity67Handler_trampoline (Bank $05) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    Entity67Handler_trampoline(&gb, mock_cb_05);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 11. CheckPositionForMapTransition_trampoline (Bank $02) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    mock_cb_called = false;
+    CheckPositionForMapTransition_trampoline(&gb, mock_cb_02);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x08);
+    assert(gb_read(&gb, wCurrentBank) == 0x08);
+
+    /* 12. GhiniMovement_trampoline (Bank $04) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    GhiniMovement_trampoline(&gb, mock_cb_04);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 13. SmashRock_trampoline (Bank $03) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    SmashRock_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 14. LoadHeartsAndRupeesCount (Bank $02) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    test_load_rupees_called = 0;
+    test_load_hearts_called = 0;
+    LoadHeartsAndRupeesCount(&gb, mock_load_rupees, mock_load_hearts);
+    assert(test_load_rupees_called == 1);
+    assert(test_load_hearts_called == 1);
+    assert(gb.rom_bank == 0x08);
+
+    /* 15. SpawnChestWithItemAndRestoreBank3 (Bank $02 -> Bank $03) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x07;
+    mock_cb_called = false;
+    SpawnChestWithItemAndRestoreBank3(&gb, mock_cb_02);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x03);
+    assert(gb_read(&gb, wCurrentBank) == 0x03);
+
+    /* 16. DrawABButtonSlots (Bank $20) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    test_draw_slots_bc = 0;
+    test_draw_slots_e = 0;
+    DrawABButtonSlots(&gb, mock_draw_slots);
+    assert(test_draw_slots_bc == 0x0001);
+    assert(test_draw_slots_e == 0xFF);
+    assert(gb.rom_bank == 0x08);
+
+    /* 17. GiveInventoryItem_trampoline (Bank $03) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    test_given_item = 0;
+    GiveInventoryItem_trampoline(&gb, 0x0A, mock_give_item);
+    assert(test_given_item == 0x0A);
+    assert(gb.rom_bank == 0x08);
+
+    /* 18. func_006_783C_trampoline (Bank $06 -> Bank $03) */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x07;
+    mock_cb_called = false;
+    func_006_783C_trampoline(&gb, mock_cb_06);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x03);
+    assert(gb_read(&gb, wCurrentBank) == 0x03);
+
+    /* 19. UnloadAllEntities */
+    gb_init(&gb);
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        gb_write(&gb, wEntitiesStatusTable + i, (uint8_t)(i + 1));
+    }
+    UnloadAllEntities(&gb);
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        assert(gb_read(&gb, wEntitiesStatusTable + i) == 0);
+    }
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
@@ -774,5 +989,6 @@ void run_entities_tests(void) {
     test_entities_batch_hitbox_and_collision_trampolines();
     test_animate_entities_pipeline();
     test_entity_rendering_routines();
+    test_boss_and_entity_init_trampolines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

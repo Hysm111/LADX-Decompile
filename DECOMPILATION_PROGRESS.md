@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 19.67%
-* **Number of Verified Functions**: 236
-* **Number of Decompiled Functions**: 236
-* **Number Remaining**: ~964 functions
-* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3DAB`+)
-* **Current Task**: Decompile and verify Bank 0 boss & entity init trampolines (`00:3DAB`+)
-* **Last Completed Task**: Decompiled and verified 8 Bank 0 Entity Sprite Rendering routines (`RenderActiveEntitySpritesPair`, `label_3C71`, `RenderActiveEntitySprite`, `label_3CD9`, `RenderActiveEntitySpritesRectUsingAllOAM`, `RenderActiveEntitySpritesRect`, `SkipDisabledEntityDuringRoomTransition`, `func_015_7964_trampoline`) (`00:3BC0` - `00:3D57`, `00:3DA0`)
-* **Next Task**: Decompile and verify Bank 0 boss init and entity trampolines (`00:3DAB`+) in `code/home/entities.asm`
-* **Last Update Timestamp**: 2026-09-06T18:25:00+03:00
+* **Current Overall Progress**: 21.25%
+* **Number of Verified Functions**: 255
+* **Number of Decompiled Functions**: 255
+* **Number Remaining**: ~945 functions
+* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3E8E`+)
+* **Current Task**: Decompile and verify Bank 0 entity recoil and physics helpers (`00:3E8E`+)
+* **Last Completed Task**: Decompiled and verified 19 Bank 0 Boss & Entity init trampolines and UnloadAllEntities (`EntityInitMiniMoldorm_trampoline`, `EntityInitMoldorm_trampoline`, `EntityInitFacade_trampoline`, `EntityInitSlimeEye_trampoline`, `EntityInitGenie_trampoline`, `EntityInitSlimeEel_trampoline`, `EntityInitDodongoSnake_trampoline`, `EntityInitHotHead_trampoline`, `EntityInitEvilEagle_trampoline`, `Entity67Handler_trampoline`, `CheckPositionForMapTransition_trampoline`, `GhiniMovement_trampoline`, `SmashRock_trampoline`, `LoadHeartsAndRupeesCount`, `SpawnChestWithItemAndRestoreBank3`, `DrawABButtonSlots`, `GiveInventoryItem_trampoline`, `func_006_783C_trampoline`, `UnloadAllEntities`) (`00:3DAB` - `00:3E8D`)
+* **Next Task**: Decompile and verify Bank 0 entity recoil and physics helpers (`00:3E8E`+) in `code/home/entities.asm`
+* **Last Update Timestamp**: 2026-09-06T18:40:00+03:00
 
 ---
 
@@ -184,10 +184,37 @@
 | `RenderActiveEntitySpritesRect` | VERIFIED | PASS | PASS | Renders a rectangular group of sprites starting at wDynamicOAMBuffer + wOAMNextAvailableSlot (`00:3CE6`) |
 | `SkipDisabledEntityDuringRoomTransition` | VERIFIED | PASS | PASS | Checks room transition status, X/Y screen bounds, and sign tables to determine if entity rendering should skip (`00:3D57`) |
 | `func_015_7964_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $15, calls func_015_7964, and restores saved bank via ReloadSavedBank (`00:3DA0`) |
+| `EntityInitMiniMoldorm_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $04, calls EntityInitMiniMoldorm, and restores saved bank (`00:3DAB`) |
+| `EntityInitMoldorm_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $04, calls EntityInitMoldorm, and restores saved bank (`00:3DB6`) |
+| `EntityInitFacade_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $04, calls EntityInitFacade, and restores saved bank (`00:3DC1`) |
+| `EntityInitSlimeEye_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $04, calls EntityInitSlimeEye, and restores saved bank (`00:3DCC`) |
+| `EntityInitGenie_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $36, calls EntityInitGenie, and restores saved bank (`00:3DD7`) |
+| `EntityInitSlimeEel_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $05, calls EntityInitSlimeEel, and restores saved bank (`00:3DE2`) |
+| `EntityInitDodongoSnake_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $05, calls EntityInitDodongoSnake, and restores saved bank (`00:3DED`) |
+| `EntityInitHotHead_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $05, calls EntityInitHotHead, and restores saved bank (`00:3DF8`) |
+| `EntityInitEvilEagle_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $05, calls EntityInitEvilEagle, and restores saved bank (`00:3E03`) |
+| `Entity67Handler_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $05, calls Entity67Handler, and restores saved bank (`00:3E0E`) |
+| `CheckPositionForMapTransition_trampoline` | VERIFIED | PASS | PASS | Preserves wCurrentBank, calls CheckPositionForMapTransition in Bank $02, and restores saved bank (`00:3E19`) |
+| `GhiniMovement_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $04, calls GhiniVisibleHandler.move, and restores saved bank (`00:3E29`) |
+| `SmashRock_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls SmashRock, and restores saved bank (`00:3E34`) |
+| `LoadHeartsAndRupeesCount` | VERIFIED | PASS | PASS | Switches to Bank $02, calls LoadRupeesDigits and LoadHeartsCount, and restores saved bank (`00:3E3F`) |
+| `SpawnChestWithItemAndRestoreBank3` | VERIFIED | PASS | PASS | Switches to Bank $02, calls SpawnChestWithItem, and restores Bank $03 (`00:3E4D`) |
+| `DrawABButtonSlots` | VERIFIED | PASS | PASS | Switches to Bank $20, calls DrawInventorySlots with parameters for A/B slots, and restores saved bank (`00:3E5A`) |
+| `GiveInventoryItem_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GiveInventoryItem with player item, and restores saved bank (`00:3E6B`) |
+| `func_006_783C_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $06, calls func_006_783C, and restores Bank $03 (`00:3E76`) |
+| `UnloadAllEntities` | VERIFIED | PASS | PASS | Clears all 16 entity status entries in wEntitiesStatusTable to 0 (`00:3E83`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Boss & Entity Init Trampolines (`00:3DAB`-`00:3E8D`)**:
+   - Boss init trampolines switch into specific ROM banks: Mini-Moldorm, Moldorm, Facade, Slime Eye, and Ghini movement use Bank `$04`; Genie uses Bank `$36`; Slime Eel, Dodongo Snake, Hot Head, Evil Eagle, and Entity 67 use Bank `$05`.
+   - `CheckPositionForMapTransition_trampoline` explicitly saves `wCurrentBank` on the stack before switching to Bank `$02` and restores it via `SwitchBank`.
+   - `LoadHeartsAndRupeesCount` executes both `LoadRupeesDigits` and `LoadHeartsCount` in Bank `$02` before reloading saved bank.
+   - `SpawnChestWithItemAndRestoreBank3` and `func_006_783C_trampoline` ensure Bank `$03` is actively restored upon completion.
+   - `DrawABButtonSlots` sets register `c = 1, b = 0, e = 0xFF` and calls `DrawInventorySlots` in Bank `$20`.
+   - `UnloadAllEntities` iterates all `MAX_ENTITIES` (16) slots in `wEntitiesStatusTable`, zeroing each slot to disable all entities.
 
 1. **Entity Sprite Rendering Routines (`00:3BC0`-`00:3D57`, `00:3DA0`)**:
    - `RenderActiveEntitySpritesPair`: iterates a 4-byte display list entry per variant (`tile0`, `attr0`, `tile1`, `attr1`), computing horizontal flip adjustments (`+8` or `0`), screen shake offset subtraction, and off-screen Y-coordinate relocation (`$F0`) if tile lower nibble is `$0F`. Also handles GBC palette override (`OAM_GBC_PAL_4`). Calls `func_015_795D` and `func_015_7995` in Bank $15 before restoring saved bank.

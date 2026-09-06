@@ -767,3 +767,138 @@ void func_015_7964_trampoline(GBState *gb, void (*func_015_7964)(GBState *)) {
     }
     ReloadSavedBank(gb);
 }
+
+void EntityInitMiniMoldorm_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x04);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitMoldorm_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x04);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitFacade_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x04);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitSlimeEye_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x04);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitGenie_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitSlimeEel_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x05);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitDodongoSnake_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x05);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitHotHead_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x05);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void EntityInitEvilEagle_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x05);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void Entity67Handler_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x05);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void CheckPositionForMapTransition_trampoline(GBState *gb, void (*check_pos)(GBState *)) {
+    if (!gb) return;
+    uint8_t saved_bank = gb_read(gb, wCurrentBank);
+    SwitchBank(gb, 0x02);
+    if (check_pos) check_pos(gb);
+    SwitchBank(gb, saved_bank);
+}
+
+void GhiniMovement_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x04);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void SmashRock_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (func) func(gb);
+    ReloadSavedBank(gb);
+}
+
+void LoadHeartsAndRupeesCount(GBState *gb, void (*load_rupees)(GBState *), void (*load_hearts)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x02);
+    if (load_rupees) load_rupees(gb);
+    if (load_hearts) load_hearts(gb);
+    ReloadSavedBank(gb);
+}
+
+void SpawnChestWithItemAndRestoreBank3(GBState *gb, void (*spawn_chest)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x02);
+    if (spawn_chest) spawn_chest(gb);
+    SwitchBank(gb, 0x03);
+}
+
+void DrawABButtonSlots(GBState *gb, void (*draw_slots)(GBState *, uint16_t bc, uint8_t e)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (draw_slots) draw_slots(gb, 0x0001, 0xFF);
+    ReloadSavedBank(gb);
+}
+
+void GiveInventoryItem_trampoline(GBState *gb, uint8_t item, void (*give_item)(GBState *, uint8_t item)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (give_item) give_item(gb, item);
+    ReloadSavedBank(gb);
+}
+
+void func_006_783C_trampoline(GBState *gb, void (*func)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x06);
+    if (func) func(gb);
+    SwitchBank(gb, 0x03);
+}
+
+void UnloadAllEntities(GBState *gb) {
+    if (!gb) return;
+    for (uint16_t i = 0; i < MAX_ENTITIES; i++) {
+        gb_write(gb, (uint16_t)(wEntitiesStatusTable + i), 0);
+    }
+}
