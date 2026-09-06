@@ -72,7 +72,7 @@ void PlayAudioStepWithHooks(GBState *gb,
         return;
     }
 
-    /* Otherwise (e.g. timing == 1), play two audio steps (double speed) */
+    /* If timing == 1: double speed, 2 steps */
     doAudioStep(gb, play_music_1b, play_music_1e);
     doAudioStep(gb, play_music_1b, play_music_1e);
 }
@@ -117,4 +117,14 @@ void func_27F2(GBState *gb, void (*func_01F_4003)(GBState *)) {
         }
     }
     ReloadSavedBank(gb);
+}
+
+void PlayBoomerangSfx_trampoline(GBState *gb, void (*play_sfx)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (play_sfx) {
+        play_sfx(gb);
+    }
+    gb_write(gb, rSelectROMBank, gb_read(gb, wCurrentBank));
 }

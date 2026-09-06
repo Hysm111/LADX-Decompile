@@ -32,6 +32,68 @@ void MarkTriggerAsResolved(GBState *gb);
  */
 void SelectRoomTilesets(GBState *gb);
 
+/**
+ * LoadTileset0F_trampoline (00:28E8)
+ * Switches to BANK(LoadTileset0F) ($01) via SwitchBank and jumps to LoadTileset0F.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param load_tileset Callback to LoadTileset0F
+ */
+void LoadTileset0F_trampoline(GBState *gb, void (*load_tileset)(GBState *));
+
+/**
+ * GetChestsStatusForRoom_trampoline (00:29ED)
+ * Switches to bank $14, calls GetChestsStatusForRoom callback,
+ * and reloads saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param get_chests_status Callback to GetChestsStatusForRoom
+ */
+void GetChestsStatusForRoom_trampoline(GBState *gb, void (*get_chests_status)(GBState *));
+
+/**
+ * func_2A07 (00:2A07)
+ * Switches to bank $01, calls func_001_5A59 callback,
+ * and reloads saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_001_5A59 Callback to routine at 001:5A59
+ */
+void func_2A07(GBState *gb, void (*func_001_5A59)(GBState *));
+
+/**
+ * GetObjectPhysicsFlags (00:2A12)
+ * Reads the physics flags for a given static object.
+ * Sets rSelectROMBank to BANK(OverworldObjectPhysicFlags) ($08).
+ * If hMapId == MAP_COLOR_DUNGEON ($FF), reads from Indoors1ObjectPhysicFlags + de.
+ * Otherwise, reads from OverworldObjectPhysicFlags + de.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Room object offset
+ * @return Physics flags byte
+ */
+uint8_t GetObjectPhysicsFlags(GBState *gb, uint16_t de);
+
+/**
+ * GetObjectPhysicsFlags_trampoline (00:2A26)
+ * Calls GetObjectPhysicsFlags, then restores previous ROM bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Room object offset
+ * @return Physics flags byte
+ */
+uint8_t GetObjectPhysicsFlags_trampoline(GBState *gb, uint16_t de);
+
+/**
+ * GetObjectPhysicsFlagsAndRestoreBank3 (00:2A2C)
+ * Calls GetObjectPhysicsFlags, sets rSelectROMBank to $03, and returns physics flags.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Room object offset
+ * @return Physics flags byte
+ */
+uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de);
+
 #ifdef __cplusplus
 }
 #endif

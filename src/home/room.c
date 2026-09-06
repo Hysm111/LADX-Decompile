@@ -136,3 +136,56 @@ void SelectRoomTilesets(GBState *gb) {
 
     ReloadSavedBank(gb);
 }
+
+void LoadTileset0F_trampoline(GBState *gb, void (*load_tileset)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, 0x01);
+    if (load_tileset) {
+        load_tileset(gb);
+    }
+}
+
+void GetChestsStatusForRoom_trampoline(GBState *gb, void (*get_chests_status)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x14);
+    if (get_chests_status) {
+        get_chests_status(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void func_2A07(GBState *gb, void (*func_001_5A59)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x01);
+    if (func_001_5A59) {
+        func_001_5A59(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+uint8_t GetObjectPhysicsFlags(GBState *gb, uint16_t de) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, BANK_ObjectPhysicFlags);
+    uint16_t hl = (gb_read(gb, hMapId) == MAP_COLOR_DUNGEON) ? Indoors1ObjectPhysicFlags : OverworldObjectPhysicFlags;
+    return gb_read(gb, hl + de);
+}
+
+uint8_t GetObjectPhysicsFlags_trampoline(GBState *gb, uint16_t de) {
+    if (!gb) return 0;
+
+    uint8_t flags = GetObjectPhysicsFlags(gb, de);
+    ReloadSavedBank(gb);
+    return flags;
+}
+
+uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de) {
+    if (!gb) return 0;
+
+    uint8_t flags = GetObjectPhysicsFlags(gb, de);
+    gb_write(gb, rSelectROMBank, 0x03);
+    return flags;
+}

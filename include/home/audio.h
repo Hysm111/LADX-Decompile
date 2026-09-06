@@ -7,38 +7,35 @@
 extern "C" {
 #endif
 
-typedef void (*AudioStepCallback)(GBState *gb);
-
 /**
  * PlayWrongAnswerJingle (00:0C20)
- * Plays the wrong answer audio jingle by writing JINGLE_WRONG_ANSWER to hJingle.
+ * Plays the wrong answer error sound effect by writing JINGLE_WRONG_ANSWER to hJingle.
  */
 void PlayWrongAnswerJingle(GBState *gb);
 
 /**
  * AlertSwordMoblins (00:0C50)
- * Sets wSwordMoblinAlertingSoundCounter to 4 when an alerting noise occurs.
+ * Sets wSwordMoblinAlertingSoundCounter to 0x04.
  */
 void AlertSwordMoblins(GBState *gb);
 
 /**
  * PlayBombExplosionSfx (00:0C4B)
- * Triggers bomb explosion noise sfx by writing NOISE_SFX_EXPLOSION to hNoiseSfx,\n * then falls through to AlertSwordMoblins.
+ * Triggers bomb explosion noise sfx by writing NOISE_SFX_EXPLOSION to hNoiseSfx,
+ * then falls through to AlertSwordMoblins.
  */
 void PlayBombExplosionSfx(GBState *gb);
 
 /**
- * Executes an audio step: calls PlaySfx in bank $1F, then if no wave SFX is playing,
- * executes music tracks from bank $1B and $1E depending on wMusicTrackTiming and frame counter.
- * Corresponds to PlayAudioStep (00:08A4) in disassembly.
- *
- * @param gb Pointer to Game Boy hardware state
+ * PlayAudioStep (00:08A4)
+ * Audio step dispatcher executed once per frame.
+ * Calls PlaySfx in bank $1F, checks if hWaveSfx is active,
+ * evaluates wMusicTrackTiming, and steps music handlers in banks $1B and $1E.
  */
 void PlayAudioStep(GBState *gb);
 
-/**
- * Hooked version of PlayAudioStep allowing custom callbacks for the sub-bank audio routines.
- */
+typedef void (*AudioStepCallback)(GBState *gb);
+
 void PlayAudioStepWithHooks(GBState *gb,
                             AudioStepCallback play_sfx,
                             AudioStepCallback play_music_1b,
@@ -83,6 +80,16 @@ void ResetMusicFadeTimer(GBState *gb);
  * @param func_01F_4003 Callback to routine at 01F:4003
  */
 void func_27F2(GBState *gb, void (*func_01F_4003)(GBState *));
+
+/**
+ * PlayBoomerangSfx_trampoline (00:29F8)
+ * Switches to bank $20 (BANK(PlayBoomerangSfx)), calls PlayBoomerangSfx,
+ * and restores rSelectROMBank from wCurrentBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param play_sfx Callback to PlayBoomerangSfx
+ */
+void PlayBoomerangSfx_trampoline(GBState *gb, void (*play_sfx)(GBState *));
 
 #ifdef __cplusplus
 }
