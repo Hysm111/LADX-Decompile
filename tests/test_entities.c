@@ -5,6 +5,9 @@
 #include "home/entities.h"
 #include "constants/memory.h"
 #include "constants/entities.h"
+#include "constants/gameplay.h"
+#include "constants/maps.h"
+#include "constants/sfx.h"
 
 void test_is_zero(void) {
     printf("[*] Running IsZero tests...\n");
@@ -151,7 +154,7 @@ void test_animate_entities_trampolines(void) {
 }
 
 
-static uint8_t mock_entities_rom[0x4000 * 0x20];
+static uint8_t mock_entities_rom[0x4000 * 0x40];
 #define ROM_OFFSET(bank, addr) (((size_t)(bank) * 0x4000) + ((size_t)(addr) - 0x4000))
 
 static bool mock_cb_called = false;
@@ -166,6 +169,7 @@ static void mock_cb_19(GBState *gb) {
 }
 static void mock_cb_03(GBState *gb) { mock_check_bank_cb(gb, 0x03); }
 static void mock_cb_14(GBState *gb) { mock_check_bank_cb(gb, 0x14); }
+static void mock_cb_15(GBState *gb) { mock_check_bank_cb(gb, 0x15); }
 static void mock_cb_01(GBState *gb) {
     mock_check_bank_cb(gb, 0x01);
     assert(gb_read(gb, wCurrentBank) == 0x01);
@@ -408,6 +412,168 @@ static void test_entities_batch_hitbox_and_collision_trampolines(void) {
     assert(gb.rom_bank == 0x14);
 }
 
+
+static int test_func4303_called = 0;
+static int test_func6352_called = 0;
+static int test_animate_entity_count = 0;
+static uint8_t test_animated_slots[16];
+
+static void mock_func_020_4303(GBState *gb) {
+    test_func4303_called++;
+    assert(gb->rom_bank == 0x20);
+}
+
+static void mock_func_020_6352(GBState *gb) {
+    test_func6352_called++;
+    assert(gb->rom_bank == 0x20);
+    assert(gb_read(gb, wCurrentBank) == 0x20);
+}
+
+static void mock_animate_entity_slot(GBState *gb, uint16_t entity_index) {
+    test_animated_slots[test_animate_entity_count++] = (uint8_t)entity_index;
+    assert(gb_read(gb, wActiveEntityIndex) == entity_index);
+}
+
+static bool s_simple_cb_called = false;
+static void simple_test_cb(GBState *gb) { (void)gb; s_simple_cb_called = true; }
+static int test_status_handler_called = 0;
+static void mock_status_active_handler(GBState *gb) {
+    test_status_handler_called++;
+    assert(gb->rom_bank == 0x03);
+}
+
+static uint8_t dispatched_bank = 0;
+static uint16_t dispatched_addr = 0;
+static void mock_handler_dispatch(GBState *gb, uint8_t bank, uint16_t addr) {
+    dispatched_bank = bank;
+    dispatched_addr = addr;
+}
+
+static void test_animate_entities_pipeline(void) {
+    printf("[*] Running AnimateEntities pipeline tests (00:398D-00:3A8D, 00:3D7F-00:3D8A)...\n");
+
+    GBState gb;
+
+    /* 1. ClearEntitySpeed */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesSpeedXTable + 3, 0x12);
+    gb_write(&gb, wEntitiesSpeedYTable + 3, 0x34);
+    ClearEntitySpeed(&gb, 3);
+    assert(gb_read(&gb, wEntitiesSpeedXTable + 3) == 0);
+    assert(gb_read(&gb, wEntitiesSpeedYTable + 3) == 0);
+
+    /* 2. CopyEntityPositionToActivePosition */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesPosXTable + 4, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 4, 0x60);
+    gb_write(&gb, wEntitiesPosZTable + 4, 0x08);
+    CopyEntityPositionToActivePosition(&gb, 4);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x50);
+    assert(gb_read(&gb, hActiveEntityPosY) == 0x60);
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x58);
+
+    /* 3. ResetEntity_trampoline */
+    gb_init(&gb);
+    mock_cb_called = false;
+    ResetEntity_trampoline(&gb, mock_cb_15); /* reuses checking bank */
+    assert(gb.rom_bank == 0x03);
+
+    /* 4. AnimateEntity */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesTypeTable + 2, 0x09);
+    gb_write(&gb, wEntitiesStateTable + 2, 0x01);
+    gb_write(&gb, wEntitiesSpriteVariantTable + 2, 0x04);
+    gb_write(&gb, wEntitiesStatusTable + 2, ENTITY_STATUS_ACTIVE);
+    gb_write(&gb, hActiveEntityStatus, ENTITY_STATUS_ACTIVE);
+    gb_write(&gb, wEntitiesPosXTable + 2, 0x20);
+    gb_write(&gb, wEntitiesPosYTable + 2, 0x30);
+    gb_write(&gb, wEntitiesPosZTable + 2, 0x00);
+
+    AnimateEntityCallbacks ae_cbs = {
+        .ExecuteActiveEntityHandler = mock_status_active_handler,
+    };
+    test_status_handler_called = 0;
+    AnimateEntity(&gb, 2, &ae_cbs);
+
+    assert(test_status_handler_called == 1);
+    assert(gb_read(&gb, hActiveEntityType) == 0x09);
+    assert(gb_read(&gb, hActiveEntityState) == 0x01);
+    assert(gb_read(&gb, hActiveEntitySpriteVariant) == 0x04);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x20);
+    assert(gb_read(&gb, hActiveEntityPosY) == 0x30);
+    assert(gb.rom_bank == 0x03);
+
+    /* 5. ExecuteActiveEntityHandler */
+    gb_init(&gb);
+    memset(mock_entities_rom, 0, sizeof(mock_entities_rom));
+    /* EntityHandlersTable is at 0x4000 in bank 0x20 */
+    /* Type 0x05 entry at 0x4000 + 0x05 * 3 = 0x400F */
+    mock_entities_rom[ROM_OFFSET(0x20, EntityHandlersTable + 5 * 3 + 0)] = 0x78; /* low */
+    mock_entities_rom[ROM_OFFSET(0x20, EntityHandlersTable + 5 * 3 + 1)] = 0x56; /* high */
+    mock_entities_rom[ROM_OFFSET(0x20, EntityHandlersTable + 5 * 3 + 2)] = 0x0B; /* bank */
+    gb_attach_rom(&gb, mock_entities_rom, sizeof(mock_entities_rom));
+
+    gb_write(&gb, hActiveEntityType, 0x05);
+    dispatched_bank = 0;
+    dispatched_addr = 0;
+    ExecuteActiveEntityHandler(&gb, mock_handler_dispatch);
+    assert(dispatched_bank == 0x0B);
+    assert(dispatched_addr == 0x5678);
+    assert(gb.rom_bank == 0x0B);
+    assert(gb_read(&gb, wCurrentBank) == 0x0B);
+
+    /* 6. ExecuteActiveEntityHandler_trampoline */
+    gb_init(&gb);
+    s_simple_cb_called = false;
+    ExecuteActiveEntityHandler_trampoline(&gb, simple_test_cb);
+    assert(s_simple_cb_called);
+    assert(gb.rom_bank == 0x03);
+    assert(gb_read(&gb, wCurrentBank) == 0x03);
+
+    /* 7. AnimateEntities main loop */
+    gb_init(&gb);
+    gb_write(&gb, wBossAgonySFXCountdown, 1);
+    gb_write(&gb, wDialogState, 0);
+    gb_write(&gb, wC111, 5);
+    gb_write(&gb, wLinkMotionState, 0);
+    gb_write(&gb, hMapId, 0x02); /* < MAP_CAVE_B */
+    gb_write(&gb, hFrameCounter, 2); /* slot = (2 & 3)*8 = 16 = 0x10 */
+
+    /* Set two active entities: slot 1 and slot 7 */
+    gb_write(&gb, wEntitiesStatusTable + 1, ENTITY_STATUS_ACTIVE);
+    gb_write(&gb, wEntitiesStatusTable + 7, ENTITY_STATUS_ACTIVE);
+
+    AnimateEntitiesCallbacks main_cbs = {
+        .func_020_4303 = mock_func_020_4303,
+        .func_020_6352 = mock_func_020_6352,
+        .AnimateEntity = mock_animate_entity_slot,
+    };
+
+    test_func4303_called = 0;
+    test_func6352_called = 0;
+    test_animate_entity_count = 0;
+
+    AnimateEntities(&gb, &main_cbs);
+
+    assert(gb_read(&gb, wBossAgonySFXCountdown) == 0);
+    assert(gb_read(&gb, hWaveSfx) == WAVE_SFX_BOSS_DEATH_CRY);
+    assert(gb_read(&gb, wC1A8) == 5);
+    assert(gb_read(&gb, wC111) == 4);
+    assert(gb_read(&gb, wOAMNextAvailableSlot) == 0x10);
+    assert(test_func4303_called == 1);
+    assert(test_func6352_called == 1);
+    assert(test_animate_entity_count == 2);
+    /* Should loop down: slot 7 first, then slot 1 */
+    assert(test_animated_slots[0] == 7);
+    assert(test_animated_slots[1] == 1);
+
+    /* Test Link passing out early return */
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_PASS_OUT);
+    test_func4303_called = 0;
+    AnimateEntities(&gb, &main_cbs);
+    assert(test_func4303_called == 0); /* returned early */
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
@@ -416,5 +582,6 @@ void run_entities_tests(void) {
     test_animate_entities_trampolines();
     test_entities_batch_trampolines();
     test_entities_batch_hitbox_and_collision_trampolines();
+    test_animate_entities_pipeline();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

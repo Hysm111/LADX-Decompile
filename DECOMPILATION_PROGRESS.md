@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 18.42%
-* **Number of Verified Functions**: 221
-* **Number of Decompiled Functions**: 221
-* **Number Remaining**: ~979 functions
-* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:398D`+)
-* **Current Task**: Decompile and verify Bank 0 entity animation & rendering pipeline (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler`, `RenderActiveEntitySpritesPair`) (`00:398D`+)
-* **Last Completed Task**: Decompiled and verified 15 Bank 0 Entities Hitbox & Collision routines (`ConfigureEntityHitbox`, `SetEntitySpriteVariant`, `IncrementEntityState`, `HurtBySpikes_trampoline`, `ApplyEntityInteractionWithBackground_trampoline`, `label_3B2E`, `DefaultEnemyDamageCollisionHandler_trampoline`, `label_3B44`, `CheckLinkCollisionWithProjectile_trampoline`, `CheckLinkCollisionWithEnemy_trampoline`, `label_3B65`, `label_3B70`, `label_3B7B`, `ApplyVectorTowardsLink_trampoline`, `GetVectorTowardsLink_trampoline`) (`00:3AEA` - `00:3BBF`)
-* **Next Task**: Decompile and verify Bank 0 entity animation pipeline (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler`) (`00:398D`+)
-* **Last Update Timestamp**: 2026-09-06T17:55:00+03:00
+* **Current Overall Progress**: 19.00%
+* **Number of Verified Functions**: 228
+* **Number of Decompiled Functions**: 228
+* **Number Remaining**: ~972 functions
+* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3B86`+)
+* **Current Task**: Decompile and verify Bank 0 entity vector & movement helpers (`00:3B86`+)
+* **Last Completed Task**: Decompiled and verified 7 Bank 0 Entity Animation & Movement pipeline functions (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler_trampoline`, `ExecuteActiveEntityHandler`, `ClearEntitySpeed`, `CopyEntityPositionToActivePosition`) (`00:398D` - `00:3A8D`, `00:3D7F` - `00:3D8A`)
+* **Next Task**: Decompile and verify Bank 0 entity vector & movement helpers (`00:3B86`+) in `code/home/entities.asm`
+* **Last Update Timestamp**: 2026-09-06T18:10:00+03:00
 
 ---
 
@@ -169,10 +169,24 @@
 | `label_3B7B` | VERIFIED | PASS | PASS | Switches to Bank $03, calls func_003_75a2, and restores saved bank (`00:3B7B`) |
 | `ApplyVectorTowardsLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ApplyVectorTowardsLink, and restores saved bank (`00:3BAA`) |
 | `GetVectorTowardsLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GetVectorTowardsLink, and restores saved bank (`00:3BB5`) |
+| `AnimateEntities` | VERIFIED | PASS | PASS | Main entity loop: handles boss agony cry, dialog state, OAM slot cycling, bank $20 routines, and iterates slots 15..0 (`00:398D`) |
+| `ResetEntity_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $15, calls ResetEntity, and restores Bank $03 in rSelectROMBank (`00:3A0A`) |
+| `AnimateEntity` | VERIFIED | PASS | PASS | Prepares active entity HRAM, handles lifted/raft transition updates, updates timers in bank $14, and dispatches via status jump table in bank $03 (`00:3A18`) |
+| `ExecuteActiveEntityHandler_trampoline` | VERIFIED | PASS | PASS | Calls ExecuteActiveEntityHandler and restores Bank $03 (`00:3A81`) |
+| `ExecuteActiveEntityHandler` | VERIFIED | PASS | PASS | Reads handler address and bank from EntityHandlersTable ($20:$4000) and jumps to entity code (`00:3A8D`) |
+| `ClearEntitySpeed` | VERIFIED | PASS | PASS | Clears X and Y speeds in wEntitiesSpeedXTable and wEntitiesSpeedYTable for entity slot (`00:3D7F`) |
+| `CopyEntityPositionToActivePosition` | VERIFIED | PASS | PASS | Copies posX and posY to HRAM, and computes visualPosY = posY - posZ (`00:3D8A`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Entity Animation & Dispatch Pipeline (`00:398D`-`00:3A8D`, `00:3D7F`-`00:3D8A`)**:
+   - `AnimateEntities`: iterates entity slots in reverse order (`15` down to `0`), setting `wActiveEntityIndex` and checking `wEntitiesStatusTable`. Also decrements `wBossAgonySFXCountdown` triggering `WAVE_SFX_BOSS_DEATH_CRY`, updates `wC111`/`wC1A8` when no dialog is active, computes `wOAMNextAvailableSlot`, and calls Bank $20 helper routines.
+   - `AnimateEntity`: loads type, state, and sprite variant into HRAM registers, checks lifted / raft owner conditions to determine whether `UpdateEntityPositionForRoomTransition` runs before or after `CopyEntityPositionToActivePosition`, updates timers in Bank $14, and switches to Bank $03 to dispatch via status jump table.
+   - `ExecuteActiveEntityHandler`: reads a 3-byte `far_pointer` (`addr_low`, `addr_high`, `bank`) from `EntityHandlersTable` (`$20:$4000`), sets `wCurrentBank` and `rSelectROMBank`, and executes the entity handler.
+   - `ClearEntitySpeed`: sets both speed coordinates to 0 in WRAM.
+   - `CopyEntityPositionToActivePosition`: loads `wEntitiesPosXTable` into `hActiveEntityPosX`, `wEntitiesPosYTable` into `hActiveEntityPosY`, and subtracts `wEntitiesPosZTable` from `posY` to store in `hActiveEntityVisualPosY`.
 
 1. **Entities Hitbox & Collision Trampolines (`00:3AEA`-`00:3BBF`)**:
    - `ConfigureEntityHitbox`: masks `wEntitiesHitboxFlagsTable` with `$7C` to select one of 16 4-byte entries from `HitboxPositions` (`$3AAA`), and writes the 4 hitbox coordinate/extent bytes to `wEntitiesHitboxPositionTable + (bc * 4)`.

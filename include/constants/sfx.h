@@ -15,6 +15,7 @@
 #define WAVE_SFX_NONE                           0x00
 #define WAVE_SFX_LINK_HURT                      0x03
 #define WAVE_SFX_LOW_HEARTS                     0x04
+#define WAVE_SFX_BOSS_DEATH_CRY                 0x10
 
 /* Values for hNoiseSfx */
 #define NOISE_SFX_NONE                          0x00

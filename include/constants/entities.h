@@ -5,4 +5,20 @@
 #define BowWowEatableEntitiesTable 0x5218
 #define HitboxPositions 0x3AAA
 
+#define MAX_ENTITIES 16
+
+#define ENTITY_STATUS_DISABLED   0
+#define ENTITY_STATUS_DYING      1
+#define ENTITY_STATUS_FALLING    2
+#define ENTITY_STATUS_BURNING    3
+#define ENTITY_STATUS_INIT       4
+#define ENTITY_STATUS_ACTIVE     5
+#define ENTITY_STATUS_STUNNED    6
+#define ENTITY_STATUS_LIFTED     7
+#define ENTITY_STATUS_THROWN     8
+
+#define ENTITY_RAFT_RAFT_OWNER   0x6A
+
+#define EntityHandlersTable      0x4000
+
 #endif /* LADX_CONSTANTS_ENTITIES_H */

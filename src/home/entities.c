@@ -3,6 +3,9 @@
 #include "constants/memory.h"
 #include "constants/hardware.h"
 #include "constants/entities.h"
+#include "constants/sfx.h"
+#include "constants/maps.h"
+#include "constants/gameplay.h"
 
 uint8_t IsZero(GBState *gb, uint16_t hl, uint16_t bc) {
     if (!gb) return 0;
@@ -333,4 +336,210 @@ void GetVectorTowardsLink_trampoline(GBState *gb, void (*get_vector)(GBState *))
         get_vector(gb);
     }
     ReloadSavedBank(gb);
+}
+
+void AnimateEntities(GBState *gb, const AnimateEntitiesCallbacks *callbacks) {
+    if (!gb) return;
+
+    /* Play the Boss Agony audio effect if needed */
+    uint8_t agony = gb_read(gb, wBossAgonySFXCountdown);
+    if (agony != 0) {
+        agony--;
+        gb_write(gb, wBossAgonySFXCountdown, agony);
+        if (agony == 0) {
+            gb_write(gb, hWaveSfx, WAVE_SFX_BOSS_DEATH_CRY);
+        }
+    }
+
+    /* If no dialog is open, decrement wC111 */
+    if (gb_read(gb, wDialogState) == 0) {
+        uint8_t c111 = gb_read(gb, wC111);
+        gb_write(gb, wC1A8, c111);
+        if (c111 != 0) {
+            gb_write(gb, wC111, (uint8_t)(c111 - 1));
+        }
+    }
+
+    /* If Link is passing out, return */
+    if (gb_read(gb, wLinkMotionState) == LINK_MOTION_PASS_OUT) {
+        return;
+    }
+
+    gb_write(gb, wC3C1, 0);
+
+    uint8_t map_id = gb_read(gb, hMapId);
+    uint8_t slot_idx = 0;
+    if (map_id < MAP_CAVE_B) {
+        slot_idx = gb_read(gb, hFrameCounter) & 0x03;
+    }
+    static const uint8_t s_data_3989[4] = {0, 8, 0x10, 0x18};
+    gb_write(gb, wOAMNextAvailableSlot, s_data_3989[slot_idx]);
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (callbacks && callbacks->func_020_4303) {
+        callbacks->func_020_4303(gb);
+    }
+    gb_write(gb, rSelectROMBank, 0x00);
+
+    if (gb_read(gb, wDialogState) == 0) {
+        gb_write(gb, wItemUsageContext, 0);
+    }
+
+    SwitchBank(gb, 0x20);
+    if (callbacks && callbacks->func_020_6352) {
+        callbacks->func_020_6352(gb);
+    }
+
+    /* For each entity slot (MAX_ENTITIES - 1 down to 0) */
+    for (int c = MAX_ENTITIES - 1; c >= 0; c--) {
+        gb_write(gb, wActiveEntityIndex, (uint8_t)c);
+        uint8_t status = gb_read(gb, (uint16_t)(wEntitiesStatusTable + c));
+        if (status != 0) {
+            gb_write(gb, hActiveEntityStatus, status);
+            if (callbacks && callbacks->AnimateEntity) {
+                callbacks->AnimateEntity(gb, (uint16_t)c);
+            }
+        }
+    }
+}
+
+void ResetEntity_trampoline(GBState *gb, void (*reset_entity)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x15);
+    if (reset_entity) {
+        reset_entity(gb);
+    }
+    gb_write(gb, rSelectROMBank, 0x03);
+}
+
+void AnimateEntity(GBState *gb, uint16_t entity_index, const AnimateEntityCallbacks *callbacks) {
+    if (!gb) return;
+
+    uint8_t type = gb_read(gb, (uint16_t)(wEntitiesTypeTable + entity_index));
+    gb_write(gb, hActiveEntityType, type);
+
+    uint8_t state = gb_read(gb, (uint16_t)(wEntitiesStateTable + entity_index));
+    gb_write(gb, hActiveEntityState, state);
+
+    uint8_t variant = gb_read(gb, (uint16_t)(wEntitiesSpriteVariantTable + entity_index));
+    gb_write(gb, hActiveEntitySpriteVariant, variant);
+
+    SwitchBank(gb, 0x19);
+
+    bool is_lifted = false;
+    if (type == ENTITY_RAFT_RAFT_OWNER) {
+        if (gb_read(gb, hLinkSlowWalkingSpeed) != 0) {
+            is_lifted = true;
+        }
+    }
+    if (gb_read(gb, hActiveEntityStatus) == ENTITY_STATUS_LIFTED) {
+        is_lifted = true;
+    }
+
+    if (is_lifted) {
+        if (callbacks && callbacks->UpdateEntityPositionForRoomTransition) {
+            callbacks->UpdateEntityPositionForRoomTransition(gb);
+        }
+        if (callbacks && callbacks->CopyEntityPositionToActivePosition) {
+            callbacks->CopyEntityPositionToActivePosition(gb, entity_index);
+        } else {
+            CopyEntityPositionToActivePosition(gb, entity_index);
+        }
+    } else {
+        if (callbacks && callbacks->CopyEntityPositionToActivePosition) {
+            callbacks->CopyEntityPositionToActivePosition(gb, entity_index);
+        } else {
+            CopyEntityPositionToActivePosition(gb, entity_index);
+        }
+        if (callbacks && callbacks->UpdateEntityPositionForRoomTransition) {
+            callbacks->UpdateEntityPositionForRoomTransition(gb);
+        }
+    }
+
+    SwitchBank(gb, 0x14);
+    if (callbacks && callbacks->UpdateEntityTimers) {
+        callbacks->UpdateEntityTimers(gb);
+    }
+
+    SwitchBank(gb, 0x03);
+
+    uint8_t status = gb_read(gb, hActiveEntityStatus);
+    if (callbacks) {
+        switch (status) {
+            case ENTITY_STATUS_DISABLED:
+                break;
+            case ENTITY_STATUS_DYING:
+                if (callbacks->EntityDeathHandler) callbacks->EntityDeathHandler(gb);
+                break;
+            case ENTITY_STATUS_FALLING:
+                if (callbacks->EntityFallHandler) callbacks->EntityFallHandler(gb);
+                break;
+            case ENTITY_STATUS_BURNING:
+                if (callbacks->EntityBurningHandler) callbacks->EntityBurningHandler(gb);
+                break;
+            case ENTITY_STATUS_INIT:
+                if (callbacks->EntityInitHandler) callbacks->EntityInitHandler(gb);
+                break;
+            case ENTITY_STATUS_ACTIVE:
+                if (callbacks->ExecuteActiveEntityHandler) callbacks->ExecuteActiveEntityHandler(gb);
+                break;
+            case ENTITY_STATUS_STUNNED:
+                if (callbacks->EntityStunnedHandler) callbacks->EntityStunnedHandler(gb);
+                break;
+            case ENTITY_STATUS_LIFTED:
+                if (callbacks->EntityLiftedHandler) callbacks->EntityLiftedHandler(gb);
+                break;
+            case ENTITY_STATUS_THROWN:
+                if (callbacks->EntityThrownHandler) callbacks->EntityThrownHandler(gb);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void ExecuteActiveEntityHandler_trampoline(GBState *gb, void (*execute_active_handler)(GBState *)) {
+    if (!gb) return;
+    if (execute_active_handler) {
+        execute_active_handler(gb);
+    }
+    SwitchBank(gb, 0x03);
+}
+
+void ExecuteActiveEntityHandler(GBState *gb, void (*handler_dispatch)(GBState *, uint8_t bank, uint16_t addr)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+
+    uint8_t type = gb_read(gb, hActiveEntityType);
+    uint16_t entry_addr = (uint16_t)(EntityHandlersTable + (type * 3));
+
+    uint8_t low = gb_read(gb, entry_addr);
+    uint8_t high = gb_read(gb, (uint16_t)(entry_addr + 1));
+    uint8_t bank = gb_read(gb, (uint16_t)(entry_addr + 2));
+
+    uint16_t handler_addr = (uint16_t)((high << 8) | low);
+    SwitchBank(gb, bank);
+
+    if (handler_dispatch) {
+        handler_dispatch(gb, bank, handler_addr);
+    }
+}
+
+void ClearEntitySpeed(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), 0);
+    gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), 0);
+}
+
+void CopyEntityPositionToActivePosition(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    uint8_t posX = gb_read(gb, (uint16_t)(wEntitiesPosXTable + entity_index));
+    gb_write(gb, hActiveEntityPosX, posX);
+
+    uint8_t posY = gb_read(gb, (uint16_t)(wEntitiesPosYTable + entity_index));
+    gb_write(gb, hActiveEntityPosY, posY);
+
+    uint8_t posZ = gb_read(gb, (uint16_t)(wEntitiesPosZTable + entity_index));
+    gb_write(gb, hActiveEntityVisualPosY, (uint8_t)(posY - posZ));
 }

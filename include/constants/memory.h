@@ -94,6 +94,9 @@
 #define wEntitiesPhysicsFlagsTable            0xC120
 #define wEntitiesPosXTable                    0xC200
 #define wEntitiesPosYTable                    0xC210
+#define wEntitiesSpeedXTable                  0xC240
+#define wEntitiesSpeedYTable                  0xC250
+#define wEntitiesPosZTable                    0xC310
 #define wEntitiesTransitionCountdownTable     0xC2E0
 #define wEntitiesPrivateCountdown1Table       0xC2F0
 #define wEntitiesIgnoreHitsCountdownTable     0xC410
@@ -102,6 +105,15 @@
 #define wEntitiesHitboxFlagsTable             0xC350
 #define wEntitiesSpriteVariantTable           0xC3B0
 #define wEntitiesHitboxPositionTable          0xD580
+#define wEntitiesStatusTable                  0xC280
+#define wEntitiesTypeTable                    0xC3A0
+#define wActiveEntityIndex                    0xC123
+#define wC111                                 0xC111
+#define wC1A8                                 0xC1A8
+#define wC3C1                                 0xC3C1
+#define wBossAgonySFXCountdown                0xC5A7
+#define wOAMNextAvailableSlot                 0xC3C0
+#define wItemUsageContext                     0xC1AD
 #define wSwordMoblinAlertingSoundCounter      0xC502
 
 /* WRAM Transient VFX Tables */
@@ -155,6 +167,15 @@
 #define hMultiPurposeG               0xFFE8
 #define hRoomBank                    0xFFE8
 #define hMultiPurposeH               0xFFE9
+#define hActiveEntityStatus                   0xFFEA
+#define hActiveEntityType                     0xFFEB
+#define hActiveEntityVisualPosY               0xFFEC
+#define hActiveEntityFlipAttribute            0xFFED
+#define hActiveEntityPosX                     0xFFEE
+#define hActiveEntityPosY                     0xFFEF
+#define hActiveEntityState                    0xFFF0
+#define hActiveEntitySpriteVariant            0xFFF1
+#define hLinkSlowWalkingSpeed                 0xFFB2
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3
 #define hNoiseSfx                    0xFFF4

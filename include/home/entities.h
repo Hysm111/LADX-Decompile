@@ -320,6 +320,92 @@ void ApplyVectorTowardsLink_trampoline(GBState *gb, void (*apply_vector)(GBState
  */
 void GetVectorTowardsLink_trampoline(GBState *gb, void (*get_vector)(GBState *));
 
+typedef struct {
+    void (*func_020_4303)(GBState *gb);
+    void (*func_020_6352)(GBState *gb);
+    void (*AnimateEntity)(GBState *gb, uint16_t entity_index);
+} AnimateEntitiesCallbacks;
+
+/**
+ * AnimateEntities (00:398D)
+ * Main loop iterating through active entity slots and animating each entity.
+ * Handles boss agony countdown, dialog state, and OAM slot cycling.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param callbacks Callbacks for bank 0x20 routines and entity animation
+ */
+void AnimateEntities(GBState *gb, const AnimateEntitiesCallbacks *callbacks);
+
+/**
+ * ResetEntity_trampoline (00:3A0A)
+ * Switches to Bank $15, calls reset_entity, and sets rSelectROMBank to $03.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param reset_entity Target callback in Bank $15
+ */
+void ResetEntity_trampoline(GBState *gb, void (*reset_entity)(GBState *));
+
+typedef struct {
+    void (*UpdateEntityPositionForRoomTransition)(GBState *gb);
+    void (*CopyEntityPositionToActivePosition)(GBState *gb, uint16_t entity_index);
+    void (*UpdateEntityTimers)(GBState *gb);
+    void (*EntityDeathHandler)(GBState *gb);
+    void (*EntityFallHandler)(GBState *gb);
+    void (*EntityBurningHandler)(GBState *gb);
+    void (*EntityInitHandler)(GBState *gb);
+    void (*ExecuteActiveEntityHandler)(GBState *gb);
+    void (*EntityStunnedHandler)(GBState *gb);
+    void (*EntityLiftedHandler)(GBState *gb);
+    void (*EntityThrownHandler)(GBState *gb);
+} AnimateEntityCallbacks;
+
+/**
+ * AnimateEntity (00:3A18)
+ * Dispatches active entity logic based on its state and status jump table.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @param callbacks Handlers for transitions, timers, and status states
+ */
+void AnimateEntity(GBState *gb, uint16_t entity_index, const AnimateEntityCallbacks *callbacks);
+
+/**
+ * ExecuteActiveEntityHandler_trampoline (00:3A81)
+ * Calls execute_active_handler, then restores Bank $03 in wCurrentBank and rSelectROMBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param execute_active_handler Target callback
+ */
+void ExecuteActiveEntityHandler_trampoline(GBState *gb, void (*execute_active_handler)(GBState *));
+
+/**
+ * ExecuteActiveEntityHandler (00:3A8D)
+ * Reads entity handler pointer from EntityHandlersTable in Bank $20 and jumps to target.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param handler_dispatch Callback to execute the target handler
+ */
+void ExecuteActiveEntityHandler(GBState *gb, void (*handler_dispatch)(GBState *, uint8_t bank, uint16_t addr));
+
+/**
+ * ClearEntitySpeed (00:3D7F)
+ * Clears X and Y speed components for the entity slot.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ClearEntitySpeed(GBState *gb, uint16_t entity_index);
+
+/**
+ * CopyEntityPositionToActivePosition (00:3D8A)
+ * Copies entity X and Y to hActiveEntityPosX and hActiveEntityPosY,
+ * and computes visual Y = posY - posZ into hActiveEntityVisualPosY.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void CopyEntityPositionToActivePosition(GBState *gb, uint16_t entity_index);
+
 #ifdef __cplusplus
 }
 #endif
