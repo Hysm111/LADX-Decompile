@@ -41,3 +41,4 @@
 #define NOISE_SFX_CLINK             0x17
 #define JINGLE_WATER_SPLASH         0x0E
 #define NOISE_SFX_MAGIC_ROD          0x0D
+#define WAVE_SFX_LIFT_UP                0x02

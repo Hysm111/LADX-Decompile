@@ -73,3 +73,13 @@
 #define REPLACE_TILES_ISLAND_FADE       0x0E
 #define REPLACE_TILES_MARIN_SITTING     0x0F
 #define REPLACE_TILES_MARIN_STANDING    0x10
+#define ACTIVE_POWER_UP_PIECE_OF_POWER  0x01
+#define TRIGGER_THROW_POT_AT_CHEST      0x0D
+#define EVENT_TRIGGER_MASK              0x1F
+#define OBJECT_WEATHER_VANE_BASE        0x5E
+#define OBJECT_OWL_STATUE               0x6F
+#define OBJECT_SIGNPOST                 0xD4
+#define OBJECT_CHEST_CLOSED             0xA0
+#define ITEM_USAGE_READING_TEXT         0x02
+#define ROOM_INDOOR_B_MARIN_HOUSE       0xA3
+#define UNKNOWN_ROOM_FA                 0xFA

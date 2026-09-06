@@ -7,6 +7,8 @@
 #include "constants/memory.h"
 #include "constants/gameplay.h"
 #include "constants/sfx.h"
+#include "constants/joypad.h"
+#include "constants/inventory.h"
 
 static int failures = 0;
 
@@ -548,7 +550,149 @@ static void test_update_link_walking_animation(void) {
     TEST_ASSERT(gb_read(&gb, hLinkAnimationState) == LINK_ANIMATION_STATE_HOLD_SWIMMING_1_DOWN, "Animation not HOLD_SWIMMING_1_DOWN");
 }
 
+
+static bool mock_reveal_called = false;
+static void mock_reveal_object(GBState *gb) {
+    (void)gb;
+    mock_reveal_called = true;
+}
+
+static uint8_t mock_spawn_proj(GBState *gb, uint8_t entity_type) {
+    (void)gb;
+    (void)entity_type;
+    return 2; /* slot 2 */
+}
+
+static bool mock_5795_called = false;
+static void mock_func_003_5795(GBState *gb) {
+    (void)gb;
+    mock_5795_called = true;
+}
+
+static uint8_t mock_get_physics_flags(GBState *gb, uint8_t is_indoor, uint8_t obj) {
+    (void)gb;
+    (void)is_indoor;
+    if (obj == 0x20 || obj == 0x8E || obj == 0x5C) return 0x15;
+    return 0x00;
+}
+
+static void test_compute_link_position(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. Horizontal speed positive */
+    gb_write(&gb, hLinkPositionX, 0x50);
+    gb_write(&gb, hLinkSpeedX, 0x18); /* speed = 1.5, swap = 0x81, swap&0xF0 = 0x80 */
+    gb_write(&gb, wC11A, 0x00);
+
+    ComputeLinkPosition(&gb, 0);
+
+    /* acc becomes 0x80 (no carry), int_speed = 1 -> new_pos = 0x51 */
+    TEST_ASSERT(gb_read(&gb, wC11A) == 0x80, "Horizontal subpixel accumulator mismatch");
+    TEST_ASSERT(gb_read(&gb, hLinkPositionX) == 0x51, "Horizontal position mismatch");
+
+    /* Second step: acc overflows (0x80 + 0x80 = 0x100 -> carry = 1), int_speed = 1 -> delta = 2 -> pos = 0x53 */
+    ComputeLinkPosition(&gb, 0);
+    TEST_ASSERT(gb_read(&gb, wC11A) == 0x00, "Horizontal subpixel accumulator overflow mismatch");
+    TEST_ASSERT(gb_read(&gb, hLinkPositionX) == 0x53, "Horizontal position with carry mismatch");
+
+    /* 2. UpdateFinalLinkPosition calls vertical and horizontal */
+    gb_write(&gb, wInventoryAppearing, 0);
+    gb_write(&gb, hLinkPositionY, 0x40);
+    gb_write(&gb, hLinkSpeedY, 0x10); /* speed = 1.0 */
+    gb_write(&gb, wC11B, 0x00);
+    UpdateFinalLinkPosition(&gb);
+    TEST_ASSERT(gb_read(&gb, hLinkPositionY) == 0x41, "Vertical position update mismatch");
+}
+
+static void test_func_21e1_z_velocity(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, hLinkPositionZ, 0x10);
+    gb_write(&gb, hLinkVelocityZ, 0x20); /* 2.0 */
+    gb_write(&gb, wC149, 0x00);
+
+    func_21E1(&gb);
+
+    TEST_ASSERT(gb_read(&gb, hLinkPositionZ) == 0x12, "Z position integration mismatch");
+}
+
+static void test_label_2183_and_func_2165(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    mock_reveal_called = false;
+    mock_5795_called = false;
+
+    gb_write(&gb, hMultiPurpose0, 0x8E);
+    gb_write(&gb, hMultiPurposeE, 0x01);
+    gb_write(&gb, hLinkDirection, DIRECTION_UP);
+
+    func_2165(&gb, mock_reveal_object, mock_spawn_proj, mock_func_003_5795);
+
+    TEST_ASSERT(mock_reveal_called, "RevealObject not called in func_2165");
+    TEST_ASSERT(mock_5795_called, "func_003_5795 not called in label_2183");
+    TEST_ASSERT(gb_read(&gb, hObjectUnderEntity) == 0x8E, "hObjectUnderEntity mismatch");
+    TEST_ASSERT(gb_read(&gb, wC15D) == DIRECTION_UP, "wC15D mismatch");
+    TEST_ASSERT(gb_read(&gb, hWaveSfx) == WAVE_SFX_LIFT_UP, "Wave SFX mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wEntitiesStatusTable + 2)) == 0x07, "Entity status mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wEntitiesSpriteVariantTable + 2)) == 0x01, "Variant mismatch");
+}
+
+static void test_label_1f69_interactive_motion(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. Motion state not default -> returns early */
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_MAP_FADE_OUT);
+    gb_write(&gb, wPullCounter, 0x05);
+    label_1F69(&gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wPullCounter) == 0x05, "label_1F69 did not return on non-default motion");
+
+    /* 2. Facing UP, object 0x20 in front, power bracelet equipped and pull button pressed */
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
+    gb_write(&gb, wIsRunningWithPegasusBoots, 0);
+    gb_write(&gb, wIsCarryingLiftedObject, 0);
+    gb_write(&gb, hLinkPositionZ, 0);
+    gb_write(&gb, hLinkDirection, DIRECTION_UP);
+    gb_write(&gb, hLinkPositionX, 0x40);
+    gb_write(&gb, hLinkPositionY, 0x40);
+
+    /* SwordArea: X: 0x40 + 0x08 - 8 = 0x40. c = 0x04.
+       Y: 0x40 + 0x05 - 0x10 = 0x35 -> 0x30.
+       mp1 = 0x30 | 0x04 = 0x34. Room object at wRoomObjects + 0x34 (0xD711 + 0x34 = 0xD745) */
+    gb_write(&gb, (uint16_t)(wRoomObjects + 0x34), 0x20);
+
+    /* Power bracelet in A button slot (index 1) */
+    gb_write(&gb, (uint16_t)(wInventoryItems + 1), INVENTORY_POWER_BRACELET);
+    gb_write(&gb, hPressedButtonsMask, J_A | J_DOWN); /* pulling down when facing UP */
+    gb_write(&gb, wActivePowerUp, ACTIVE_POWER_UP_PIECE_OF_POWER); /* threshold = 3 */
+    gb_write(&gb, wPullCounter, 2); /* will increment to 3 -> triggers lift! */
+
+    mock_reveal_called = false;
+    mock_5795_called = false;
+
+    label_1F69(&gb, mock_get_physics_flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+               mock_reveal_object, mock_spawn_proj, mock_func_003_5795);
+
+    TEST_ASSERT(gb_read(&gb, hLinkInteractiveMotionBlocked) == 1, "Motion not blocked during lift");
+    TEST_ASSERT(mock_reveal_called, "Reveal object not called on lift completion");
+    TEST_ASSERT(mock_5795_called, "func_5795 not called on lift completion");
+}
+
 void run_link_tests(void) {
+    printf("[*] Running ComputeLinkPosition and UpdateFinalLinkPosition tests...\n");
+    test_compute_link_position();
+
+    printf("[*] Running func_21E1 (Z velocity integration) tests...\n");
+    test_func_21e1_z_velocity();
+
+    printf("[*] Running label_2183 and func_2165 tests...\n");
+    test_label_2183_and_func_2165();
+
+    printf("[*] Running label_1F69 interactive motion and lifting tests...\n");
+    test_label_1f69_interactive_motion();
     printf("[*] Running disableMovementInTransition and playNoiseStairs tests...\n");
     test_disableMovement_and_playNoiseStairs();
 

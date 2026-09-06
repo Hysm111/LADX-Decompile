@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 31.67%
-* **Number of Verified Functions**: 380
-* **Number of Decompiled Functions**: 380
-* **Number Remaining**: ~820 functions
-* **Current Subsystem**: Bank 0 - Link Sprite Rendering & Dynamic Tile Replacement (`code/home/animated_tiles.asm` & `code/bank0.asm`, `00:1B0D`, `00:1D2E`-`00:1F48`)
-* **Current Task**: Bank 0 Link Sprite Rendering & Dynamic Tile Replacement completed
-* **Last Completed Task**: Decompiled and verified 16 Bank 0 V-Blank rendering routines (`DrawLinkSprite`, `CopyDataAndDrawLinkSprite`, `Copy4TilesAndDrawLinkSprite`, `ReplaceTilesPairAndDrawLinkSprite`, `ReplaceMarinTiles`, `ReplaceTradingItemTiles`, `ReplaceMagicPowderTilesByToadstool`, `ReplaceSlimeKeyTilesByGoldenLeaf`, `ReplaceToadstoolTilesByMagicPowder`, `ReplaceTilesButtonPressed`, `ReplaceTiles_04`, `ReplaceEndCreditsTiles`, `ReplaceDialogTilesByInstruments`, `ReplaceTiles_08`, `UpdateSwitchBlockTiles`, `AnimateTiles`) (`00:1B0D`, `00:1D2E` - `00:1F48`)
-* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Link lifting, grabbing, and throwing mechanics `00:1F49`+)
-* **Last Update Timestamp**: 2026-09-07T00:05:00+03:00
+* **Current Overall Progress**: 32.33%
+* **Number of Verified Functions**: 388
+* **Number of Decompiled Functions**: 388
+* **Number Remaining**: ~812 functions
+* **Current Subsystem**: Bank 0 - Link Interactive Motion & Position Physics (`code/bank0.asm`, `00:1F61`-`00:2204`)
+* **Current Task**: Bank 0 Link Interactive Motion & Position Physics completed
+* **Last Completed Task**: Decompiled and verified 8 Bank 0 Link interactive motion, lifting, and position integration routines (`label_1F69_trampoline`, `label_1F69`, `func_2165`, `RevealObjectUnderObject_trampoline`, `label_2183`, `UpdateFinalLinkPosition`, `ComputeLinkPosition`, `func_21E1`) (`00:1F61` - `00:2204`)
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Room transition BG region update routines `00:2209`+)
+* **Last Update Timestamp**: 2026-09-07T00:35:00+03:00
 
 ---
 
@@ -328,10 +328,27 @@
 | `ReplaceTiles_08` | VERIFIED | PASS | PASS | Copies ending sequence graphics tiles from bank $13 according to wCreditsScratch0 (`00:1E69`) |
 | `UpdateSwitchBlockTiles` | VERIFIED | PASS | PASS | Multi-stage switch block raise/lower tile animator updating blocks A and B in VRAM (`00:1ED7`) |
 | `AnimateTiles` | VERIFIED | PASS | PASS | Core V-Blank graphics dispatcher routing gameplay modes, replacement requests, and animated tile tables (`00:1B0D`) |
+| `label_1F69_trampoline` | VERIFIED | PASS | PASS | Trampoline calling label_1F69 and restoring ROM bank $02 (`00:1F61`) |
+| `label_1F69` | VERIFIED | PASS | PASS | Evaluates room object in front of Link, text interaction (signs/chests/weather vane), and Power Bracelet pull/lift cadence (`00:1F69`) |
+| `func_2165` | VERIFIED | PASS | PASS | Sets hObjectUnderEntity, calls RevealObjectUnderObject trampoline, saves direction, and spawns lifted rock projectile (`00:2165`) |
+| `RevealObjectUnderObject_trampoline` | VERIFIED | PASS | PASS | Direct bank switch to $14 to reveal underlying ground tile and restore bank (`00:2178`) |
+| `label_2183` | VERIFIED | PASS | PASS | Spawns ENTITY_LIFTABLE_ROCK projectile, plays WAVE_SFX_LIFT_UP, and configures status & variant tables (`00:2183`) |
+| `UpdateFinalLinkPosition` | VERIFIED | PASS | PASS | Integrates Link horizontal and vertical velocities into position unless inventory is appearing (`00:21A8`) |
+| `ComputeLinkPosition` | VERIFIED | PASS | PASS | Fixed-point 4.4 speed integrator with subpixel accumulator updating Link coordinate along specified axis (`00:21B6`) |
+| `func_21E1` | VERIFIED | PASS | PASS | Fixed-point 4.4 Z-axis velocity integrator with subpixel accumulator updating hLinkPositionZ (`00:21E1`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Link Interactive Motion & Position Physics (`00:1F61`-`00:2204`)**:
+   - `ComputeLinkPosition` and `func_21E1` treat speeds as signed 4.4 fixed-point numbers:
+     - The upper 4 bits are the integer pixel offset (`int8_t speed >> 4`).
+     - The lower 4 bits are swapped and accumulated into subpixel registers `wC11A` (X), `wC11B` (Y), or `wC149` (Z).
+     - When subpixel addition overflows, carry (+1) is added to the integer step.
+   - `label_1F69` handles dual interactions:
+     - Text reading: when facing `DIRECTION_UP` and pressing A or B, checks for Weather Vane base ($5E), Owl statues ($6F), Signposts ($D4), chests, or Marin dialogue.
+     - Object lifting: checks Power Bracelet equipped in A or B slot. When pulling away from the object (opposite direction button held), increments `wPullCounter` up to threshold (3 with Piece of Power, 8 normally), then triggers object reveal and spawns `ENTITY_LIFTABLE_ROCK`.
 
 1. **V-Blank Link Sprite Rendering & Dynamic Tile Replacement (`00:1B0D`, `00:1D2E`-`00:1F48`)**:
    - `DrawLinkSprite` formats two 8x16 sprite records at `wLinkOAMBuffer+8`:

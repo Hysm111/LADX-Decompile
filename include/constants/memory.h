@@ -326,3 +326,12 @@
 #define wWindowY                        0xDB9A
 #define wInvincibilityCounter           0xDBC7
 #define wTunicType                      0xDC0F
+#define wPullCounter                    0xC15F
+#define wMazeSignpostPos                0xD473
+#define wC15D                           0xC15D
+#define wC149                           0xC149
+#define wC11A                           0xC11A
+#define wC11B                           0xC11B
+#define wOcarinaSongFlags               0xDB49
+#define wRoomEvent                      0xC18E
+#define wInventoryItems                 0xDB00

@@ -37,3 +37,12 @@
 #define ADDR_CodepointToDiacritic  0x4741
 
 #endif /* LADX_CONSTANTS_DIALOG_H */
+#define Dialog18E                       0x8E
+#define Dialog1A9                       0xA9
+#define Dialog1AF                       0xAF
+#define Dialog083                       0x83
+#define Dialog22D                       0x2D
+#define Dialog278                       0x78
+#define Dialog0FF                       0xFF
+#define Dialog0FC                       0xFC
+#define Dialog0FD                       0xFD

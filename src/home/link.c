@@ -4,6 +4,10 @@
 #include "constants/memory.h"
 #include "constants/gameplay.h"
 #include "constants/sfx.h"
+#include "constants/joypad.h"
+#include "constants/inventory.h"
+#include "constants/dialog.h"
+#include "constants/link.h"
 
 void disableMovementInTransition(GBState *gb) {
     if (!gb) return;
@@ -696,4 +700,301 @@ void UpdateLinkWalkingAnimation(GBState *gb) {
     }
 
     gb_write(gb, hLinkAnimationState, table[bc]);
+}
+
+static const uint8_t SwordAreaXForDirection[4] = { 0x0C, 0x03, 0x08, 0x08 };
+static const uint8_t SwordAreaYForDirection[4] = { 0x0A, 0x0A, 0x05, 0x10 };
+static const uint8_t LinkDirectionToLinkAnimationState_2[4] = {
+    LINK_ANIMATION_STATE_GRABBING_RIGHT,
+    LINK_ANIMATION_STATE_GRABBING_LEFT,
+    LINK_ANIMATION_STATE_GRABBING_UP,
+    LINK_ANIMATION_STATE_GRABBING_DOWN
+};
+static const uint8_t LinkDirectionToLiftDirectionButton[4] = { 2, 1, 8, 4 };
+static const uint8_t data_1F59[4] = { 0xFC, 4, 0, 0 };
+static const uint8_t data_1F5D[4] = { 0, 0, 4, 0 };
+
+void ComputeLinkPosition(GBState *gb, uint8_t direction) {
+    if (!gb) return;
+
+    uint8_t speed_raw = gb_read(gb, (uint16_t)(hLinkSpeedX + direction));
+    uint8_t speed_swap_hi = (uint8_t)(((speed_raw << 4) | (speed_raw >> 4)) & 0xF0);
+
+    uint8_t acc = gb_read(gb, (uint16_t)(wC11A + direction));
+    uint16_t sum_acc = (uint16_t)acc + speed_swap_hi;
+    gb_write(gb, (uint16_t)(wC11A + direction), (uint8_t)sum_acc);
+    uint8_t carry = (sum_acc > 0xFF) ? 1 : 0;
+
+    int8_t speed_int = (int8_t)speed_raw >> 4;
+    uint8_t pos = gb_read(gb, (uint16_t)(hLinkPositionX + direction));
+    uint8_t new_pos = (uint8_t)(pos + speed_int + carry);
+    gb_write(gb, (uint16_t)(hLinkPositionX + direction), new_pos);
+}
+
+void UpdateFinalLinkPosition(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, wInventoryAppearing) != 0) {
+        return;
+    }
+    ComputeLinkPosition(gb, 1); /* Vertical */
+    ComputeLinkPosition(gb, 0); /* Horizontal */
+}
+
+void func_21E1(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t vel_raw = gb_read(gb, hLinkVelocityZ);
+    uint8_t vel_swap_hi = (uint8_t)(((vel_raw << 4) | (vel_raw >> 4)) & 0xF0);
+
+    uint8_t acc = gb_read(gb, wC149);
+    uint16_t sum_acc = (uint16_t)acc + vel_swap_hi;
+    gb_write(gb, wC149, (uint8_t)sum_acc);
+    uint8_t carry = (sum_acc > 0xFF) ? 1 : 0;
+
+    int8_t vel_int = (int8_t)vel_raw >> 4;
+    uint8_t pos_z = gb_read(gb, hLinkPositionZ);
+    uint8_t new_pos_z = (uint8_t)(pos_z + vel_int + carry);
+    gb_write(gb, hLinkPositionZ, new_pos_z);
+}
+
+void RevealObjectUnderObject_trampoline(GBState *gb, void (*reveal_object)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x14);
+    if (reveal_object) {
+        reveal_object(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void label_2183(GBState *gb,
+                uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                void (*func_003_5795)(GBState *)) {
+    if (!gb) return;
+    if (!spawn_projectile) return;
+
+    uint8_t slot = spawn_projectile(gb, ENTITY_LIFTABLE_ROCK);
+    if (slot == 0xFF) {
+        return; /* Carry flag set: spawn failed */
+    }
+
+    gb_write(gb, hWaveSfx, WAVE_SFX_LIFT_UP);
+    gb_write(gb, (uint16_t)(wEntitiesStatusTable + slot), 0x07);
+    gb_write(gb, (uint16_t)(wEntitiesSpriteVariantTable + slot), gb_read(gb, hMultiPurposeE));
+
+    SwitchBank(gb, 0x03);
+    if (func_003_5795) {
+        func_003_5795(gb);
+    }
+}
+
+void func_2165(GBState *gb,
+               void (*reveal_object)(GBState *),
+               uint8_t (*spawn_projectile)(GBState *, uint8_t),
+               void (*func_003_5795)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, hObjectUnderEntity, gb_read(gb, hMultiPurpose0));
+    RevealObjectUnderObject_trampoline(gb, reveal_object);
+    gb_write(gb, wC15D, gb_read(gb, hLinkDirection));
+    label_2183(gb, spawn_projectile, func_003_5795);
+}
+
+void label_1F69(GBState *gb,
+                uint8_t (*get_physics)(GBState *, uint8_t, uint8_t),
+                void (*open_dialog_table0)(GBState *, uint8_t),
+                void (*open_dialog_table1)(GBState *, uint8_t),
+                void (*open_dialog_table2)(GBState *, uint8_t),
+                void (*func_014_5900)(GBState *),
+                void (*spawn_chest)(GBState *),
+                void (*label_002_48b0)(GBState *),
+                void (*func_014_50c3)(GBState *),
+                void (*reveal_object)(GBState *),
+                uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                void (*func_003_5795)(GBState *)) {
+    if (!gb) return;
+
+    if (gb_read(gb, wIsRunningWithPegasusBoots) != 0 ||
+        gb_read(gb, wIsCarryingLiftedObject) != 0 ||
+        gb_read(gb, hLinkPositionZ) != 0 ||
+        gb_read(gb, wLinkMotionState) != LINK_MOTION_DEFAULT) {
+        return;
+    }
+
+    uint8_t dir = gb_read(gb, hLinkDirection) & 0x03;
+    uint8_t obj_left = (uint8_t)(((gb_read(gb, hLinkPositionX) + SwordAreaXForDirection[dir] - 8)) & 0xF0);
+    gb_write(gb, hIntersectedObjectLeft, obj_left);
+
+    uint8_t c = (uint8_t)((obj_left >> 4) | (obj_left << 4));
+    uint8_t obj_top = (uint8_t)(((gb_read(gb, hLinkPositionY) + SwordAreaYForDirection[dir] - 0x10)) & 0xF0);
+    gb_write(gb, hIntersectedObjectTop, obj_top);
+
+    uint8_t mp1 = (uint8_t)(obj_top | (c & 0x0F));
+    gb_write(gb, hMultiPurpose1, mp1);
+
+    uint16_t room_obj_addr = (uint16_t)(wRoomObjects + mp1);
+    if ((room_obj_addr >> 8) != 0xD7) {
+        gb_write(gb, wPullCounter, 0);
+        return;
+    }
+
+    uint8_t obj_id = gb_read(gb, room_obj_addr);
+    gb_write(gb, hMultiPurpose0, obj_id);
+
+    uint8_t physics = 0;
+    if (get_physics) {
+        physics = get_physics(gb, gb_read(gb, wIsIndoor), obj_id);
+    }
+    gb_write(gb, hMultiPurpose5, physics);
+
+    if (obj_id != 0x9A) {
+        if (physics == 0x00 || physics == 0x50 || physics == 0x51 ||
+            physics < 0x11 || physics >= 0xD4 || (physics >= 0x7C && physics < 0xD0)) {
+            gb_write(gb, wPullCounter, 0);
+            return;
+        }
+
+        if ((obj_id == 0x6F || obj_id == 0x5E || obj_id == 0xD4) && gb_read(gb, wIsIndoor) != 0) {
+            goto jp_2098_label;
+        }
+    }
+
+    if (dir == DIRECTION_UP) {
+        gb_write(gb, wItemUsageContext, ITEM_USAGE_READING_TEXT);
+        uint8_t joypad = gb_read(gb, hJoypadState);
+        if ((joypad & (J_A | J_B)) != 0) {
+            if (obj_id == OBJECT_WEATHER_VANE_BASE) {
+                if (open_dialog_table1) open_dialog_table1(gb, Dialog18E);
+                goto special_cases_end;
+            }
+            if (obj_id == OBJECT_OWL_STATUE || obj_id == OBJECT_SIGNPOST) {
+                uint8_t ocarina = gb_read(gb, wOcarinaSongFlags);
+                uint8_t sign_dialog = Dialog1A9;
+                if (gb->rom) {
+                    /* Bank 14 SignpostDialogTable */
+                    size_t off = (size_t)0x14 * 0x4000 + (0x5118 - 0x4000) + gb_read(gb, hMapRoom);
+                    if (off < gb->rom_size) sign_dialog = gb->rom[off];
+                }
+                if (sign_dialog == Dialog1A9 && (ocarina & 1)) {
+                    sign_dialog = Dialog1AF;
+                }
+                if (sign_dialog == Dialog1AF && !(ocarina & 1)) {
+                    uint8_t pos = (uint8_t)(((obj_left >> 4) & 0x0F) | (obj_top & 0xF0));
+                    gb_write(gb, wMazeSignpostPos, pos);
+                    goto special_cases_end;
+                }
+                if (sign_dialog == Dialog083) {
+                    if (open_dialog_table0) open_dialog_table0(gb, Dialog083);
+                } else if (sign_dialog == Dialog22D) {
+                    if (open_dialog_table2) open_dialog_table2(gb, Dialog22D);
+                } else {
+                    if (open_dialog_table1) open_dialog_table1(gb, sign_dialog);
+                }
+                goto special_cases_end;
+            }
+            if (gb_read(gb, wIsMarinFollowingLink) != 0) {
+                if (open_dialog_table2) open_dialog_table2(gb, Dialog278);
+                goto special_cases_end;
+            }
+            if (gb_read(gb, wSwordLevel) == 0 && gb_read(gb, hMapRoom) == ROOM_INDOOR_B_MARIN_HOUSE) {
+                if (open_dialog_table0) open_dialog_table0(gb, Dialog0FF);
+            } else if (gb_read(gb, hMapRoom) == UNKNOWN_ROOM_FA) {
+                if (open_dialog_table0) open_dialog_table0(gb, Dialog0FC);
+            } else {
+                if (open_dialog_table0) open_dialog_table0(gb, Dialog0FD);
+            }
+            goto special_cases_end;
+        }
+    }
+
+jp_2098_label:
+    if (obj_id == OBJECT_CHEST_CLOSED) {
+        if ((gb_read(gb, wRoomEvent) & EVENT_TRIGGER_MASK) != TRIGGER_THROW_POT_AT_CHEST &&
+            dir == DIRECTION_UP &&
+            (gb_read(gb, hJoypadState) & (J_A | J_B)) != 0) {
+            if (gb_read(gb, hIsSideScrolling) != 0 || dir == DIRECTION_UP) {
+                if (func_014_5900) {
+                    gb_write(gb, rSelectROMBank, 0x14);
+                    func_014_5900(gb);
+                }
+                if (spawn_chest) {
+                    gb_write(gb, rSelectROMBank, 0x02);
+                    spawn_chest(gb);
+                }
+            }
+        }
+    }
+
+special_cases_end:
+    {
+        uint8_t pressed = gb_read(gb, hPressedButtonsMask);
+        bool has_bracelet = false;
+        if (gb_read(gb, (uint16_t)(wInventoryItems + 0)) == INVENTORY_POWER_BRACELET && (pressed & J_B)) {
+            has_bracelet = true;
+        } else if (gb_read(gb, (uint16_t)(wInventoryItems + 1)) == INVENTORY_POWER_BRACELET && (pressed & J_A)) {
+            has_bracelet = true;
+        }
+        if (!has_bracelet) {
+            return;
+        }
+    }
+
+    if (label_002_48b0) {
+        gb_write(gb, rSelectROMBank, 0x02);
+        label_002_48b0(gb);
+    }
+    gb_write(gb, hLinkInteractiveMotionBlocked, 1);
+    gb_write(gb, hLinkAnimationState, LinkDirectionToLinkAnimationState_2[dir]);
+
+    if ((gb_read(gb, hPressedButtonsMask) & LinkDirectionToLiftDirectionButton[dir]) == 0) {
+        gb_write(gb, wPullCounter, 0);
+        return;
+    }
+
+    gb_write(gb, wC13C, data_1F59[dir]);
+    gb_write(gb, wC13B, data_1F5D[dir]);
+    gb_write(gb, hLinkAnimationState, (uint8_t)(gb_read(gb, hLinkAnimationState) + 1));
+
+    uint8_t required = (gb_read(gb, wActivePowerUp) == ACTIVE_POWER_UP_PIECE_OF_POWER) ? 3 : 8;
+    uint8_t pull = (uint8_t)(gb_read(gb, wPullCounter) + 1);
+    gb_write(gb, wPullCounter, pull);
+    if (pull < required) {
+        return;
+    }
+
+    gb_write(gb, hMultiPurposeE, 0);
+    if (obj_id == 0x8E || obj_id == 0x20) {
+        func_2165(gb, reveal_object, spawn_projectile, func_003_5795);
+        if (func_014_50c3) {
+            gb_write(gb, rSelectROMBank, 0x14);
+            func_014_50c3(gb);
+            ReloadSavedBank(gb);
+        }
+        return;
+    }
+
+    if (gb_read(gb, wIsIndoor) != 0) {
+        return;
+    }
+
+    if (obj_id == 0x5C) {
+        gb_write(gb, hMultiPurposeE, 1);
+    }
+    func_2165(gb, reveal_object, spawn_projectile, func_003_5795);
+}
+
+void label_1F69_trampoline(GBState *gb,
+                           uint8_t (*get_physics)(GBState *, uint8_t, uint8_t),
+                           void (*open_dialog_table0)(GBState *, uint8_t),
+                           void (*open_dialog_table1)(GBState *, uint8_t),
+                           void (*open_dialog_table2)(GBState *, uint8_t),
+                           void (*func_014_5900)(GBState *),
+                           void (*spawn_chest)(GBState *),
+                           void (*label_002_48b0)(GBState *),
+                           void (*func_014_50c3)(GBState *),
+                           void (*reveal_object)(GBState *),
+                           uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                           void (*func_003_5795)(GBState *)) {
+    label_1F69(gb, get_physics, open_dialog_table0, open_dialog_table1, open_dialog_table2,
+               func_014_5900, spawn_chest, label_002_48b0, func_014_50c3,
+               reveal_object, spawn_projectile, func_003_5795);
+    SwitchBank(gb, 2);
 }

@@ -179,6 +179,74 @@ void func_1A39(GBState *gb, void (*func_020_6c7a)(GBState *), void (*func_020_56
  */
 void UpdateLinkWalkingAnimation(GBState *gb);
 
+
+/**
+ * Link interactive motion, lifting, pulling, and object interaction handler (00:1F69).
+ */
+void label_1F69(GBState *gb,
+                uint8_t (*get_physics)(GBState *, uint8_t, uint8_t),
+                void (*open_dialog_table0)(GBState *, uint8_t),
+                void (*open_dialog_table1)(GBState *, uint8_t),
+                void (*open_dialog_table2)(GBState *, uint8_t),
+                void (*func_014_5900)(GBState *),
+                void (*spawn_chest)(GBState *),
+                void (*label_002_48b0)(GBState *),
+                void (*func_014_50c3)(GBState *),
+                void (*reveal_object)(GBState *),
+                uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                void (*func_003_5795)(GBState *));
+
+/**
+ * Trampoline calling label_1F69 and restoring Bank 2 (00:1F61).
+ */
+void label_1F69_trampoline(GBState *gb,
+                           uint8_t (*get_physics)(GBState *, uint8_t, uint8_t),
+                           void (*open_dialog_table0)(GBState *, uint8_t),
+                           void (*open_dialog_table1)(GBState *, uint8_t),
+                           void (*open_dialog_table2)(GBState *, uint8_t),
+                           void (*func_014_5900)(GBState *),
+                           void (*spawn_chest)(GBState *),
+                           void (*label_002_48b0)(GBState *),
+                           void (*func_014_50c3)(GBState *),
+                           void (*reveal_object)(GBState *),
+                           uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                           void (*func_003_5795)(GBState *));
+
+/**
+ * Spawns lifted object projectile and marks object under entity revealed (00:2165).
+ */
+void func_2165(GBState *gb,
+               void (*reveal_object)(GBState *),
+               uint8_t (*spawn_projectile)(GBState *, uint8_t),
+               void (*func_003_5795)(GBState *));
+
+/**
+ * Trampoline calling Bank 14 RevealObjectUnderObject (00:2178).
+ */
+void RevealObjectUnderObject_trampoline(GBState *gb, void (*reveal_object)(GBState *));
+
+/**
+ * Spawns ENTITY_LIFTABLE_ROCK and initializes lifted entity status (00:2183).
+ */
+void label_2183(GBState *gb,
+                uint8_t (*spawn_projectile)(GBState *, uint8_t),
+                void (*func_003_5795)(GBState *));
+
+/**
+ * Updates Link's final X and Y coordinates by integrating speed (00:21A8).
+ */
+void UpdateFinalLinkPosition(GBState *gb);
+
+/**
+ * Integrates Link's speed along horizontal (c=0) or vertical (c=1) axis (00:21B6).
+ */
+void ComputeLinkPosition(GBState *gb, uint8_t direction);
+
+/**
+ * Integrates Link's Z velocity into Z position using subpixel accumulator (00:21E1).
+ */
+void func_21E1(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

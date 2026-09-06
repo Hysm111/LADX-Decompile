@@ -128,3 +128,5 @@
 #define hReplaceTiles                   0xFFA5
 #define hAnimatedTilesFrameCount        0xFFA6
 #define hAnimatedTilesDataOffset        0xFFA7
+#define hMultiPurpose5                  0xFFDC
+#define hMultiPurposeE                  0xFFE5
