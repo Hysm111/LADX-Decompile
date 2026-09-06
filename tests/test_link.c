@@ -17,6 +17,36 @@ static int failures = 0;
         } \
     } while (0)
 
+static void test_disableMovement_and_playNoiseStairs(void) {
+    GBState gb;
+
+    /* test disableMovementInTransition directly */
+    gb_init(&gb);
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
+    gb_write(&gb, wTransitionSequenceCounter, 0x04);
+    gb_write(&gb, wC16C, 0x12);
+    gb_write(&gb, wD478, 0x34);
+
+    disableMovementInTransition(&gb);
+
+    TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not LINK_MOTION_MAP_FADE_OUT");
+    TEST_ASSERT(gb_read(&gb, wTransitionSequenceCounter) == 0, "Transition counter not cleared");
+    TEST_ASSERT(gb_read(&gb, wC16C) == 0, "wC16C not cleared");
+    TEST_ASSERT(gb_read(&gb, wD478) == 0, "wD478 not cleared");
+
+    /* test playNoiseStairs directly */
+    gb_init(&gb);
+    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
+    gb_write(&gb, wTransitionSequenceCounter, 0x08);
+
+    playNoiseStairs(&gb);
+
+    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set to NOISE_SFX_STAIRS");
+    TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not set");
+    TEST_ASSERT(gb_read(&gb, wTransitionSequenceCounter) == 0, "Transition counter not cleared");
+}
+
 static void test_fade_out_transitions(void) {
     GBState gb;
 
@@ -133,6 +163,9 @@ static void test_resets_and_position(void) {
 }
 
 void run_link_tests(void) {
+    printf("[*] Running disableMovementInTransition and playNoiseStairs tests...\n");
+    test_disableMovement_and_playNoiseStairs();
+
     printf("[*] Running Map Fade-out Transition tests...\n");
     test_fade_out_transitions();
 
@@ -140,6 +173,8 @@ void run_link_tests(void) {
     test_resets_and_position();
 
     if (failures == 0) {
-        printf("  [PASS] All link.asm functions verified successfully!\n\n");
+        printf("  [PASS] All link tests passed.\n");
+    } else {
+        printf("  [FAIL] %d link test(s) failed.\n", failures);
     }
 }

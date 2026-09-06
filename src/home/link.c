@@ -3,19 +3,27 @@
 #include "constants/gameplay.h"
 #include "constants/sfx.h"
 
-static void disableMovementInTransition(GBState *gb) {
+void disableMovementInTransition(GBState *gb) {
+    if (!gb) return;
+
     gb_write(gb, wLinkMotionState, LINK_MOTION_MAP_FADE_OUT);
     gb_write(gb, wTransitionSequenceCounter, 0);
     gb_write(gb, wC16C, 0);
     gb_write(gb, wD478, 0);
 }
 
+void playNoiseStairs(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, hNoiseSfx, NOISE_SFX_STAIRS);
+    disableMovementInTransition(gb);
+}
+
 void ApplyMapFadeOutTransitionWithNoise(GBState *gb) {
     if (!gb) return;
 
     gb_write(gb, hMusicFadeOutTimer, 0x30);
-    gb_write(gb, hNoiseSfx, NOISE_SFX_STAIRS);
-    disableMovementInTransition(gb);
+    playNoiseStairs(gb);
 }
 
 void ApplyMapFadeOutTransition(GBState *gb) {
@@ -33,8 +41,7 @@ void ApplyMapFadeOutTransitionWithSound(GBState *gb) {
 
     if (category == 1 && indoor != 0) {
         gb_write(gb, hContinueMusicAfterWarp, 1);
-        gb_write(gb, hNoiseSfx, NOISE_SFX_STAIRS);
-        disableMovementInTransition(gb);
+        playNoiseStairs(gb);
     } else {
         ApplyMapFadeOutTransitionWithNoise(gb);
     }
@@ -59,7 +66,7 @@ void CopyLinkFinalPositionToPosition(GBState *gb) {
     if (!gb) return;
 
     uint8_t x = gb_read(gb, hLinkFinalPositionX);
-    gb_write(gb, hLinkPositionX, x);
     uint8_t y = gb_read(gb, hLinkFinalPositionY);
+    gb_write(gb, hLinkPositionX, x);
     gb_write(gb, hLinkPositionY, y);
 }

@@ -9,9 +9,8 @@ extern "C" {
 
 /**
  * Adjust bank number for Game Boy Color mode.
- * If running on GBC (hIsGBC != 0), sets bit 5 (bank | 0x20).
- * On DMG (hIsGBC == 0), returns the bank number unchanged.
- * Corresponds to AdjustBankNumberForGBC (00:0B0B) in disassembly.
+ * If running on GBC (hIsGBC is non-zero), sets bit 5 (adds $20) to bank number.
+ * On DMG, leaves the bank number unchanged.
  *
  * @param gb Pointer to Game Boy hardware state
  * @param bank Original bank number
@@ -20,20 +19,18 @@ extern "C" {
 uint8_t AdjustBankNumberForGBC(GBState *gb, uint8_t bank);
 
 /**
- * Switch ROM bank to specified bank, and save it in wCurrentBank.
- * Corresponds to SwitchBank (00:080C) in disassembly.
+ * Switch to the specified ROM bank and save it as active bank in wCurrentBank.
  *
  * @param gb Pointer to Game Boy hardware state
- * @param bank Target bank number
+ * @param bank Bank number to switch to
  */
 void SwitchBank(GBState *gb, uint8_t bank);
 
 /**
- * Switch to bank adjusted for GBC mode, and save it in wCurrentBank.
- * Corresponds to SwitchAdjustedBank (00:0813) in disassembly.
+ * Adjust bank number for GBC, switch to it, and save it in wCurrentBank.
  *
  * @param gb Pointer to Game Boy hardware state
- * @param bank Original target bank number
+ * @param bank Original bank number
  */
 void SwitchAdjustedBank(GBState *gb, uint8_t bank);
 
@@ -80,6 +77,15 @@ void RestoreStackedBankAndReturn(GBState *gb, uint8_t stacked_bank);
 void RestoreStackedBank(GBState *gb, uint8_t stacked_bank);
 
 /**
+ * Jump target helper for Farcall: reads address from wFarcallAdressHigh/Low.
+ * Corresponds to Farcall_trampoline (00:0BE7) in disassembly.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @return Target 16-bit address (wFarcallAdressHigh << 8) | wFarcallAdressLow
+ */
+uint16_t Farcall_trampoline(GBState *gb);
+
+/**
  * Perform a farcall: switch to wFarcallBank, execute target, then restore wFarcallReturnBank.
  * Corresponds to Farcall (00:0BD7) in disassembly.
  *
@@ -98,19 +104,8 @@ void Farcall(GBState *gb, void (*target_func)(GBState *));
 bool CheckOverworldObjectIgnoreList(uint8_t object_id);
 
 /**
- * Backup an overworld object at HL into WRAM bank 2 on GBC outdoor screens.
- * Corresponds to BackupObjectInRAM2 (00:0B2F) in disassembly.
- *
- * @param gb Pointer to Game Boy hardware state
- * @param hl Object address in RAM bank
- * @param flags_and_return_bank Bit 7: if 1, bypass ignore check; Bits 0-6: ROM bank to restore
- */
-void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank);
-
-/**
  * Copy object attributes from ROM bank hMultiPurpose0 to WRAM bank 2,
  * then restore ROM bank $20.
- * Corresponds to CopyObjectsAttributesToWRAM2 (00:0B1A) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
  * @param de Destination address
@@ -118,6 +113,16 @@ void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank)
  * @param bc Number of bytes to copy
  */
 void CopyObjectsAttributesToWRAM2(GBState *gb, uint16_t de, uint16_t hl, uint16_t bc);
+
+/**
+ * On GBC, copy overworld object at [hl] to RAM bank 2, with optional ignore list filtering.
+ * Corresponds to BackupObjectInRAM2 (00:0B2F) in disassembly.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param hl Address in RAM bank 0 and 2
+ * @param flags_and_return_bank Bit 7: if clear, check ignore list; bits 0-6: return bank
+ */
+void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank);
 
 #ifdef __cplusplus
 }

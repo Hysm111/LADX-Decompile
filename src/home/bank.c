@@ -6,7 +6,8 @@
 uint8_t AdjustBankNumberForGBC(GBState *gb, uint8_t bank) {
     if (!gb) return bank;
 
-    if (gb_read(gb, hIsGBC) != 0) {
+    uint8_t is_gbc = gb_read(gb, hIsGBC);
+    if (is_gbc != 0) {
         return bank | 0x20;
     }
     return bank;
@@ -29,15 +30,15 @@ void SwitchAdjustedBank(GBState *gb, uint8_t bank) {
 void ReloadSavedBank(GBState *gb) {
     if (!gb) return;
 
-    uint8_t bank = gb_read(gb, wCurrentBank);
-    gb_write(gb, rSelectROMBank, bank);
+    uint8_t saved = gb_read(gb, wCurrentBank);
+    gb_write(gb, rSelectROMBank, saved);
 }
 
 void RestoreBankAndReturn(GBState *gb) {
     if (!gb) return;
 
-    uint8_t bank = gb_read(gb, wCurrentBank);
-    gb_write(gb, rSelectROMBank, bank);
+    uint8_t saved = gb_read(gb, wCurrentBank);
+    gb_write(gb, rSelectROMBank, saved);
 }
 
 void LoadBank1AndReturn(GBState *gb) {
@@ -56,6 +57,14 @@ void RestoreStackedBank(GBState *gb, uint8_t stacked_bank) {
     if (!gb) return;
 
     SwitchBank(gb, stacked_bank);
+}
+
+uint16_t Farcall_trampoline(GBState *gb) {
+    if (!gb) return 0;
+
+    uint8_t high = gb_read(gb, wFarcallAdressHigh);
+    uint8_t low = gb_read(gb, wFarcallAdressLow);
+    return ((uint16_t)high << 8) | low;
 }
 
 void Farcall(GBState *gb, void (*target_func)(GBState *)) {
@@ -85,41 +94,47 @@ bool CheckOverworldObjectIgnoreList(uint8_t object_id) {
     return false;
 }
 
-void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank) {
-    if (!gb) return;
-
-    gb_write(gb, hMultiPurpose2, flags_and_return_bank);
-
-    if (gb_read(gb, hIsGBC) == 0) {
-        return;
-    }
-    if (gb_read(gb, wIsIndoor) != 0) {
-        return;
-    }
-
-    if ((flags_and_return_bank & 0x80) == 0) {
-        uint8_t obj = gb_read(gb, hl);
-        if (!CheckOverworldObjectIgnoreList(obj)) {
-            gb_write(gb, rSelectROMBank, flags_and_return_bank & 0x7F);
-            return;
-        }
-    }
-
-    uint8_t b = gb_read(gb, hl);
-    gb_write(gb, rSVBK, 0x02);
-    gb_write(gb, hl, b);
-    gb_write(gb, rSVBK, 0x00);
-
-    gb_write(gb, rSelectROMBank, flags_and_return_bank & 0x7F);
-}
-
 void CopyObjectsAttributesToWRAM2(GBState *gb, uint16_t de, uint16_t hl, uint16_t bc) {
     if (!gb) return;
 
     uint8_t src_bank = gb_read(gb, hMultiPurpose0);
     gb_write(gb, rSelectROMBank, src_bank);
-    gb_write(gb, rSVBK, 0x02);
+
+    gb_write(gb, rSVBK, 2);
     CopyData(gb, de, hl, bc);
-    gb_write(gb, rSVBK, 0x00);
+    gb_write(gb, rSVBK, 0);
+
     gb_write(gb, rSelectROMBank, 0x20);
+}
+
+void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank) {
+    if (!gb) return;
+
+    gb_write(gb, hMultiPurpose2, flags_and_return_bank);
+
+    uint8_t is_gbc = gb_read(gb, hIsGBC);
+    if (!is_gbc) {
+        return;
+    }
+
+    /* Check if object is in ignore list unless bit 7 of flags is set */
+    if ((flags_and_return_bank & 0x80) == 0) {
+        uint8_t obj = gb_read(gb, hl);
+        if (!CheckOverworldObjectIgnoreList(obj)) {
+            /* Object is not in ignore list (carry set in asm), skip copy */
+            uint8_t return_bank = flags_and_return_bank & 0x7F;
+            gb_write(gb, rSelectROMBank, return_bank);
+            return;
+        }
+    }
+
+    /* Copy object from RAM bank 0 to RAM bank 2 */
+    uint8_t val = gb_read(gb, hl);
+    gb_write(gb, rSVBK, 2);
+    gb_write(gb, hl, val);
+    gb_write(gb, rSVBK, 0);
+
+    /* Restore ROM bank (bits 0-6) */
+    uint8_t return_bank = flags_and_return_bank & 0x7F;
+    gb_write(gb, rSelectROMBank, return_bank);
 }

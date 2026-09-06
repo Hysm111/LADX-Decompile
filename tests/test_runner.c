@@ -11,6 +11,7 @@ extern void run_dialog_tests(void);
 extern void run_room_tests(void);
 extern void run_link_tests(void);
 extern void run_vfx_tests(void);
+extern void run_ui_tests(void);
 
 int main(void) {
     int total_failures = 0;
@@ -29,6 +30,7 @@ int main(void) {
     run_room_tests();
     run_link_tests();
     run_vfx_tests();
+    run_ui_tests();
 
     printf("========================================\n");
     if (total_failures == 0) {

@@ -23,6 +23,7 @@ set(LADX_CORE_SOURCES
     src/home/room.c
     src/home/link.c
     src/home/vfx.c
+    src/home/ui.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -42,6 +43,7 @@ add_executable(ladx_tests
     tests/test_room.c
     tests/test_link.c
     tests/test_vfx.c
+    tests/test_ui.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 4.7%
-* **Number of Verified Functions**: 57
-* **Number of Decompiled Functions**: 57
+* **Current Overall Progress**: 5.4%
+* **Number of Verified Functions**: 65
+* **Number of Decompiled Functions**: 65
 * **Number Remaining**: ~1200+ functions
-* **Current Subsystem**: Bank 0 - Foundational Routines
-* **Current Task**: Completed and verified Bank 0 bank restoration, farcall, object backup, and sword poke VFX routines
-* **Last Completed Task**: Decompiled and verified `RestoreBankAndReturn`, `LoadBank1AndReturn`, `RestoreStackedBankAndReturn`, `RestoreStackedBank`, `Farcall`, `func_BC5`, `CopyColorDungeonSymbols`, `BackupObjectInRAM2`, `label_D07`, and `label_D15`
-* **Next Task**: Select next unfinished Bank 0 or Bank 1 subsystem
-* **Last Update Timestamp**: 2026-09-06T04:20:00+03:00
+* **Current Subsystem**: Bank 0 - Piece of Heart Meter & Transition Audio Helpers
+* **Current Task**: Completed and verified Piece of Heart meter VRAM loaders, transition noise/movement helpers, and Farcall trampoline
+* **Last Completed Task**: Decompiled and verified `CopyTilesToPieceOfHeartMeter`, `LoadPieceOfHeartMeterTiles1`, `LoadPieceOfHeartMeterTiles2`, `ClearPieceOfHeartMeterTiles1`, `ClearPieceOfHeartMeterTiles2`, `playNoiseStairs`, `disableMovementInTransition`, and `Farcall_trampoline`
+* **Next Task**: Select next unfinished Bank 0 subsystem (Entity spawning trampolines or Room transition routines)
+* **Last Update Timestamp**: 2026-09-06T04:45:00+03:00
 
 ---
 
@@ -76,83 +76,33 @@
 | `BackupObjectInRAM2` | VERIFIED | PASS | PASS | Backs up overworld object to WRAM bank 2 with ignore list filtering (`00:0B2F`) |
 | `label_D07` | VERIFIED | PASS | PASS | Sets up sword poke VFX position from wC140/wC142 minus 8 (`00:0D07`) |
 | `label_D15` | VERIFIED | PASS | PASS | Plays sword poking jingle and adds TRANSCIENT_VFX_SWORD_POKE (`00:0D15`) |
-
----
-
-## Completed Work
-
-- **`ClearBytes` (`00:29DF`)**: Status: `VERIFIED`.
-- **`ClearWRAMBytes` (`00:29DC`)**: Status: `VERIFIED`.
-- **`ClearHRAMBytesAndWRAM` (`00:29D3`)**: Status: `VERIFIED`.
-- **`ClearHRAMAndWRAM` (`00:29D0`)**: Status: `VERIFIED`.
-- **`ClearWRAMAndLowerHRAM` (`00:29CB`)**: Status: `VERIFIED`.
-- **`ClearLowerWRAM` (`00:29C6`)**: Status: `VERIFIED`.
-- **`ClearLowerAndMiddleWRAM` (`00:29C1`)**: Status: `VERIFIED`.
-- **`FillBGMapBlack` (`00:28F0`)**: Status: `VERIFIED`.
-- **`FillBGMapWhite` (`00:28F7`)**: Status: `VERIFIED`.
-- **`FillBGMap` (`00:28FC`)**: Status: `VERIFIED`.
-- **`CopyData` (`00:2914`)**: Status: `VERIFIED`.
-- **`CopyDataFromBank` (`00:2908`)**: Status: `VERIFIED`.
-- **`DrawCommandToVRAM` (`00:2941`)**: Status: `VERIFIED`.
-- **`DrawCommandToVRAMDuringRoomTransition` (`00:2991`)**: Status: `VERIFIED`.
-- **`ExecuteDrawCommands` (`00:2927`)**: Status: `VERIFIED`.
-- **`AdjustBankNumberForGBC` (`00:0B0B`)**: Status: `VERIFIED`.
-- **`SwitchBank` (`00:080C`)**: Status: `VERIFIED`.
-- **`SwitchAdjustedBank` (`00:0813`)**: Status: `VERIFIED`.
-- **`ReloadSavedBank` (`00:081D`)**: Status: `VERIFIED`.
-- **`CopyObjectsAttributesToWRAM2` (`00:0B1A`)**: Status: `VERIFIED`.
-- **`CopyToBGMap0` (`00:0B96`)**: Status: `VERIFIED`.
-- **`CopyDataToVRAM_noDMA` (`00:0A01`)**: Status: `VERIFIED`.
-- **`CopyDataToVRAM` (`00:0A13`)**: Status: `VERIFIED`.
-- **`CopyData_trampoline` (`00:0B5D`)**: Status: `VERIFIED`.
-- **`func_BB5` (`00:0BB5`)**: Status: `VERIFIED`.
-- **`CopyBGMapFromBank` (`00:0B69`)**: Status: `VERIFIED`.
-- **`LCDOff` (`00:28CF`)**: Status: `VERIFIED`.
-- **`IsZero` (`00:0C08`)**: Status: `VERIFIED`.
-- **`GetEntitySlowTransitionCountdown` (`00:0BFB`)**: Status: `VERIFIED`.
-- **`GetEntityPrivateCountdown1` (`00:0C00`)**: Status: `VERIFIED`.
-- **`GetEntityTransitionCountdown` (`00:0C05`)**: Status: `VERIFIED`.
-- **`DecrementEntityIgnoreHitsCountdown` (`00:0C56`)**: Status: `VERIFIED`.
-- **`PlayWrongAnswerJingle` (`00:0C20`)**: Status: `VERIFIED`.
-- **`AlertSwordMoblins` (`00:0C50`)**: Status: `VERIFIED`.
-- **`PlayBombExplosionSfx` (`00:0C4B`)**: Status: `VERIFIED`.
-- **`CopySirenInstrumentTiles` (`00:0C3A`)**: Status: `VERIFIED`.
-- **`ReadValueInDialogsBank` (`00:0C2D`)**: Status: `VERIFIED`.
-- **`ReadTileValueFromAsciiTable` (`00:0C25`)**: Status: `VERIFIED`.
-- **`ReadTileValueFromDiacriticsTable` (`00:0C2A`)**: Status: `VERIFIED`.
-- **`MarkTriggerAsResolved` (`00:0C60`)**: Status: `VERIFIED`.
-- **`ApplyMapFadeOutTransitionWithNoise` (`00:0C7D`)**: Status: `VERIFIED`.
-- **`ApplyMapFadeOutTransition` (`00:0C83`)**: Status: `VERIFIED`.
-- **`ApplyMapFadeOutTransitionWithSound` (`00:0C89`)**: Status: `VERIFIED`.
-- **`ResetSpinAttack` (`00:0CAF`)**: Status: `VERIFIED`.
-- **`ResetPegasusBoots` (`00:0CB6`)**: Status: `VERIFIED`.
-- **`CopyLinkFinalPositionToPosition` (`00:0CBE`)**: Status: `VERIFIED`.
-- **`AddTranscientVfx` (`00:0CC7`)**: Status: `VERIFIED`.
-- **`RestoreBankAndReturn` (`00:08DF`)**: Status: `VERIFIED`.
-- **`LoadBank1AndReturn` (`00:0917`)**: Status: `VERIFIED`.
-- **`RestoreStackedBankAndReturn` (`00:0973`)**: Status: `VERIFIED`.
-- **`RestoreStackedBank` (`00:0AB0`)**: Status: `VERIFIED`.
-- **`Farcall` (`00:0BD7`)**: Status: `VERIFIED`.
-- **`func_BC5` (`00:0BC5`)**: Status: `VERIFIED`.
-- **`CopyColorDungeonSymbols` (`00:0A32`)**: Status: `VERIFIED`.
-- **`BackupObjectInRAM2` (`00:0B2F`)**: Status: `VERIFIED`.
-- **`label_D07` (`00:0D07`)**: Status: `VERIFIED`.
-- **`label_D15` (`00:0D15`)**: Status: `VERIFIED`.
+| `CopyTilesToPieceOfHeartMeter` | VERIFIED | PASS | PASS | Copies 3 tiles to VRAM, resets BG loading flags, selects bank $0C (`00:0080`) |
+| `LoadPieceOfHeartMeterTiles1` | VERIFIED | PASS | PASS | Loads 3 Piece of Heart meter tiles to vTiles1 + $1A0 (`00:0062`) |
+| `LoadPieceOfHeartMeterTiles2` | VERIFIED | PASS | PASS | Loads 3 Piece of Heart meter tiles to vTiles1 + $1D0 (`00:006A`) |
+| `ClearPieceOfHeartMeterTiles1` | VERIFIED | PASS | PASS | Restores overwritten equipment tiles to vTiles1 + $1D0 (`00:0072`) |
+| `ClearPieceOfHeartMeterTiles2` | VERIFIED | PASS | PASS | Restores overwritten equipment tiles to vTiles1 + $1A0 (`00:007A`) |
+| `playNoiseStairs` | VERIFIED | PASS | PASS | Plays stairs noise SFX and disables transition motion (`00:0C9A`) |
+| `disableMovementInTransition` | VERIFIED | PASS | PASS | Sets motion state to fade out and resets transition counters (`00:0C9E`) |
+| `Farcall_trampoline` | VERIFIED | PASS | PASS | Resolves target function address from wFarcallAdressHigh/Low (`00:0BE7`) |
 
 ---
 
 ## Technical Discoveries
 
-- **Assembly & Memory Verification**:
-  - Bank restoration & farcall: `RestoreBankAndReturn` reloads `wCurrentBank` into `rSelectROMBank`. `LoadBank1AndReturn` loads 1 into `rSelectROMBank`. `RestoreStackedBankAndReturn` pops stacked bank into `rSelectROMBank`. `RestoreStackedBank` pops stacked bank and calls `SwitchBank` (updating both `wCurrentBank` and `rSelectROMBank`).
-  - Farcall dispatch: `wFarcallBank` ($DE01), `wFarcallAdressHigh` ($DE02), `wFarcallAdressLow` ($DE03), `wFarcallReturnBank` ($DE04).
-  - Copy helpers: `func_BC5` reads ROM bank from `w2_D16A` ($D16A), copies `b` bytes from `hl` to `de`, and restores bank `$28`.
-  - Color dungeon symbol copy: `CopyColorDungeonSymbols` copies 32 bytes from `ColorDungeonNpcTiles + $F00` ($4F00 in bank $35) to `wAnimatedScrollingTilesStorage` ($DCC0), restoring the stacked bank.
-  - Object RAM2 backup: `BackupObjectInRAM2` checks `hIsGBC` and `wIsIndoor` (outdoor GBC only); if bit 7 of `a` is 0, checks `OverworldObjectIgnoreList` (14 bytes in bank 20: 0x03, 0x04, 0x09, 0x5E, 0x91, 0xA1, 0xAA, 0xC4, 0xC6, 0xCC, 0xDB, 0xE1, 0xE3, 0xE8); copies `[hl]` into WRAM bank 2 (`rSVBK = 2`), restores `rSVBK = 0`, and switches ROM bank to `a & 0x7F`.
-  - Sword poke VFX: `wC140` (X) - 8, `wC142` (Y) - 8; `label_D15` plays `JINGLE_SWORD_POKING` ($07) into `hJingle` and calls `AddTranscientVfx(TRANSCIENT_VFX_SWORD_POKE = 5)`.
+- **Header / UI VRAM Loaders (`code/home/header.asm`)**:
+  - `CopyTilesToPieceOfHeartMeter` (`00:0080`): copies $30 bytes from `hl` to `de` using `CopyData`, sets `hNeedsUpdatingBGTiles = 0`, `hBGTilesLoadingStage = 0`, and selects ROM bank `$0C`.
+  - `LoadPieceOfHeartMeterTiles1` (`00:0062`): loads $30 bytes from `PieceOfHeartMeterTiles` (`0x6900`) to `vTiles1 + $1A0` (`0x89A0`).
+  - `LoadPieceOfHeartMeterTiles2` (`00:006A`): loads $30 bytes from `PieceOfHeartMeterTiles + $30` (`0x6930`) to `vTiles1 + $1D0` (`0x89D0`).
+  - `ClearPieceOfHeartMeterTiles1` (`00:0072`): restores $30 bytes from `InventoryEquipmentItemsTiles + $1D0` (`0x49D0`) to `vTiles1 + $1D0` (`0x89D0`).
+  - `ClearPieceOfHeartMeterTiles2` (`00:007A`): restores $30 bytes from `InventoryEquipmentItemsTiles + $1A0` (`0x49A0`) to `vTiles1 + $1A0` (`0x89A0`).
+- **Transition Helpers (`code/bank0.asm`)**:
+  - `playNoiseStairs` (`00:0C9A`): plays `NOISE_SFX_STAIRS` into `hNoiseSfx`, then chains into `disableMovementInTransition`.
+  - `disableMovementInTransition` (`00:0C9E`): sets `wLinkMotionState` to `LINK_MOTION_MAP_FADE_OUT` (`$03`), resets `wTransitionSequenceCounter`, `wC16C`, and `wD478` to 0.
+- **Farcall Trampoline (`code/bank0.asm`)**:
+  - `Farcall_trampoline` (`00:0BE7`): reconstructs 16-bit address from `wFarcallAdressHigh` (`$DE02`) and `wFarcallAdressLow` (`$DE03`) and executes it.
 
 ---
 
 ## Verification Log
 
-- 57 functions tested and verified with 100% pass rate.
+- 65 functions tested and verified with 100% pass rate.

@@ -8,6 +8,23 @@ extern "C" {
 #endif
 
 /**
+ * Plays stairs noise SFX (NOISE_SFX_STAIRS) and disables Link's movement.
+ * Corresponds to playNoiseStairs (00:0C9A) in disassembly.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void playNoiseStairs(GBState *gb);
+
+/**
+ * Disables Link's movement (sets wLinkMotionState = LINK_MOTION_MAP_FADE_OUT)
+ * and resets transition sequence variables (wTransitionSequenceCounter, wC16C, wD478).
+ * Corresponds to disableMovementInTransition (00:0C9E) in disassembly.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void disableMovementInTransition(GBState *gb);
+
+/**
  * Apply map fade-out transition with stairs sound effect:
  * Sets hMusicFadeOutTimer to $30, plays NOISE_SFX_STAIRS, and disables Link's movement.
  *
@@ -40,8 +57,7 @@ void ApplyMapFadeOutTransitionWithSound(GBState *gb);
 void ResetSpinAttack(GBState *gb);
 
 /**
- * Reset Pegasus boots state (wPegasusBootsChargeMeter = 0, wIsRunningWithPegasusBoots = 0).
- *
+ * Reset Pegasus boots state (wPegasusBootsChargeMeter = 0, wIsRunningWithPegasusBoots = 0).\n *
  * @param gb Pointer to Game Boy hardware state
  */
 void ResetPegasusBoots(GBState *gb);

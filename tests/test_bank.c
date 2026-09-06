@@ -129,44 +129,45 @@ static void test_farcall(void) {
 
     TEST_ASSERT(gb_read(&gb, 0xC100) == 0x55, "Farcall did not execute target function");
     TEST_ASSERT(gb.rom_bank == 0x05, "Farcall did not switch back to wFarcallReturnBank");
+
+    /* Test Farcall_trampoline */
+    gb_write(&gb, wFarcallAdressHigh, 0x4E);
+    gb_write(&gb, wFarcallAdressLow, 0x2A);
+    uint16_t addr = Farcall_trampoline(&gb);
+    TEST_ASSERT(addr == 0x4E2A, "Farcall_trampoline did not return correct 16-bit address");
 }
 
 static void test_backup_object_in_ram2(void) {
     GBState gb;
     gb_init(&gb);
 
-    /* 1. On DMG (hIsGBC = 0), returns immediately */
+    /* 1. On DMG (hIsGBC = 0), returns immediately without copying or changing ROM bank */
     gb_write(&gb, hIsGBC, 0);
-    gb_write(&gb, wIsIndoor, 0);
     gb.wram[1][0x500] = 0x03; /* Overworld object at $D500 */
     gb.wram[2][0x500] = 0x00;
     gb.rom_bank = 0x01;
     BackupObjectInRAM2(&gb, 0xD500, 0x04);
     TEST_ASSERT(gb.wram[2][0x500] == 0x00, "DMG should not backup object to RAM2");
+    TEST_ASSERT(gb.rom_bank == 0x01, "DMG should return immediately without restoring bank");
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose2) == 0x04, "hMultiPurpose2 not set on DMG");
 
-    /* 2. Indoors (wIsIndoor != 0), returns immediately */
+    /* 2. GBC mode, object IS in ignore list (0x03), bit 7 clear -> copy performed */
     gb_write(&gb, hIsGBC, 1);
-    gb_write(&gb, wIsIndoor, 1);
-    BackupObjectInRAM2(&gb, 0xD500, 0x04);
-    TEST_ASSERT(gb.wram[2][0x500] == 0x00, "Indoors should not backup object to RAM2");
-
-    /* 3. GBC outdoors, object IS in ignore list (0x03) -> backed up */
-    gb_write(&gb, hIsGBC, 1);
-    gb_write(&gb, wIsIndoor, 0);
     gb.wram[1][0x500] = 0x03;
+    gb.wram[2][0x500] = 0x00;
     BackupObjectInRAM2(&gb, 0xD500, 0x05);
     TEST_ASSERT(gb.wram[2][0x500] == 0x03, "GBC in-list object was not backed up to RAM2");
     TEST_ASSERT(gb.rom_bank == 0x05, "ROM bank not set to return_bank 0x05");
     TEST_ASSERT(gb_read(&gb, hMultiPurpose2) == 0x05, "hMultiPurpose2 not set");
 
-    /* 4. GBC outdoors, object NOT in ignore list (0x42), bit 7 clear -> skipped */
+    /* 3. GBC mode, object NOT in ignore list (0x42), bit 7 clear -> skipped */
     gb.wram[1][0x501] = 0x42;
     gb.wram[2][0x501] = 0x00;
     BackupObjectInRAM2(&gb, 0xD501, 0x06);
     TEST_ASSERT(gb.wram[2][0x501] == 0x00, "Object not in ignore list should be skipped");
     TEST_ASSERT(gb.rom_bank == 0x06, "ROM bank not restored when skipped");
 
-    /* 5. GBC outdoors, object NOT in ignore list (0x42), bit 7 set -> forced backup */
+    /* 4. GBC mode, object NOT in ignore list (0x42), bit 7 set -> forced backup */
     gb.wram[1][0x502] = 0x42;
     gb.wram[2][0x502] = 0x00;
     BackupObjectInRAM2(&gb, 0xD502, 0x87);

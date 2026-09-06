@@ -21,6 +21,11 @@
 #define ADDR_AUD3WAVERAM 0xFF30
 #define ADDR_HRAM        0xFF80
 
+/* VRAM Tile Blocks */
+#define vTiles0          0x8000
+#define vTiles1          0x8800
+#define vTiles2          0x9000
+
 /* VRAM Tilemaps */
 #define vBGMap0          0x9800
 #define vBGMap1          0x9C00

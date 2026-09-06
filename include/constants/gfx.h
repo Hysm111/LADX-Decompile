@@ -12,4 +12,8 @@
 /* Special tile during room transitions treated as transparent */
 #define TRANSITION_TRANSPARENT_TILE 0xEE
 
+/* Graphic asset ROM addresses in Bank $0C */
+#define InventoryEquipmentItemsTiles 0x4800
+#define PieceOfHeartMeterTiles       0x6900
+
 #endif /* LADX_CONSTANTS_GFX_H */
