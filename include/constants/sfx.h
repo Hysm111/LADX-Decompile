@@ -30,3 +30,10 @@
 
 #define NOISE_SFX_SHOVEL_DIG            0x0E
 #define NOISE_SFX_DRAW_SHIELD           0x16
+
+#define NOISE_SFX_SWORD_SWING_A     0x02
+#define NOISE_SFX_SWORD_SWING_B     0x14
+#define NOISE_SFX_SWORD_SWING_C     0x15
+#define NOISE_SFX_SWORD_SWING_D     0x18
+#define NOISE_SFX_WHOOSH            0x0A
+#define JINGLE_FEATHER_JUMP         0x0D

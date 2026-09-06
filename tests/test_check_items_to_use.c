@@ -4,6 +4,8 @@
 #include "gb.h"
 #include "home/check_items_to_use.h"
 #include "constants/inventory.h"
+#include "constants/entities.h"
+#include "constants/directions.h"
 #include "constants/hardware.h"
 #include "constants/joypad.h"
 #include "constants/memory.h"
@@ -272,6 +274,214 @@ static void test_check_items_to_use(void) {
     TEST_ASSERT(gb_read(&gb, wPegasusBootsChargeMeter) == 0, "Boots charge meter not reset on button release");
 }
 
+
+static void test_use_power_bracelet(void) {
+    GBState gb;
+    gb_init(&gb);
+    UsePowerBracelet(&gb);
+    TEST_ASSERT(true, "UsePowerBracelet returned cleanly");
+}
+
+static int mock_4bff_calls = 0;
+static void mock_func_020_4bff(GBState *gb) {
+    (void)gb;
+    mock_4bff_calls++;
+}
+
+static void test_use_boomerang(void) {
+    GBState gb;
+
+    /* 1. Projectiles already active */
+    gb_init(&gb);
+    gb_write(&gb, wActiveProjectileCount, 1);
+    mock_4bff_calls = 0;
+    UseBoomerang(&gb, NULL, mock_func_020_4bff);
+    TEST_ASSERT(mock_4bff_calls == 0, "Boomerang used while projectiles active");
+
+    /* 2. Free to use boomerang */
+    gb_init(&gb);
+    mock_4bff_calls = 0;
+    UseBoomerang(&gb, NULL, mock_func_020_4bff);
+    TEST_ASSERT(mock_4bff_calls == 1, "func_020_4BFF not called");
+    TEST_ASSERT(gb_read(&gb, wEntitiesStatusTable) == 4, "Boomerang entity not initialized");
+    TEST_ASSERT(gb_read(&gb, wEntitiesTypeTable) == ENTITY_BOOMERANG, "Entity type not ENTITY_BOOMERANG");
+}
+
+static void test_spawn_player_projectile(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, hLinkDirection, DIRECTION_UP);
+    gb_write(&gb, hLinkPositionX, 50);
+    gb_write(&gb, hLinkPositionY, 60);
+    gb_write(&gb, hLinkPositionZ, 5);
+
+    uint8_t out_idx = 0xFF;
+    bool success = SpawnPlayerProjectile(&gb, ENTITY_ARROW, &out_idx);
+    TEST_ASSERT(success == true, "Failed to spawn player projectile");
+    TEST_ASSERT(out_idx == 0, "First projectile not in slot 0");
+    TEST_ASSERT(gb_read(&gb, wEntitiesPosXTable + out_idx) == 50, "Projectile X pos mismatch");
+    TEST_ASSERT(gb_read(&gb, wEntitiesPosYTable + out_idx) == 60, "Projectile Y pos mismatch");
+    TEST_ASSERT(gb_read(&gb, wEntitiesPosZTable + out_idx) == 6, "Projectile Z pos not hLinkPositionZ + 1");
+    TEST_ASSERT(gb_read(&gb, wEntitiesDirectionTable + out_idx) == DIRECTION_UP, "Projectile direction mismatch");
+    TEST_ASSERT(gb_read(&gb, wEntitiesSpeedYTable + out_idx) == (uint8_t)-32, "Upward projectile Y speed mismatch");
+
+    /* Fill all 16 slots, next spawn should fail */
+    for (int i = 0; i < 16; i++) {
+        gb_write(&gb, wEntitiesStatusTable + i, 5);
+    }
+    success = SpawnPlayerProjectile(&gb, ENTITY_BOMB, &out_idx);
+    TEST_ASSERT(success == false, "Projectile spawned when all 16 slots full");
+}
+
+static void test_shoot_arrow(void) {
+    GBState gb;
+
+    /* 1. Already shooting arrow */
+    gb_init(&gb);
+    gb_write(&gb, wIsShootingArrow, 0x10);
+    bool res = ShootArrow(&gb, NULL, NULL);
+    TEST_ASSERT(res == false, "Arrow shot while already shooting");
+
+    /* 2. Zero arrows -> wrong answer jingle */
+    gb_init(&gb);
+    gb_write(&gb, wArrowCount, 0x00);
+    res = ShootArrow(&gb, NULL, NULL);
+    TEST_ASSERT(res == false, "Arrow shot with zero count");
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_WRONG_ANSWER, "Wrong answer jingle not played on 0 arrows");
+
+    /* 3. Normal arrow shot */
+    gb_init(&gb);
+    gb_write(&gb, wArrowCount, 0x10);
+    gb_write(&gb, hLinkDirection, DIRECTION_RIGHT);
+    res = ShootArrow(&gb, NULL, NULL);
+    TEST_ASSERT(res == true, "Normal arrow shot failed");
+    TEST_ASSERT(gb_read(&gb, wArrowCount) == 0x09, "Arrow count BCD decrement failed");
+    TEST_ASSERT(gb_read(&gb, wIsShootingArrow) == 0x10, "wIsShootingArrow not set");
+    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_WHOOSH, "Whoosh SFX not played");
+    TEST_ASSERT(gb_read(&gb, wBombArrowCooldown) == 0x06, "Bomb arrow cooldown not set");
+    TEST_ASSERT(gb_read(&gb, wEntitiesSpeedXTable + 0) == 0x30, "Arrow SpeedX mismatch without power");
+
+    /* 4. Bomb-arrow combo */
+    gb_init(&gb);
+    gb_write(&gb, wArrowCount, 0x05);
+    gb_write(&gb, wBombArrowCooldown, 0x04);
+    gb_write(&gb, wLatestDroppedBombEntityIndex, 0x03);
+    gb_write(&gb, wEntitiesStatusTable + 0x03, 0x05); /* Active bomb */
+
+    res = ShootArrow(&gb, NULL, NULL);
+    TEST_ASSERT(res == true, "Bomb arrow shot failed");
+    TEST_ASSERT(gb_read(&gb, wEntitiesStatusTable + 0x03) == 0x00, "Dropped bomb not cleared on bomb-arrow");
+    TEST_ASSERT(gb_read(&gb, wEntitiesStateTable + gb_read(&gb, wLatestShotArrowEntityIndex)) == 0x01, "Arrow state not set to 1 for bomb-arrow");
+    TEST_ASSERT(gb_read(&gb, wBombArrowCooldown) == 0x00, "Bomb arrow cooldown not reset");
+}
+
+static void test_use_magic_powder(void) {
+    GBState gb;
+
+    /* 1. Has toadstool: gives toadstool dialog */
+    gb_init(&gb);
+    gb_write(&gb, wHasToadstool, 0x01);
+    gb_write(&gb, hLinkPositionZ, 0x00);
+    UseMagicPowder(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wDialogGotItem) == 0x02, "Toadstool dialog not triggered");
+    TEST_ASSERT(gb_read(&gb, wDialogGotItemCountdown) == 0x2A, "Toadstool countdown not set");
+
+    /* 2. Zero magic powder -> wrong answer jingle */
+    gb_init(&gb);
+    gb_write(&gb, wMagicPowderCount, 0x00);
+    UseMagicPowder(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_WRONG_ANSWER, "Wrong answer jingle not played on 0 powder");
+
+    /* 3. Normal magic powder sprinkle */
+    gb_init(&gb);
+    gb_write(&gb, wMagicPowderCount, 0x10);
+    UseMagicPowder(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wEntitiesStatusTable) == 4, "Magic powder entity not initialized");
+    TEST_ASSERT(gb_read(&gb, wEntitiesTypeTable) == ENTITY_MAGIC_POWDER_SPRINKLE, "Entity type not magic powder sprinkle");
+}
+
+static void test_use_rocs_feather(void) {
+    GBState gb;
+
+    /* 1. In air already -> ignored */
+    gb_init(&gb);
+    gb_write(&gb, wIsLinkInTheAir, 0x01);
+    UseRocsFeather(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hJingle) == 0, "Feather used while already in air");
+
+    /* 2. Normal top-down jump */
+    gb_init(&gb);
+    UseRocsFeather(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wIsLinkInTheAir) == 0x01, "wIsLinkInTheAir not set");
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_FEATHER_JUMP, "Feather jump jingle not played");
+    TEST_ASSERT(gb_read(&gb, hLinkVelocityZ) == 0x20, "Link velocity Z not 0x20");
+
+    /* 3. Running with Pegasus boots boost */
+    gb_init(&gb);
+    gb_write(&gb, wIsRunningWithPegasusBoots, 0x01);
+    gb_write(&gb, hLinkDirection, DIRECTION_RIGHT);
+    UseRocsFeather(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hLinkSpeedX) == 28, "Pegasus boots jump speed boost X mismatch");
+
+    /* 4. Side-scrolling jump */
+    gb_init(&gb);
+    gb_write(&gb, hIsSideScrolling, 0x01);
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    UseRocsFeather(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hLinkSpeedY) == 0xE8, "Side-scrolling jump speed Y mismatch with lateral button pressed");
+}
+
+static void test_update_link_direction_from_joypad(void) {
+    GBState gb;
+
+    gb_init(&gb);
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    UpdateLinkDirectionFromJoypad(&gb);
+    TEST_ASSERT(gb_read(&gb, hLinkDirection) == DIRECTION_RIGHT, "Direction not set to RIGHT");
+
+    gb_write(&gb, hPressedButtonsMask, J_UP);
+    UpdateLinkDirectionFromJoypad(&gb);
+    TEST_ASSERT(gb_read(&gb, hLinkDirection) == DIRECTION_UP, "Direction not set to UP");
+
+    /* Diagonal / keep */
+    gb_write(&gb, hPressedButtonsMask, J_UP | J_RIGHT);
+    UpdateLinkDirectionFromJoypad(&gb);
+    TEST_ASSERT(gb_read(&gb, hLinkDirection) == DIRECTION_UP, "Direction changed on diagonal input");
+}
+
+static int mock_reset_spin_calls = 0;
+static void mock_reset_spin(GBState *gb) {
+    (void)gb;
+    mock_reset_spin_calls++;
+}
+
+static void test_use_sword(void) {
+    GBState gb;
+
+    /* 1. Spin attack active -> ignored */
+    gb_init(&gb);
+    gb_write(&gb, wIsUsingSpinAttack, 0x01);
+    UseSword(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wSwordAnimationState) == 0, "Sword used while spin attack active");
+
+    /* 2. Normal swing (L1 sword) */
+    gb_init(&gb);
+    mock_reset_spin_calls = 0;
+    UseSword(&gb, mock_reset_spin, NULL);
+    TEST_ASSERT(gb_read(&gb, wSwordAnimationState) == SWORD_ANIMATION_STATE_SWING_START, "Sword animation not START");
+    TEST_ASSERT(gb_read(&gb, wSwordCollisionEnabled) == SWORD_ANIMATION_STATE_SWING_START, "Sword collision not enabled");
+    TEST_ASSERT(gb_read(&gb, wC138) == 0x03, "wC138 not set to 3");
+    TEST_ASSERT(mock_reset_spin_calls == 1, "ResetSpinAttack not called");
+
+    /* 3. L2 Sword with full hearts -> sword beam */
+    gb_init(&gb);
+    gb_write(&gb, wSwordLevel, 0x02);
+    gb_write(&gb, wFullHearts, 0x01);
+    UseSword(&gb, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, wEntitiesTypeTable) == ENTITY_SWORD_BEAM, "Sword beam not spawned on full health L2 sword");
+}
+
 void run_check_items_to_use_tests(void) {
     printf("[*] Running SetShieldVals tests...\n");
     test_set_shield_vals();
@@ -296,6 +506,31 @@ void run_check_items_to_use_tests(void) {
 
     printf("[*] Running CheckItemsToUse tests...\n");
     test_check_items_to_use();
+
+
+    printf("[*] Running UsePowerBracelet tests...\n");
+    test_use_power_bracelet();
+
+    printf("[*] Running UseBoomerang tests...\n");
+    test_use_boomerang();
+
+    printf("[*] Running SpawnPlayerProjectile tests...\n");
+    test_spawn_player_projectile();
+
+    printf("[*] Running ShootArrow tests...\n");
+    test_shoot_arrow();
+
+    printf("[*] Running UseMagicPowder tests...\n");
+    test_use_magic_powder();
+
+    printf("[*] Running UseRocsFeather tests...\n");
+    test_use_rocs_feather();
+
+    printf("[*] Running UpdateLinkDirectionFromJoypad tests...\n");
+    test_update_link_direction_from_joypad();
+
+    printf("[*] Running UseSword tests...\n");
+    test_use_sword();
 
     if (failures == 0) {
         printf("  [PASS] All check_items_to_use.asm routines verified successfully!\n\n");

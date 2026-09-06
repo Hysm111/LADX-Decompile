@@ -69,6 +69,46 @@ void SetShieldVals(GBState *gb, void (*sync_shield_trampoline)(GBState *));
  */
 void PlaceBomb(GBState *gb, bool (*spawn_bomb_projectile)(GBState *), void (*convert_to_bomb_arrow)(GBState *));
 
+/**
+ * Power bracelet item action (00:1382).
+ */
+void UsePowerBracelet(GBState *gb);
+
+/**
+ * Boomerang item action (00:1383).
+ */
+void UseBoomerang(GBState *gb, bool (*spawn_projectile)(GBState *, uint8_t, uint8_t *), void (*func_020_4bff)(GBState *));
+
+/**
+ * Shoot arrow item action (00:13BD).
+ */
+bool ShootArrow(GBState *gb, bool (*spawn_projectile)(GBState *, uint8_t, uint8_t *), void (*func_157c_cb)(GBState *));
+
+/**
+ * Spawn a player projectile (00:142F).
+ */
+bool SpawnPlayerProjectile(GBState *gb, uint8_t entity_type, uint8_t *out_entity_index);
+
+/**
+ * Magic powder item action (00:148D).
+ */
+void UseMagicPowder(GBState *gb, uint16_t (*spawn_entity)(GBState *, uint8_t), void (*sprinkle_powder)(GBState *));
+
+/**
+ * Roc's Feather item action (00:14CB).
+ */
+void UseRocsFeather(GBState *gb, void (*update_final_link_pos)(GBState *), void (*check_pos_for_map_trans)(GBState *));
+
+/**
+ * Sword item action (00:1528).
+ */
+void UseSword(GBState *gb, void (*reset_spin_attack)(GBState *), void (*clear_link_position_increment)(GBState *));
+
+/**
+ * Update hLinkDirection from joypad d-pad input (00:157C).
+ */
+void UpdateLinkDirectionFromJoypad(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

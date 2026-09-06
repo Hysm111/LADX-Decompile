@@ -116,3 +116,8 @@
 #define OAM_GBC_PAL_4    0x04
 
 #endif /* LADX_CONSTANTS_HARDWARE_H */
+#define hLinkSpeedX                 0xFF9A
+#define hLinkSpeedY                 0xFF9B
+#define hLinkDirection              0xFF9E
+#define hLinkPositionZ              0xFFA2
+#define hLinkVelocityZ              0xFFA3

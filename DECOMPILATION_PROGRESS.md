@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 26.08%
-* **Number of Verified Functions**: 313
-* **Number of Decompiled Functions**: 313
-* **Number Remaining**: ~887 functions
-* **Current Subsystem**: Bank 0 - Item Usage & Inventory Subsystem (`code/home/check_items_to_use.asm`, `00:1177`-`00:1381` - 100% COMPLETE!)
-* **Current Task**: Bank 0 Item Usage & Inventory checks completed
-* **Last Completed Task**: Decompiled and verified 9 Bank 0 item usage routines (`CheckItemsToUse`, `UseItem`, `UseMagicRod`, `UseShield`, `UseShovel`, `UseHookshot`, `HoldSwordIfNeeded`, `SetShieldVals`, `PlaceBomb`) (`00:1177` - `00:1381`) - **check_items_to_use.asm 100% Complete**!
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (e.g. projectile/bomb helpers, sword attacks, or audio routines)
-* **Last Update Timestamp**: 2026-09-06T22:00:00+03:00
+* **Current Overall Progress**: 26.75%
+* **Number of Verified Functions**: 321
+* **Number of Decompiled Functions**: 321
+* **Number Remaining**: ~879 functions
+* **Current Subsystem**: Bank 0 - Player Item Actions & Projectiles (`code/bank0.asm`, `00:1382`-`00:158E`)
+* **Current Task**: Bank 0 Item Actions & Projectile Spawning completed
+* **Last Completed Task**: Decompiled and verified 8 Bank 0 item actions and projectile spawning routines (`UsePowerBracelet`, `UseBoomerang`, `ShootArrow`, `SpawnPlayerProjectile`, `UseMagicPowder`, `UseRocsFeather`, `UseSword`, `UpdateLinkDirectionFromJoypad`) (`00:1382` - `00:158E`)
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Sword static collisions & room object interaction `00:15A7` - `00:1650`)
+* **Last Update Timestamp**: 2026-09-06T22:20:00+03:00
 
 ---
 
@@ -261,10 +261,26 @@
 | `HoldSwordIfNeeded` | VERIFIED | PASS | PASS | Sets sword holding animation state and enables sword collision when button is held outside NPC/text dialog (`00:1321`) |
 | `SetShieldVals` | VERIFIED | PASS | PASS | Sets wIsUsingShield and wHasMirrorShield, and synchronizes shield attributes via Bank $20 trampoline (`00:1340`) |
 | `PlaceBomb` | VERIFIED | PASS | PASS | Checks placed bomb count, decrements bomb BCD count, spawns bomb projectile, and checks bomb-arrow conversion (`00:135A`) |
+| `UsePowerBracelet` | VERIFIED | PASS | PASS | Power bracelet item handler stub (`00:1382`) |
+| `UseBoomerang` | VERIFIED | PASS | PASS | Validates projectile limits, spawns boomerang projectile, and syncs via Bank $20 helper (`00:1383`) |
+| `ShootArrow` | VERIFIED | PASS | PASS | Arrow shooting action: BCD ammo decrement, directional projectile spawn, bomb-arrow combo conversion, and speed setup (`00:13BD`) |
+| `SpawnPlayerProjectile` | VERIFIED | PASS | PASS | Spawns projectile entity, initializes position, Z height, speed tables, direction, and variant from player state (`00:142F`) |
+| `UseMagicPowder` | VERIFIED | PASS | PASS | Handles toadstool trade dialog check, powder count validation, and magic powder sprinkle spawning (`00:148D`) |
+| `UseRocsFeather` | VERIFIED | PASS | PASS | Jump mechanics: initializes Z velocity, plays jump jingle, applies lateral boost when running with Pegasus boots, handles side-scrolling jump physics (`00:14CB`) |
+| `UseSword` | VERIFIED | PASS | PASS | Sword attack action: initializes swing animation, selects random swing SFX, clears spin attack, and spawns full-health sword beam on L2 sword (`00:1528`) |
+| `UpdateLinkDirectionFromJoypad` | VERIFIED | PASS | PASS | Converts dpad bitmask from hPressedButtonsMask into cardinal link direction via JoypadToLinkDirection table (`00:157C`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Player Item Actions & Projectile Subsystem (`00:1382`-`00:158E`)**:
+   - `SpawnPlayerProjectile`: dynamically allocates projectile in active entity table `wEntitiesStatusTable` (slots 0..15), computes directional X/Y offsets, sets initial Z velocity (`hLinkPositionZ + 1`), sets speed vectors from `PlayerProjectileSpeedXPerDirection` / `PlayerProjectileSpeedYPerDirection`, synchronizes sprite variant, direction, and thrown direction, and starts attack step countdown (`$0C`).
+   - `ShootArrow`: checks active arrow limit (`ARROW_MAX_ACTIVE_COUNT = 2`), decrements arrow count in BCD, spawns arrow entity, checks for bomb-arrow combo (`wBombArrowCooldown != 0`), clears dropped bomb entity slot and converts arrow state to 1; otherwise plays whoosh SFX and sets cooldown. Applies `data_13AD` and `data_13B5` speed tables (adjusted by +4 if Piece of Power is active).
+   - `UseBoomerang`: validates single active projectile, spawns `ENTITY_BOOMERANG` (0x01), and calls Bank `$20` trampoline.
+   - `UseMagicPowder`: checks for active toadstool to initiate trade dialog (`DIALOG_GOT_TOADSTOOL` = $02); validates powder count; spawns `ENTITY_MAGIC_POWDER_SPRINKLE` (0x08) and invokes `SprinkleMagicPowder` in Bank `$20`.
+   - `UseRocsFeather`: triggers jump state (`wIsLinkInTheAir = 1`), resets `wC152`/`wC153`, plays `JINGLE_FEATHER_JUMP` ($0D), applies directional horizontal/vertical boost vectors from `PegasusBootsJumpBoostXTable` / `PegasusBootsJumpBoostYTable` if Pegasus Boots sprint is active; in side-scrolling areas, computes vertical speed based on lateral directional inputs (`0xE8` or `0xEA`) and updates final link position.
+   - `UseSword`: checks spin attack state; sets `SWORD_ANIMATION_STATE_SWING_START` ($01) and enables collision; selects random swing sound effect from `SwordRandomSfxTable`; updates facing direction from joypad; resets spin attack when grounded; checks for full health (`wFullHearts != 0`) and Level 2 Sword (`wSwordLevel == 2`) to fire `ENTITY_SWORD_BEAM` ($DF).
 
 1. **Item Usage & Inventory Actions Subsystem (`00:1177`-`00:1381`) - check_items_to_use.asm 100% Complete**:
    - `CheckItemsToUse`: verifies `wBlockItemUsage | wC167 | wIsUsingHookshot == 0`. Handles Pegasus Boots charge running sword hold / shield raise; suppresses actions when gel is clinging or carrying objects; handles Pegasus Boots A/B button charges and meter reset; processes shield A/B button holds; checks Joypad state for newly pressed A/B buttons to invoke `UseItem`; evaluates sword hold via `HoldSwordIfNeeded`; and invokes Color Dungeon callback in Bank `$20`.

@@ -24,4 +24,10 @@
 
 #define EntityHandlersTable      0x4000
 
+#define ENTITY_ARROW                0x00
+#define ENTITY_BOOMERANG            0x01
+#define ENTITY_BOMB                 0x02
+#define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
+#define ENTITY_SWORD_BEAM           0xDF
+
 #endif /* LADX_CONSTANTS_ENTITIES_H */
