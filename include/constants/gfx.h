@@ -218,6 +218,39 @@
 #define TitleDXTilesDMG              0x5C00
 #define TitleDXOAMTiles              0x6500
 
+
+/* Dungeon floor, wall, and item pointers in Bank $20 */
+#define BANK_DungeonFloorTilesPointers 0x20
+#define DungeonFloorTilesPointers      0x4589
+
+#define BANK_DungeonWallsTilesPointers 0x20
+#define DungeonWallsTilesPointers      0x45A9
+
+#define BANK_ColorDungeonWallsTilesPointers 0x20
+#define ColorDungeonWallsTilesPointers 0x45C9
+
+#define BANK_DungeonItemsTilesPointers 0x20
+#define DungeonItemsTilesPointers      0x45CA
+
+/* Color Dungeon tiles in Bank $35 */
+#define BANK_ColorDungeonTiles         0x35
+#define ColorDungeonTiles              0x6000
+
+/* Dungeons shared tiles */
+#define DungeonsTiles                  0x4000
+
+/* Indoor items in Bank $12 */
+#define BANK_DungeonItemsTiles         0x12
+#define BANK_InventoryIndoorItemsTiles 0x12
+#define InventoryIndoorItemsTiles      0x7D00
+
+/* Overworld items and landscape in Bank $0C */
+#define BANK_InventoryOverworldItemsTiles 0x0C
+#define InventoryOverworldItemsTiles   0x4C00
+
+#define BANK_OverworldLandscapeTiles   0x0C
+#define OverworldLandscapeTiles        0x5200
+
 #endif /* LADX_CONSTANTS_GFX_H */
 #define vTilesSwitchBlockA              0x9040
 #define vTilesSwitchBlockB              0x9080

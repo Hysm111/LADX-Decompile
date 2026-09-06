@@ -184,6 +184,17 @@ void CopyDataAndDrawLinkSprite(GBState *gb, uint16_t src_hl, uint16_t dest_de, u
 /**
  * Main V-Blank animated background tiles dispatcher (00:1B0D).
  */
+
+/**
+ * AnimateTilesGroup / AnimateTiles.jumpTable (00:1BD2)
+ * Jump table executing the animation routine for the active hAnimatedTilesGroup.
+ */
+void AnimateTilesGroup(GBState *gb,
+                       void (*load_counter_tiles)(GBState *),
+                       void (*func_020_54f5)(GBState *),
+                       void (*configure_copy)(GBState *, uint8_t, uint8_t *),
+                       void (*func_038_7830)(GBState *));
+
 void AnimateTiles(GBState *gb,
                   void (*load_counter_tiles)(GBState *),
                   void (*func_020_54f5)(GBState *),

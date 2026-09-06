@@ -5,6 +5,7 @@
 #include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
+#include "constants/gameplay.h"
 
 static int gfx_failures = 0;
 
@@ -53,6 +54,30 @@ static void setup_mock_data(void) {
     mock_rom[ROM_BANK_OFFSET(0x0F, FontTiles)] = 0x9E;
     mock_rom[ROM_BANK_OFFSET(0x0F, TitleLogoTiles)] = 0x71;
     mock_rom[ROM_BANK_OFFSET(0x0F, SaveMenuTiles)] = 0x72;
+
+    
+    /* Bank $20: DungeonFloorTilesPointers ($4589), DungeonWallsTilesPointers ($45A9), DungeonItemsTilesPointers ($45CA) */
+    mock_rom[ROM_BANK_OFFSET(0x20, DungeonFloorTilesPointers + 0x01)] = 0x50; /* high byte for floor */
+    mock_rom[ROM_BANK_OFFSET(0x20, DungeonWallsTilesPointers + 0x01)] = 0x58; /* high byte for walls */
+    mock_rom[ROM_BANK_OFFSET(0x20, DungeonItemsTilesPointers + 0x01)] = 0x64; /* high byte for items */
+
+    /* Bank $0D: DungeonsTiles */
+    mock_rom[ROM_BANK_OFFSET(0x0D, 0x5000)] = 0x31; /* floor tile */
+    mock_rom[ROM_BANK_OFFSET(0x0D, DungeonsTiles)] = 0x32; /* shared dungeon tile */
+    mock_rom[ROM_BANK_OFFSET(0x0D, 0x5800)] = 0x33; /* wall tile */
+
+    /* Bank $12: DungeonItemsTiles ($6000), InventoryIndoorItemsTiles ($7D00) */
+    mock_rom[ROM_BANK_OFFSET(0x12, 0x6400)] = 0x41; /* indoor object */
+    mock_rom[ROM_BANK_OFFSET(0x12, InventoryIndoorItemsTiles)] = 0x42; /* indoor inventory */
+
+    /* Bank $0C: OverworldLandscapeTiles ($5200), InventoryOverworldItemsTiles ($4C00), Items1Tiles + 0x3C0 */
+    mock_rom[ROM_BANK_OFFSET(0x0C, OverworldLandscapeTiles)] = 0x73;
+    mock_rom[ROM_BANK_OFFSET(0x0C, InventoryOverworldItemsTiles)] = 0x74;
+    mock_rom[ROM_BANK_OFFSET(0x0C, Items1Tiles + 0x3C0)] = 0x75;
+
+    
+    mock_rom[ROM_BANK_OFFSET(0x0C, 0x68C0)] = 0x2A;
+    mock_rom[ROM_BANK_OFFSET(0x0C, 0x68E0)] = 0x2C;
 
     /* Bank $2F: GBC adjusted bank for $0F */
     mock_rom[ROM_BANK_OFFSET(0x2F, TitleLogoTiles)] = 0x71;
@@ -748,9 +773,69 @@ static void test_load_thanks_for_playing_tiles_trampoline(void) {
     TEST_ASSERT(gb.rom_bank == 0x20, "Bank not switched to 0x20 for Thanks for playing tiles");
 }
 
+
+static void test_indoor_and_base_overworld_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+
+    /* 1. func_2D50 */
+    gb_write(&gb, hIsGBC, 0);
+    func_2D50(&gb);
+    TEST_ASSERT(gb_read(&gb, hAnimatedTilesFrameCount) == 0, "hAnimatedTilesFrameCount not cleared");
+    TEST_ASSERT(gb_read(&gb, hAnimatedTilesDataOffset) == 0, "hAnimatedTilesDataOffset not cleared");
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x6B, "func_2D50 InventoryEquipmentItemsTiles not copied");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x200) == 0x00, "func_2D50 LinkCharacterTiles offset check");
+
+    /* 2. PatchInventoryTiles */
+    /* Case A: Toadstool present */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, wHasToadstool, 1);
+    PatchInventoryTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x0E0) == 0x2A, "Toadstool tile not patched to 0x2A");
+
+    /* Case B: Golden leaf present and Overworld */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, wGoldenLeavesCount, SLIME_KEY);
+    PatchInventoryTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x4A0) == 0x2C, "Golden leaf tile not patched to 0x2C");
+
+    /* Case C: Trading sequence item */
+    gb_init(&gb);
+    gb_write(&gb, wTradeSequenceItem, TRADING_ITEM_RIBBON);
+    PatchInventoryTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, hReplaceTiles) == REPLACE_TILES_TRADING_ITEM, "hReplaceTiles not set to REPLACE_TILES_TRADING_ITEM");
+
+    /* 3. LoadBaseOverworldTiles */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    LoadBaseOverworldTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles2 + 0x200) == 0x73, "OverworldLandscapeTiles not copied to vTiles2+0x200");
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x400) == 0x74, "InventoryOverworldItemsTiles not copied to vTiles1+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x6B, "func_2D50 not called in LoadBaseOverworldTiles");
+
+    /* 4. LoadIndoorTiles (standard dungeon, Map 1) */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, 0x01);
+    LoadIndoorTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles2 + 0x100) == 0x31, "Floor tiles not copied to vTiles2+0x100");
+    TEST_ASSERT(gb_read(&gb, vTiles2 + 0x200) == 0x33, "Walls tiles not copied to vTiles2+0x200");
+    TEST_ASSERT(gb_read(&gb, wAnimatedScrollingTilesStorage) == 0x75, "Animated scrolling storage not copied");
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x700) == 0x41, "Indoor objects not copied to vTiles1+0x700");
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x400) == 0x42, "Indoor items not copied to vTiles1+0x400");
+}
+
 int run_gfx_tests(void) {
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
+    test_indoor_and_base_overworld_tiles();
     test_load_credits_koholint_disappearing_tiles();
     test_load_tileset_15();
     test_load_credits_stairs_tiles();

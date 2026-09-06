@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 32.92%
-* **Number of Verified Functions**: 395
-* **Number of Decompiled Functions**: 395
-* **Number Remaining**: ~805 functions
-* **Current Subsystem**: Bank 0 - Room Transition BG Region Updates & Transition Audio Handlers (`code/bank0.asm`, `00:2209`-`00:2319`, `00:27DD`-`00:27F2`)
-* **Current Task**: Bank 0 Room Transition BG Region Updates & Transition Audio Handlers completed
-* **Last Completed Task**: Decompiled and verified 7 Bank 0 room transition BG update and transition audio routines (`UpdateBGRegion`, `CopyObjectRowToBGMap`, `CopyObjectColumnToBGMap`, `DoUpdateBGRegion`, `SelectMusicTrackAfterTransition_trampoline`, `ResetMusicFadeTimer`, `func_27F2`) (`00:2209`-`00:2319`, `00:27DD`-`00:27F2`)
-* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Room loading & collision / physics helpers `00:28E8`+)
+* **Current Overall Progress**: 33.33%
+* **Number of Verified Functions**: 400
+* **Number of Decompiled Functions**: 400
+* **Number Remaining**: ~800 functions
+* **Current Subsystem**: Bank 0 - Indoor & Overworld Tile Loaders and Inventory Patching (`code/bank0.asm`, `00:2C28`-`00:2D78`, `00:1BD2`)
+* **Current Task**: Bank 0 Indoor & Overworld Tile Loaders and Inventory Patching completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 0 indoor/overworld tile loaders, jump table & inventory patching routines (`LoadIndoorTiles`, `PatchInventoryTiles`, `LoadBaseOverworldTiles`, `func_2D50`, `AnimateTilesGroup`) (`00:2C28`-`00:2D78`, `00:1BD2`)
+* **Next Task**: Decompile and verify final 5 remaining Bank 0 routines (`LoadRoomEntities`, `LoadEntityFromDefinition`, `ReplaceEvilEagleRiderVisibleTiles`, `ReplaceEvilEagleRiderHiddenTiles`, `ReloadColorDungeonNpcTiles`) to achieve 100% completion of Bank 0
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

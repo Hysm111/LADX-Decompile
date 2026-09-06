@@ -337,3 +337,4 @@
 #define wInventoryItems                 0xDB00
 #define wBGUpdateRegionOriginLow        0xC127
 #define wBGUpdateRegionTilesCount       0xC128
+#define wGoldenLeavesCount              0xDB15

@@ -1,3 +1,6 @@
+#include "home/animated_tiles.h"
+#include "constants/gameplay.h"
+#include "constants/maps.h"
 #include "home/gfx.h"
 #include "home/bank.h"
 #include "home/copy_data.h"
@@ -578,4 +581,125 @@ void LoadThanksForPlayingTiles_trampoline(GBState *gb, void (*load_thanks)(GBSta
     if (load_thanks) {
         load_thanks(gb);
     }
+}
+
+void func_2D50(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, hAnimatedTilesFrameCount, 0);
+    gb_write(gb, hAnimatedTilesDataOffset, 0);
+    AnimateTilesGroup(gb, NULL, NULL, NULL, NULL);
+
+    uint8_t bank = AdjustBankNumberForGBC(gb, BANK_InventoryEquipmentItemsTiles);
+    gb_write(gb, rSelectROMBank, bank);
+
+    CopyData(gb, vTiles1, InventoryEquipmentItemsTiles, TILE_SIZE * 0x80);
+    CopyData(gb, vTiles0 + 0x200, LinkCharacterTiles + 0x200, TILE_SIZE * 0x10);
+}
+
+void PatchInventoryTiles(GBState *gb) {
+    if (!gb) return;
+
+    /* Replace Magic Powder tile by Toadstool if needed */
+    if (gb_read(gb, wHasToadstool) != 0) {
+        ReplaceMagicPowderTilesByToadstool(gb);
+    }
+
+    /* Replace Slime Key tile by Golden Leaf if needed */
+    bool should_check_leaves = true;
+    if (gb_read(gb, wIsIndoor) != 0) {
+        uint8_t map_id = gb_read(gb, hMapId);
+        if (map_id == MAP_COLOR_DUNGEON || map_id < MAP_CAVE_B) {
+            should_check_leaves = false;
+        }
+    }
+    if (should_check_leaves) {
+        if (gb_read(gb, wGoldenLeavesCount) >= SLIME_KEY) {
+            ReplaceSlimeKeyTilesByGoldenLeaf(gb);
+        }
+    }
+
+    /* Update the trading sequence item tile if needed */
+    if (gb_read(gb, wTradeSequenceItem) >= TRADING_ITEM_RIBBON) {
+        gb_write(gb, hReplaceTiles, REPLACE_TILES_TRADING_ITEM);
+    }
+}
+
+void LoadBaseOverworldTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchAdjustedBank(gb, BANK_OverworldLandscapeTiles);
+    CopyData(gb, vTiles2 + 0x200, OverworldLandscapeTiles, TILE_SIZE * 0x60);
+
+    CopyData(gb, vTiles1 + 0x400, InventoryOverworldItemsTiles, TILE_SIZE * 0x40);
+
+    func_2D50(gb);
+    PatchInventoryTiles(gb);
+}
+
+void LoadIndoorTiles(GBState *gb) {
+    if (!gb) return;
+
+    /* 1. Floor tiles */
+    SwitchBank(gb, BANK_DungeonFloorTilesPointers);
+    uint8_t map_id = gb_read(gb, hMapId);
+    uint16_t floor_hl = 0;
+
+    if (map_id == MAP_COLOR_DUNGEON) {
+        gb_write(gb, rSelectROMBank, BANK_ColorDungeonTiles);
+        CopyData(gb, vTiles2, ColorDungeonTiles + 0x200, TILE_SIZE * 0x10);
+        floor_hl = ColorDungeonTiles;
+    } else {
+        uint8_t ptr_high = gb_read(gb, DungeonFloorTilesPointers + map_id);
+        floor_hl = (uint16_t)(ptr_high << 8);
+        SwitchAdjustedBank(gb, BANK_DungeonsTiles);
+    }
+
+    CopyData(gb, vTiles2 + 0x100, floor_hl, TILE_SIZE * 0x10);
+
+    /* 2. Dungeon shared objects (doors, stairs, torches, etc.) */
+    SwitchAdjustedBank(gb, BANK_DungeonsTiles);
+    CopyData(gb, vTiles2 + 0x200, DungeonsTiles, TILE_SIZE * 0x60);
+
+    /* 3. Indoor walls */
+    gb_write(gb, rSelectROMBank, BANK_DungeonWallsTilesPointers);
+    uint16_t walls_table = (map_id == MAP_COLOR_DUNGEON) ? ColorDungeonWallsTilesPointers : DungeonWallsTilesPointers;
+    uint8_t walls_high = gb_read(gb, walls_table + map_id);
+    uint16_t walls_hl = (uint16_t)(walls_high << 8);
+    ReloadSavedBank(gb);
+    CopyData(gb, vTiles2 + 0x200, walls_hl, TILE_SIZE * 0x20);
+
+    uint8_t items1_bank = AdjustBankNumberForGBC(gb, BANK_Items1Tiles);
+    gb_write(gb, rSelectROMBank, items1_bank);
+    CopyData(gb, wAnimatedScrollingTilesStorage, Items1Tiles + 0x3C0, TILE_SIZE * 4);
+
+    func_2D50(gb);
+
+    /* 4. Indoor objects */
+    gb_write(gb, rSelectROMBank, BANK_DungeonItemsTilesPointers);
+    uint8_t items_high = gb_read(gb, DungeonItemsTilesPointers + map_id);
+    uint16_t items_hl = (uint16_t)(items_high << 8);
+
+    SwitchAdjustedBank(gb, BANK_DungeonItemsTiles);
+
+    if (map_id == MAP_COLOR_DUNGEON) {
+        items_hl = ColorDungeonTiles + 0x100;
+        gb_write(gb, rSelectROMBank, BANK_ColorDungeonTiles);
+    }
+
+    CopyData(gb, vTiles1 + 0x700, items_hl, TILE_SIZE * 0x10);
+
+    /* 5. Indoor items (map, compass, keys, etc.) */
+    gb_write(gb, rSelectROMBank, gb_read(gb, wCurrentBank));
+    uint16_t inv_hl = InventoryIndoorItemsTiles;
+
+    if (map_id != MAP_COLOR_DUNGEON && map_id >= MAP_CAVE_B) {
+        SwitchAdjustedBank(gb, BANK_InventoryOverworldItemsTiles);
+        inv_hl = InventoryOverworldItemsTiles;
+    }
+
+    CopyData(gb, vTiles1 + 0x400, inv_hl, TILE_SIZE * 0x30);
+
+    /* 6. Patch inventory tiles */
+    PatchInventoryTiles(gb);
 }

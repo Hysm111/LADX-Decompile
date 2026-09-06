@@ -352,6 +352,49 @@ void LoadCreditsMarinPortraitTiles_trampoline(GBState *gb, void (*load_marin_por
  */
 void LoadThanksForPlayingTiles_trampoline(GBState *gb, void (*load_thanks)(GBState *));
 
+
+/**
+ * func_2D50 (00:2D50)
+ * Clears hAnimatedTilesFrameCount and hAnimatedTilesDataOffset,
+ * invokes AnimateTiles, copies InventoryEquipmentItemsTiles
+ * to vTiles1 ($80 tiles), and LinkCharacterTiles + $200 to vTiles0 + $200 (16 tiles).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_2D50(GBState *gb);
+
+/**
+ * PatchInventoryTiles (00:2CFE)
+ * Shared subroutine for patching inventory tiles in VRAM based on progression flags:
+ * - Toadstool replaces Magic Powder if wHasToadstool != 0
+ * - Golden Leaf replaces Slime Key if indoor conditions match and wGoldenLeavesCount >= SLIME_KEY
+ * - Sets hReplaceTiles = REPLACE_TILES_TRADING_ITEM if wTradeSequenceItem >= TRADING_ITEM_RIBBON
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PatchInventoryTiles(GBState *gb);
+
+/**
+ * LoadBaseOverworldTiles (00:2D2D)
+ * Copies default Overworld tiles to VRAM:
+ * - OverworldLandscapeTiles (bank $0C) to vTiles2 + $200 ($60 tiles)
+ * - InventoryOverworldItemsTiles (bank $0C) to vTiles1 + $400 ($40 tiles)
+ * Calls func_2D50 and PatchInventoryTiles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadBaseOverworldTiles(GBState *gb);
+
+/**
+ * LoadIndoorTiles (00:2C28)
+ * Copies tiles for an indoor room (floor, objects, walls, items, inventory) to VRAM.
+ * Reads floor, wall, and item pointers from tables in Bank $20,
+ * handles Color Dungeon special cases, calls func_2D50, and calls PatchInventoryTiles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadIndoorTiles(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

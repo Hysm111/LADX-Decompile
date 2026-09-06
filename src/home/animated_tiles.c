@@ -488,6 +488,71 @@ void UpdateSwitchBlockTiles(GBState *gb, uint8_t stage) {
     }
 }
 
+void AnimateTilesGroup(GBState *gb,
+                       void (*load_counter_tiles)(GBState *),
+                       void (*func_020_54f5)(GBState *),
+                       void (*configure_copy)(GBState *, uint8_t, uint8_t *),
+                       void (*func_038_7830)(GBState *)) {
+    uint8_t group = gb_read(gb, hAnimatedTilesGroup);
+    switch (group) {
+        case ANIMATED_TILES_COUNTER:
+            AnimateCounterTilesGroup(gb, load_counter_tiles, func_020_54f5);
+            break;
+        case ANIMATED_TILES_TIDE:
+            AnimateTideTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_VILLAGE:
+            AnimateVillageTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_DUNGEON_1:
+            AnimateDungeon1TilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_UNDERGROUND:
+            AnimateUndergroundTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_LAVA:
+            AnimateLavaTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_DUNGEON_2:
+            AnimateDungeon2TilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_WARP_TILE:
+            AnimateWarpTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_CURRENTS:
+            AnimateWaterCurrentsTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_WATERFALL:
+            AnimateWaterfallTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_WATERFALL_SLOW:
+            AnimateSlowWaterfallTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_WATER_DUNGEON:
+            AnimateWaterDungeonTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_LIGHT_BEAM:
+            AnimateLightBeamTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_CRYSTAL_BLOCK:
+            AnimateCrystalBlockTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_BUBBLES:
+            AnimateBubblesTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_WEATHER_VANE:
+            AnimateWeatherVaneTilesGroup(gb, func_020_54f5, configure_copy);
+            break;
+        case ANIMATED_TILES_PHOTO:
+            AnimatePhotoTilesGroup(gb, func_038_7830);
+            break;
+        default:
+            SkipTilesGroupAnimation(gb, func_020_54f5);
+            break;
+    }
+
+}
+
 void AnimateTiles(GBState *gb,
                   void (*load_counter_tiles)(GBState *),
                   void (*func_020_54f5)(GBState *),
@@ -587,63 +652,6 @@ replace_tiles_label:
     uint8_t frame_count = (uint8_t)(gb_read(gb, hAnimatedTilesFrameCount) + 1);
     gb_write(gb, hAnimatedTilesFrameCount, frame_count);
 
-    uint8_t group = gb_read(gb, hAnimatedTilesGroup);
-    switch (group) {
-        case ANIMATED_TILES_COUNTER:
-            AnimateCounterTilesGroup(gb, load_counter_tiles, func_020_54f5);
-            break;
-        case ANIMATED_TILES_TIDE:
-            AnimateTideTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_VILLAGE:
-            AnimateVillageTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_DUNGEON_1:
-            AnimateDungeon1TilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_UNDERGROUND:
-            AnimateUndergroundTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_LAVA:
-            AnimateLavaTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_DUNGEON_2:
-            AnimateDungeon2TilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_WARP_TILE:
-            AnimateWarpTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_CURRENTS:
-            AnimateWaterCurrentsTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_WATERFALL:
-            AnimateWaterfallTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_WATERFALL_SLOW:
-            AnimateSlowWaterfallTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_WATER_DUNGEON:
-            AnimateWaterDungeonTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_LIGHT_BEAM:
-            AnimateLightBeamTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_CRYSTAL_BLOCK:
-            AnimateCrystalBlockTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_BUBBLES:
-            AnimateBubblesTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_WEATHER_VANE:
-            AnimateWeatherVaneTilesGroup(gb, func_020_54f5, configure_copy);
-            break;
-        case ANIMATED_TILES_PHOTO:
-            AnimatePhotoTilesGroup(gb, func_038_7830);
-            break;
-        default:
-            SkipTilesGroupAnimation(gb, func_020_54f5);
-            break;
-    }
-
+    AnimateTilesGroup(gb, load_counter_tiles, func_020_54f5, configure_copy, func_038_7830);
     DrawLinkSpriteAndReturn(gb);
 }
