@@ -24,19 +24,24 @@ static void setup_mock_data(void) {
     memset(mock_rom, 0, sizeof(mock_rom));
 
     /* Populate test markers in banks */
-    mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x2800)] = 0x11;
+    mock_rom[ROM_BANK_OFFSET(0x01, IntroRainTiles)] = 0x51;
+
+    /* Bank $13: EndingTiles ($4000), EaglesTowerTop1Tiles ($6800), EaglesTowerTop2Tiles ($7C00) */
+    mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x2800)] = 0x11; /* Same as EaglesTowerTop1Tiles */
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x3000)] = 0x22;
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles)] = 0x33;
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x800)] = 0x55;
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x1800)] = 0x66;
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x2000)] = 0x77;
     mock_rom[ROM_BANK_OFFSET(0x13, EndingTiles + 0x3800)] = 0x18;
+    mock_rom[ROM_BANK_OFFSET(0x13, EaglesTowerTop2Tiles)] = 0xA2;
 
     mock_rom[ROM_BANK_OFFSET(0x0C, Overworld1Tiles + 0x8E0)] = 0x88;
     mock_rom[ROM_BANK_OFFSET(0x0C, Overworld1Tiles + 0x100)] = 0x99;
     mock_rom[ROM_BANK_OFFSET(0x0C, LinkCharacterTiles)] = 0x5A;
     mock_rom[ROM_BANK_OFFSET(0x0C, InventoryEquipmentItemsTiles)] = 0x6B;
     mock_rom[ROM_BANK_OFFSET(0x0C, Items1Tiles + 0x3A0)] = 0x7C;
+    mock_rom[ROM_BANK_OFFSET(0x0C, WorldMapTiles)] = 0x91;
 
     mock_rom[ROM_BANK_OFFSET(0x12, Npc4Tiles + 0x100)] = 0xAA;
     mock_rom[ROM_BANK_OFFSET(0x12, EndingTiles + 0x3600)] = 0x44; /* Bank 12 active from LoadTileset15 */
@@ -46,15 +51,31 @@ static void setup_mock_data(void) {
     mock_rom[ROM_BANK_OFFSET(0x0F, Overworld2Tiles + 0x600)] = 0xCC;
     mock_rom[ROM_BANK_OFFSET(0x0F, MenuTiles)] = 0x8D;
     mock_rom[ROM_BANK_OFFSET(0x0F, FontTiles)] = 0x9E;
+    mock_rom[ROM_BANK_OFFSET(0x0F, TitleLogoTiles)] = 0x71;
+    mock_rom[ROM_BANK_OFFSET(0x0F, SaveMenuTiles)] = 0x72;
 
+    /* Bank $2F: GBC adjusted bank for $0F */
+    mock_rom[ROM_BANK_OFFSET(0x2F, TitleLogoTiles)] = 0x71;
+
+    mock_rom[ROM_BANK_OFFSET(0x10, Intro1Tiles)] = 0x52;
+    mock_rom[ROM_BANK_OFFSET(0x10, Intro3Tiles)] = 0x53;
+    mock_rom[ROM_BANK_OFFSET(0x10, ChristineTiles)] = 0x61;
+    mock_rom[ROM_BANK_OFFSET(0x10, MarinBeachTiles)] = 0x62;
+    mock_rom[ROM_BANK_OFFSET(0x10, FontLargeTiles)] = 0x63;
     mock_rom[ROM_BANK_OFFSET(0x10, FontLargeTiles + 0x100)] = 0x3E;
     mock_rom[ROM_BANK_OFFSET(0x10, FontLargeTiles + 0x200)] = 0x4F;
+    mock_rom[ROM_BANK_OFFSET(0x10, ReliefTiles)] = 0x64;
+    mock_rom[ROM_BANK_OFFSET(0x10, PaintingTiles)] = 0x65;
 
     mock_rom[ROM_BANK_OFFSET(0x35, PhotoAlbumTiles)] = 0xDD;
     mock_rom[ROM_BANK_OFFSET(0x35, PhotoAlbumTiles + 0x800)] = 0xDE;
     mock_rom[ROM_BANK_OFFSET(0x35, EndingCGBAltTiles)] = 0xDF;
 
     mock_rom[ROM_BANK_OFFSET(0x38, CreditsRollTiles)] = 0xEE;
+    mock_rom[ROM_BANK_OFFSET(0x38, TitleDXTilesCGB)] = 0x81;
+    mock_rom[ROM_BANK_OFFSET(0x38, TitleDXTilesDMG)] = 0x82;
+    mock_rom[ROM_BANK_OFFSET(0x38, TitleDXOAMTiles)] = 0x83;
+    mock_rom[ROM_BANK_OFFSET(0x38, TitleDXOAMTiles + 0x100)] = 0x84;
 }
 
 static void test_load_credits_koholint_disappearing_tiles(void) {
@@ -230,6 +251,105 @@ static void test_load_base_and_menu_tiles(void) {
     TEST_ASSERT(gb_read(&gb, vTiles2) == 0x9E, "LoadMenuTiles FontTiles mismatch");
 }
 
+static void test_load_intro_sequence_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    LoadIntroSequenceTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x700) == 0x51, "IntroRainTiles not copied to vTiles0+0x700");
+    TEST_ASSERT(gb_read(&gb, vTiles0) == 0x53, "Intro3Tiles not copied to vTiles0");
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x52, "Intro1Tiles not copied to vTiles1");
+}
+
+static void test_load_title_screen_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+
+    /* DMG mode */
+    gb_write(&gb, hIsGBC, 0);
+    LoadTitleScreenTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x71, "TitleLogoTiles not copied to vTiles1");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0x82, "TitleDXTilesDMG not copied to vTiles0+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x200) == 0x84, "TitleDXOAMTiles+0x100 not copied to vTiles0+0x200");
+
+    /* CGB mode */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    LoadTitleScreenTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x71, "TitleLogoTiles not copied to vTiles1 on CGB");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0x81, "TitleDXTilesCGB not copied to vTiles0+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x200) == 0x83, "TitleDXOAMTiles not copied to vTiles0+0x200");
+}
+
+static void test_load_world_map_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    LoadWorldMapTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x700) == 0x91, "WorldMapTiles not copied to vTiles1+0x700");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x200) == 0x99, "Overworld1Tiles+0x100 not copied to vTiles0+0x200");
+}
+
+static void test_load_static_pictures_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    /* Relief */
+    LoadFaceShrineReliefTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x64, "ReliefTiles not copied to vTiles2");
+
+    /* Painting */
+    gb_write(&gb, vTiles2, 0);
+    LoadSchulePaintingTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x65, "PaintingTiles not copied to vTiles2");
+
+    /* Christine */
+    gb_write(&gb, vTiles2, 0);
+    LoadChristinePortraitTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x61, "ChristineTiles not copied to vTiles2");
+}
+
+static void test_load_eagles_tower_top_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    LoadEaglesTowerTopTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x400) == 0xA2, "EaglesTowerTop2Tiles not copied to vTiles1+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x11, "EaglesTowerTop1Tiles not copied to vTiles2");
+}
+
+static void test_load_marin_beach_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    LoadMarinBeachTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0x63, "FontLargeTiles not copied to vTiles0+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x62, "MarinBeachTiles not copied to vTiles2");
+}
+
+static void test_load_save_menu_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+
+    LoadSaveMenuTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles1) == 0x72, "SaveMenuTiles not copied to vTiles1");
+    TEST_ASSERT(gb.rom_bank == BANK_SaveMenuTiles, "Bank not set to BANK_SaveMenuTiles");
+}
+
 int run_gfx_tests(void) {
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
@@ -240,6 +360,13 @@ int run_gfx_tests(void) {
     test_load_credits_link_on_sea_dmg_and_cgb();
     test_ending_scene_tiles_and_credits_roll();
     test_load_base_and_menu_tiles();
+    test_load_intro_sequence_tiles();
+    test_load_title_screen_tiles();
+    test_load_world_map_tiles();
+    test_load_static_pictures_tiles();
+    test_load_eagles_tower_top_tiles();
+    test_load_marin_beach_tiles();
+    test_load_save_menu_tiles();
 
     if (gfx_failures == 0) {
         printf("  [PASS] All gfx.asm / credits tile loaders verified successfully!\n\n");

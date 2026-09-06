@@ -178,3 +178,81 @@ void LoadMenuTiles(GBState *gb) {
     SwitchAdjustedBank(gb, BANK_FontTiles);
     CopyData(gb, vTiles2, FontTiles, 0x800);
 }
+
+void LoadIntroSequenceTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchBank(gb, BANK_IntroRainTiles);
+    CopyData(gb, vTiles0 + 0x700, IntroRainTiles, TILE_SIZE * 8);
+
+    SwitchAdjustedBank(gb, BANK_IntroTiles);
+    CopyData(gb, vTiles0, Intro3Tiles, TILE_SIZE * 0x60);
+    CopyData(gb, vTiles1, Intro1Tiles, TILE_SIZE * 0x100);
+}
+
+void LoadTitleScreenTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchAdjustedBank(gb, BANK_TitleLogoTiles);
+    CopyData(gb, vTiles1, TitleLogoTiles, TILE_SIZE * 0x70);
+
+    SwitchBank(gb, BANK_TitleDXTiles);
+
+    uint16_t dx_tiles = (gb_read(gb, hIsGBC) != 0) ? TitleDXTilesCGB : TitleDXTilesDMG;
+    CopyData(gb, vTiles0 + 0x400, dx_tiles, TILE_SIZE * 0x40);
+
+    uint16_t dx_oam_tiles = (gb_read(gb, hIsGBC) != 0) ? TitleDXOAMTiles : (TitleDXOAMTiles + 0x100);
+    CopyData(gb, vTiles0 + 0x200, dx_oam_tiles, TILE_SIZE * 0x10);
+}
+
+void LoadWorldMapTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchAdjustedBank(gb, BANK_WorldMapTiles);
+    CopyData(gb, vTiles1 + 0x700, WorldMapTiles, TILE_SIZE * 0x80);
+    CopyData(gb, vTiles0 + 0x200, Overworld1Tiles + 0x100, TILE_SIZE * 0x10);
+}
+
+void LoadStaticPictureTiles(GBState *gb, uint16_t src_hl) {
+    if (!gb) return;
+
+    SwitchAdjustedBank(gb, BANK_StaticPicturesTiles);
+    CopyData(gb, vTiles2, src_hl, TILE_SIZE * 0x80);
+}
+
+void LoadFaceShrineReliefTiles(GBState *gb) {
+    LoadStaticPictureTiles(gb, ReliefTiles);
+}
+
+void LoadSchulePaintingTiles(GBState *gb) {
+    LoadStaticPictureTiles(gb, PaintingTiles);
+}
+
+void LoadChristinePortraitTiles(GBState *gb) {
+    LoadStaticPictureTiles(gb, ChristineTiles);
+}
+
+void LoadEaglesTowerTopTiles(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t bank = AdjustBankNumberForGBC(gb, BANK_EaglesTowerTop1Tiles);
+    gb_write(gb, rSelectROMBank, bank);
+
+    CopyData(gb, vTiles1 + 0x400, EaglesTowerTop2Tiles, TILE_SIZE * 0x40);
+    CopyData(gb, vTiles2, EaglesTowerTop1Tiles, TILE_SIZE * 0x40);
+}
+
+void LoadMarinBeachTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchAdjustedBank(gb, BANK_FontLargeTiles);
+    CopyData(gb, vTiles0 + 0x400, FontLargeTiles, TILE_SIZE * 0x40);
+    CopyData(gb, vTiles2, MarinBeachTiles, TILE_SIZE * 0x60);
+}
+
+void LoadSaveMenuTiles(GBState *gb) {
+    if (!gb) return;
+
+    SwitchBank(gb, BANK_SaveMenuTiles);
+    CopyData(gb, vTiles1, SaveMenuTiles, TILE_SIZE * 0x50);
+}

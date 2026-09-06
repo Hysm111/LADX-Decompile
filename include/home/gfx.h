@@ -144,6 +144,100 @@ void LoadBaseTiles(GBState *gb);
  */
 void LoadMenuTiles(GBState *gb);
 
+/**
+ * LoadIntroSequenceTiles (00:2D79)
+ * Loads opening sequence tiles:
+ * - Rain tiles from bank $01 to vTiles0 + $700 (8 tiles)
+ * - Intro3 tiles from bank $10 to vTiles0 ($60 tiles)
+ * - Intro1 tiles from bank $10 to vTiles1 ($100 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadIntroSequenceTiles(GBState *gb);
+
+/**
+ * LoadTitleScreenTiles (00:2DA7)
+ * Loads title screen tiles:
+ * - Title logo from bank $0F to vTiles1 ($70 tiles)
+ * - "DX" text tiles from bank $38 (DMG: TitleDXTilesDMG, CGB: TitleDXTilesCGB) to vTiles0 + $400 ($40 tiles)
+ * - "DX" text OAM tiles from bank $38 to vTiles0 + $200 (16 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadTitleScreenTiles(GBState *gb);
+
+/**
+ * LoadWorldMapTiles (00:2DE9)
+ * Loads world map overview screen tiles:
+ * - WorldMapTiles from bank $0C to vTiles1 + $700 ($80 tiles)
+ * - Overworld1Tiles + $100 to vTiles0 + $200 (16 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadWorldMapTiles(GBState *gb);
+
+/**
+ * LoadStaticPictureTiles (00:2E13)
+ * Copies 0x80 tiles from static picture address in bank $10 to vTiles2.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param src_hl Source ROM address in bank $10
+ */
+void LoadStaticPictureTiles(GBState *gb, uint16_t src_hl);
+
+/**
+ * LoadFaceShrineReliefTiles (00:2E06)
+ * Loads Face Shrine relief picture to vTiles2.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadFaceShrineReliefTiles(GBState *gb);
+
+/**
+ * LoadSchulePaintingTiles (00:2E0B)
+ * Loads Schule painting picture to vTiles2.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadSchulePaintingTiles(GBState *gb);
+
+/**
+ * LoadChristinePortraitTiles (00:2E10)
+ * Loads Christine portrait picture to vTiles2.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadChristinePortraitTiles(GBState *gb);
+
+/**
+ * LoadEaglesTowerTopTiles (00:2E21)
+ * Loads Eagle's Tower collapse/boss platform top tiles:
+ * - EaglesTowerTop2Tiles (bank $13) to vTiles1 + $400 ($40 tiles)
+ * - EaglesTowerTop1Tiles (bank $13) to vTiles2 ($40 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadEaglesTowerTopTiles(GBState *gb);
+
+/**
+ * LoadMarinBeachTiles (00:2E41)
+ * Loads Marin at the beach sequence tiles:
+ * - Large font tiles from bank $10 to vTiles0 + $400 ($40 tiles)
+ * - Marin beach artwork from bank $10 to vTiles2 ($60 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadMarinBeachTiles(GBState *gb);
+
+/**
+ * LoadSaveMenuTiles (00:2E5E)
+ * Loads save and game over menu tiles:
+ * - SaveMenuTiles from bank $0F to vTiles1 ($50 tiles)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadSaveMenuTiles(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 11.83%
-* **Number of Verified Functions**: 142
-* **Number of Decompiled Functions**: 142
-* **Number Remaining**: ~1058+ functions
-* **Current Subsystem**: Bank 0 - Room Trampolines, Base/Menu Tile Loaders & Credits Sequences
-* **Current Task**: Completed and verified LoadCreditsRollTiles, LoadCreditsLinkFaceCloseUpTiles, LoadCreditsLinkSeatedOnLogTiles, func_2B92, GetRoomStatusAddressForMapPosition_trampoline, LoadBaseTiles, LoadMenuTiles
-* **Last Completed Task**: Decompiled and verified Bank 0 ending scenes, credits roll, room status address trampoline, and base/menu tile loading routines (`00:2B26` - `00:2C27`)
-* **Next Task**: Continue Bank 0 graphic loaders (`LoadIntroSequenceTiles`, `LoadTitleScreenTiles`, `LoadWorldMapTiles`, `LoadStaticPictureTiles`, `LoadEaglesTowerTopTiles`, `LoadMarinBeachTiles`, `LoadSaveMenuTiles`)
-* **Last Update Timestamp**: 2026-09-06T16:25:00+03:00
+* **Current Overall Progress**: 12.67%
+* **Number of Verified Functions**: 152
+* **Number of Decompiled Functions**: 152
+* **Number Remaining**: ~1048+ functions
+* **Current Subsystem**: Bank 0 - Graphic & Scene Loaders (`00:2D79` - `00:2E6E`)
+* **Current Task**: Completed and verified LoadIntroSequenceTiles, LoadTitleScreenTiles, LoadWorldMapTiles, LoadStaticPictureTiles, LoadFaceShrineReliefTiles, LoadSchulePaintingTiles, LoadChristinePortraitTiles, LoadEaglesTowerTopTiles, LoadMarinBeachTiles, LoadSaveMenuTiles
+* **Last Completed Task**: Decompiled and verified Bank 0 scene and artwork tile loaders (`00:2D79` - `00:2E6E`)
+* **Next Task**: Continue Bank 0 room-specific and animated tile loading routines (`LoadRoomSpecificTiles`, `AnimateTiles`)
+* **Last Update Timestamp**: 2026-09-06T16:35:00+03:00
 
 ---
 
@@ -90,29 +90,31 @@
 | `GetRoomStatusAddressForMapPosition_trampoline` | VERIFIED | PASS | PASS | Farcalls GetRoomStatusAddressForMapPosition in bank $14, reloads saved bank (`00:2BC1`) |
 | `LoadBaseTiles` | VERIFIED | PASS | PASS | Loads Link sprites and inventory equipment tiles, restores bank 1 (`00:2BCF`) |
 | `LoadMenuTiles` | VERIFIED | PASS | PASS | Calls LoadBaseTiles, then loads menu UI tiles and font tiles (`00:2C03`) |
+| `LoadIntroSequenceTiles` | VERIFIED | PASS | PASS | Loads opening intro sequence rain and background graphics (`00:2D79`) |
+| `LoadTitleScreenTiles` | VERIFIED | PASS | PASS | Loads title logo, DX logo, and DX OAM tiles for DMG/CGB (`00:2DA7`) |
+| `LoadWorldMapTiles` | VERIFIED | PASS | PASS | Loads world map tiles to vTiles1 and overworld cursor tiles (`00:2DE9`) |
+| `LoadStaticPictureTiles` | VERIFIED | PASS | PASS | Generic static picture loader (0x80 tiles to vTiles2) (`00:2E13`) |
+| `LoadFaceShrineReliefTiles` | VERIFIED | PASS | PASS | Loads Face Shrine relief artwork to vTiles2 (`00:2E06`) |
+| `LoadSchulePaintingTiles` | VERIFIED | PASS | PASS | Loads Schule painting artwork to vTiles2 (`00:2E0B`) |
+| `LoadChristinePortraitTiles` | VERIFIED | PASS | PASS | Loads Christine goat portrait artwork to vTiles2 (`00:2E10`) |
+| `LoadEaglesTowerTopTiles` | VERIFIED | PASS | PASS | Loads Eagle's Tower collapse/boss rooftop tiles to vTiles1/vTiles2 (`00:2E21`) |
+| `LoadMarinBeachTiles` | VERIFIED | PASS | PASS | Loads Marin beach cutscene graphics and large font (`00:2E41`) |
+| `LoadSaveMenuTiles` | VERIFIED | PASS | PASS | Loads save/game over dialog box tiles to vTiles1 (`00:2E5E`) |
 
 ---
 
 ## Technical Notes & Implementation Details
 
-1. **Static Object Physics Table (`00:2A12`)**:
-   - Switches ROM bank to `BANK(OverworldObjectPhysicFlags)` (`$08`).
-   - If `hMapId == MAP_COLOR_DUNGEON` (`$FF`), indexes into `Indoors1ObjectPhysicFlags` (`08:4BD4`).
-   - Otherwise, indexes into `OverworldObjectPhysicFlags` (`08:4AD4`).
-   - `GetObjectPhysicsFlags_trampoline` preserves and restores the calling bank via `ReloadSavedBank`.
-   - `GetObjectPhysicsFlagsAndRestoreBank3` specifically restores ROM bank `0x03`.
-
-2. **Credits & Ending Graphic Loaders (`00:2A37`-`00:2BBF`)**:
-   - `LoadCreditsRollTiles` coordinates audio stepping via `PlayAudioStep` between copying large font tiles, Npc3 tiles, and credits roll text tiles.
-   - `LoadCreditsLinkFaceCloseUpTiles` and `LoadCreditsLinkSeatedOnLogTiles` handle DMG vs CGB tile asset selection:
-     - Close-up: uses `EndingTiles + $3800` (bank `$13`) on DMG, `EndingCGBAltTiles` (bank `$35`) on CGB.
-     - Seated on log: uses `EndingTiles + $800` (bank `$13`) on DMG, `PhotoAlbumTiles + $800` (bank `$35`) on CGB.
-     - Common ending tile layers are copied to `vTiles1` (`EndingTiles + $3000`) and `vTiles2` (`EndingTiles + $2800`).
-
-3. **Base and Menu Tile Loaders (`00:2BCF`-`00:2C25`)**:
-   - `LoadBaseTiles` loads core gameplay tiles:
-     - `LinkCharacterTiles` (`0x4000`, bank `$0C`) to `vTiles0` (`0x400` bytes)
-     - `InventoryEquipmentItemsTiles` (`0x4800`, bank `$0C`) to `vTiles1` (`0x1000` bytes)
-     - `Items1Tiles + $3A0` (`0x47A0`, bank `$0C`) to `vTiles1 + $600` (`0x20` bytes)
-     - Explicitly resets bank to `$01` via `SwitchBank`.
-   - `LoadMenuTiles` chains from `LoadBaseTiles`, loading `MenuTiles` (`0x4000`, bank `$0F`, `0x400` bytes) to `vTiles1` and `FontTiles` (`0x5000`, bank `$0F`, `0x800` bytes) to `vTiles2`.
+1. **Scene & Artwork Graphic Loaders (`00:2D79`-`00:2E6E`)**:
+   - `LoadIntroSequenceTiles` switches between bank `$01` for rain tiles (`vTiles0 + $700`) and bank `$10` for intro graphics (`vTiles0` and `vTiles1`).
+   - `LoadTitleScreenTiles` dynamically accommodates DMG vs CGB:
+     - Title logo loaded from bank `$0F` (adjusted for GBC to bank `$2F`).
+     - "DX" text tiles loaded from bank `$38` (`TitleDXTilesDMG` vs `TitleDXTilesCGB`).
+     - "DX" progressive fade OAM tiles loaded from bank `$38` (`TitleDXOAMTiles + $100` vs `TitleDXOAMTiles`).
+   - `LoadStaticPictureTiles` serves as the shared dispatcher for full-screen story artwork:
+     - `LoadFaceShrineReliefTiles` -> `ReliefTiles` (`$7000`)
+     - `LoadSchulePaintingTiles` -> `PaintingTiles` (`$7800`)
+     - `LoadChristinePortraitTiles` -> `ChristineTiles` (`$5800`)
+   - `LoadEaglesTowerTopTiles` adjusts bank `$13` for GBC and loads collapse graphics into `vTiles1 + $400` and `vTiles2`.
+   - `LoadMarinBeachTiles` loads large font glyphs into `vTiles0 + $400` and beach artwork into `vTiles2`.
+   - `LoadSaveMenuTiles` uses direct bank switch (`SwitchBank`) to bank `$0F` for save screen tiles.
