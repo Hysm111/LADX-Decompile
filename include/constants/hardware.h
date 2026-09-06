@@ -104,4 +104,15 @@
 #define IEF_SERIAL       0x08
 #define IEF_HILO         0x10
 
+/* OAM attribute flags */
+#define OAMF_PRI         0x80
+#define OAMF_YFLIP       0x40
+#define OAMF_XFLIP       0x20
+#define OAMF_PAL0        0x00
+#define OAMF_PAL1        0x10
+#define OAMF_BANK0       0x00
+#define OAMF_BANK1       0x08
+#define OAMF_PALMASK     0x07
+#define OAM_GBC_PAL_4    0x04
+
 #endif /* LADX_CONSTANTS_HARDWARE_H */

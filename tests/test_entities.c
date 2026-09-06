@@ -574,6 +574,196 @@ static void test_animate_entities_pipeline(void) {
     assert(test_func4303_called == 0); /* returned early */
 }
 
+
+static int test_render_cb_5d_called = 0;
+static int test_render_cb_95_called = 0;
+static uint16_t test_render_cb_entity = 0;
+
+static void mock_func_015_795D(GBState *gb, uint16_t entity_index) {
+    test_render_cb_5d_called++;
+    test_render_cb_entity = entity_index;
+    assert(gb->rom_bank == 0x15);
+}
+
+static void mock_func_015_7995(GBState *gb, uint16_t entity_index) {
+    test_render_cb_95_called++;
+    test_render_cb_entity = entity_index;
+    assert(gb->rom_bank == 0x15);
+}
+
+static void test_entity_rendering_routines(void) {
+    printf("[*] Running Entity rendering and sprite routines (00:3BC0-00:3D57, 00:3DA0)...\n");
+
+    GBState gb;
+
+    /* 1. SkipDisabledEntityDuringRoomTransition */
+    gb_init(&gb);
+    gb_write(&gb, wRoomTransitionState, 0);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == false);
+
+    gb_write(&gb, wRoomTransitionState, 1);
+    gb_write(&gb, hActiveEntityPosX, 0x50);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x40);
+    gb_write(&gb, wEntitiesPosXSignTable + 1, 0);
+    gb_write(&gb, wEntitiesPosYSignTable + 1, 0);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == false);
+
+    /* Test X out of bounds: posX - 1 >= 0xC0 */
+    gb_write(&gb, hActiveEntityPosX, 0xC1);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == true);
+    gb_write(&gb, hActiveEntityPosX, 0x50);
+
+    /* Test Y out of bounds: posY - 1 >= 0x88 */
+    gb_write(&gb, hActiveEntityVisualPosY, 0x89);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == true);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x40);
+
+    /* Test X sign */
+    gb_write(&gb, wEntitiesPosXSignTable + 1, 1);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == true);
+    gb_write(&gb, wEntitiesPosXSignTable + 1, 0);
+
+    /* Test Y sign */
+    gb_write(&gb, wEntitiesPosYSignTable + 1, 1);
+    assert(SkipDisabledEntityDuringRoomTransition(&gb, 1) == true);
+    gb_write(&gb, wEntitiesPosYSignTable + 1, 0);
+
+    /* 2. label_3C71 and label_3CD9 */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x15; /* in asm, caller sets bank $15 before label_3C71 */
+    test_render_cb_95_called = 0;
+    label_3C71(&gb, 3, mock_func_015_7995);
+    assert(test_render_cb_95_called == 1);
+    assert(test_render_cb_entity == 3);
+    assert(gb.rom_bank == 0x07);
+
+    test_render_cb_95_called = 0;
+    label_3CD9(&gb, 4, mock_func_015_7995);
+    assert(test_render_cb_95_called == 1);
+    assert(test_render_cb_entity == 4);
+    assert(gb.rom_bank == 0x07);
+
+    /* 3. func_015_7964_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x06);
+    gb.rom_bank = 0x06;
+    mock_cb_called = false;
+    func_015_7964_trampoline(&gb, mock_cb_15);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x06);
+
+    /* 4. RenderActiveEntitySpritesPair */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x03);
+    gb.rom_bank = 0x03;
+    gb_write(&gb, wActiveEntityIndex, 2);
+    gb_write(&gb, wOAMNextAvailableSlot, 8);
+    gb_write(&gb, hActiveEntitySpriteVariant, 0);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x30);
+    gb_write(&gb, hActiveEntityPosX, 0x40);
+    gb_write(&gb, wScreenShakeHorizontal, 0);
+    gb_write(&gb, hActiveEntityTilesOffset, 0x10);
+    gb_write(&gb, hActiveEntityFlipAttribute, 0);
+
+    /* display list for variant 0: tile0=0x02, attr0=0x01, tile1=0x04, attr1=0x01 */
+    static const uint8_t pair_display_list[4] = { 0x02, 0x01, 0x04, 0x01 };
+    EntityRenderCallbacks render_cbs = {
+        .func_015_795D = mock_func_015_795D,
+        .func_015_7995 = mock_func_015_7995,
+    };
+    test_render_cb_5d_called = 0;
+    test_render_cb_95_called = 0;
+
+    RenderActiveEntitySpritesPair(&gb, pair_display_list, &render_cbs);
+
+    assert(test_render_cb_5d_called == 1);
+    assert(test_render_cb_95_called == 1);
+    assert(test_render_cb_entity == 2);
+    assert(gb.rom_bank == 0x03);
+
+    /* OAM slot 8 is at wDynamicOAMBuffer + 8 = 0xC038 */
+    /* Sprite 0: Y=0x30, X=0x40 (no flip, so x0 = 0 + 0x40 - 0 = 0x40), Tile=0x02+0x10=0x12, Attr=0x01 */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 8) == 0x30);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 9) == 0x40);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 10) == 0x12);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 11) == 0x01);
+    /* Sprite 1: Y=0x30, X=0x40 + 8 = 0x48, Tile=0x04+0x10=0x14, Attr=0x01 */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 12) == 0x30);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 13) == 0x48);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 14) == 0x14);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 15) == 0x01);
+
+    /* 5. RenderActiveEntitySprite */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x03);
+    gb.rom_bank = 0x03;
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write(&gb, wOAMNextAvailableSlot, 0);
+    gb_write(&gb, hActiveEntitySpriteVariant, 1);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x20);
+    gb_write(&gb, hActiveEntityPosX, 0x18);
+    gb_write(&gb, wScreenShakeHorizontal, 2);
+    gb_write(&gb, hIsSideScrolling, 1); /* reduces visual Y by 4 to 0x1C */
+    gb_write(&gb, hActiveEntityFlipAttribute, 0);
+
+    /* display list: variant 0 (2 bytes), variant 1 (tile=0x30, attr=0x00) */
+    static const uint8_t single_display_list[4] = { 0x10, 0x00, 0x30, 0x00 };
+    test_render_cb_5d_called = 0;
+    test_render_cb_95_called = 0;
+
+    RenderActiveEntitySprite(&gb, single_display_list, &render_cbs);
+
+    assert(test_render_cb_5d_called == 1);
+    assert(test_render_cb_95_called == 1);
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x1C);
+    /* OAM slot 0 at wDynamicOAMBuffer + 0: Y=0x1C, X=0x18 + 4 - 2 = 0x1A, Tile=0x30, Attr=0x00 */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0) == 0x1C);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 1) == 0x1A);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 2) == 0x30);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 3) == 0x00);
+
+    /* 6. RenderActiveEntitySpritesRect and RenderActiveEntitySpritesRectUsingAllOAM */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x03);
+    gb.rom_bank = 0x03;
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wOAMNextAvailableSlot, 0x10);
+    gb_write(&gb, hActiveEntitySpriteVariant, 0);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x50);
+    gb_write(&gb, hActiveEntityPosX, 0x60);
+    gb_write(&gb, wScreenShakeHorizontal, 0);
+    gb_write(&gb, hActiveEntityTilesOffset, 0x00);
+    gb_write(&gb, hActiveEntityFlipAttribute, 0);
+
+    /* Rect display list: 2 sprites, 4 bytes each: {relY, relX, tile, attr} */
+    static const uint8_t rect_display_list[8] = {
+        0x00, 0x00, 0x22, 0x02,
+        0x08, 0x08, 0xFF, 0x03 /* tile 0xFF should be overridden to 0 */
+    };
+    test_render_cb_5d_called = 0;
+
+    RenderActiveEntitySpritesRect(&gb, rect_display_list, 2, mock_func_015_795D);
+    assert(test_render_cb_5d_called == 1);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x10) == 0x50);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x11) == 0x60);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x12) == 0x22);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x13) == 0x02);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x14) == 0x58);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x15) == 0x68);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x16) == 0x00); /* overridden */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x17) == 0x03);
+
+    /* RenderActiveEntitySpritesRectUsingAllOAM renders at wOAMBuffer (0xC000) */
+    test_render_cb_5d_called = 0;
+    RenderActiveEntitySpritesRectUsingAllOAM(&gb, rect_display_list, 1, mock_func_015_795D);
+    assert(test_render_cb_5d_called == 1);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x50);
+    assert(gb_read(&gb, wOAMBuffer + 1) == 0x60);
+    assert(gb_read(&gb, wOAMBuffer + 2) == 0x22);
+    assert(gb_read(&gb, wOAMBuffer + 3) == 0x02);
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
@@ -583,5 +773,6 @@ void run_entities_tests(void) {
     test_entities_batch_trampolines();
     test_entities_batch_hitbox_and_collision_trampolines();
     test_animate_entities_pipeline();
+    test_entity_rendering_routines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

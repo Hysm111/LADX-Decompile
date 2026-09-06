@@ -543,3 +543,227 @@ void CopyEntityPositionToActivePosition(GBState *gb, uint16_t entity_index) {
     uint8_t posZ = gb_read(gb, (uint16_t)(wEntitiesPosZTable + entity_index));
     gb_write(gb, hActiveEntityVisualPosY, (uint8_t)(posY - posZ));
 }
+
+bool SkipDisabledEntityDuringRoomTransition(GBState *gb, uint16_t entity_index) {
+    if (!gb) return false;
+    if (gb_read(gb, wRoomTransitionState) == 0) {
+        return false;
+    }
+    uint8_t posX = gb_read(gb, hActiveEntityPosX);
+    if ((uint8_t)(posX - 1) >= 0xC0) {
+        return true;
+    }
+    uint8_t posY = gb_read(gb, hActiveEntityVisualPosY);
+    if ((uint8_t)(posY - 1) >= 0x88) {
+        return true;
+    }
+    if (gb_read(gb, (uint16_t)(wEntitiesPosXSignTable + entity_index)) != 0) {
+        return true;
+    }
+    if (gb_read(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index)) != 0) {
+        return true;
+    }
+    return false;
+}
+
+void label_3C71(GBState *gb, uint16_t entity_index, void (*func_015_7995)(GBState *, uint16_t)) {
+    if (!gb) return;
+    if (func_015_7995) {
+        func_015_7995(gb, entity_index);
+    }
+    ReloadSavedBank(gb);
+}
+
+void label_3CD9(GBState *gb, uint16_t entity_index, void (*func_015_7995)(GBState *, uint16_t)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x15);
+    label_3C71(gb, entity_index, func_015_7995);
+}
+
+void RenderActiveEntitySpritesPair(GBState *gb, const uint8_t *display_list, const EntityRenderCallbacks *callbacks) {
+    if (!gb || !display_list) return;
+
+    uint8_t variant = gb_read(gb, hActiveEntitySpriteVariant);
+    if (variant == 0xFF) return;
+
+    uint16_t entity_index = gb_read(gb, wActiveEntityIndex);
+    if (SkipDisabledEntityDuringRoomTransition(gb, entity_index)) {
+        return;
+    }
+
+    uint16_t oam_dest = (uint16_t)(wDynamicOAMBuffer + gb_read(gb, wOAMNextAvailableSlot));
+    uint8_t visualPosY = gb_read(gb, hActiveEntityVisualPosY);
+    uint8_t posX = gb_read(gb, hActiveEntityPosX);
+    uint8_t shake = gb_read(gb, wScreenShakeHorizontal);
+    uint8_t flip = gb_read(gb, hActiveEntityFlipAttribute);
+
+    /* Sprite 0 Y */
+    gb_write(gb, oam_dest++, visualPosY);
+
+    /* Sprite 0 X */
+    uint8_t x_adj0 = (flip & OAMF_XFLIP) ? 8 : 0;
+    uint8_t x0 = (uint8_t)(x_adj0 + posX - shake);
+    gb_write(gb, oam_dest++, x0);
+
+    /* Sprite 0 Tile */
+    uint16_t list_idx = (uint16_t)(variant * 4);
+    uint8_t tiles_offset = gb_read(gb, hActiveEntityTilesOffset);
+    uint8_t tile0 = (uint8_t)(display_list[list_idx] + tiles_offset);
+    gb_write(gb, oam_dest++, tile0);
+    if ((tile0 & 0x0F) == 0x0F) {
+        gb_write(gb, (uint16_t)(oam_dest - 3), 0xF0);
+    }
+
+    /* Sprite 0 Attr */
+    uint8_t attr0 = (uint8_t)(display_list[list_idx + 1] ^ flip);
+    if (gb_read(gb, hIsGBC) != 0 && (flip & OAMF_PAL1) != 0) {
+        attr0 = (uint8_t)((attr0 & (uint8_t)(~OAMF_PALMASK)) | OAM_GBC_PAL_4);
+    }
+    gb_write(gb, oam_dest++, attr0);
+
+    /* Sprite 1 Y */
+    gb_write(gb, oam_dest++, visualPosY);
+
+    /* Sprite 1 X */
+    uint8_t x_adj1 = (flip & OAMF_XFLIP) ? 0 : 8;
+    uint8_t x1 = (uint8_t)(posX + x_adj1 - shake);
+    gb_write(gb, oam_dest++, x1);
+
+    /* Sprite 1 Tile */
+    uint8_t tile1 = (uint8_t)(display_list[list_idx + 2] + tiles_offset);
+    gb_write(gb, oam_dest++, tile1);
+    if ((tile1 & 0x0F) == 0x0F) {
+        gb_write(gb, (uint16_t)(oam_dest - 3), 0xF0);
+    }
+
+    /* Sprite 1 Attr */
+    uint8_t attr1 = (uint8_t)(display_list[list_idx + 3] ^ flip);
+    if (gb_read(gb, hIsGBC) != 0 && (flip & OAMF_PAL1) != 0) {
+        attr1 = (uint8_t)((attr1 & (uint8_t)(~OAMF_PALMASK)) | OAM_GBC_PAL_4);
+    }
+    gb_write(gb, oam_dest++, attr1);
+
+    /* Bank $15 calls */
+    gb_write(gb, rSelectROMBank, 0x15);
+    if (callbacks && callbacks->func_015_795D) {
+        callbacks->func_015_795D(gb, entity_index);
+    }
+    if (callbacks && callbacks->func_015_7995) {
+        callbacks->func_015_7995(gb, entity_index);
+    }
+    ReloadSavedBank(gb);
+}
+
+void RenderActiveEntitySprite(GBState *gb, const uint8_t *display_list, const EntityRenderCallbacks *callbacks) {
+    if (!gb || !display_list) return;
+
+    uint8_t variant = gb_read(gb, hActiveEntitySpriteVariant);
+    if (variant == 0xFF) return;
+
+    uint16_t entity_index = gb_read(gb, wActiveEntityIndex);
+    if (SkipDisabledEntityDuringRoomTransition(gb, entity_index)) {
+        return;
+    }
+
+    uint16_t oam_dest = (uint16_t)(wDynamicOAMBuffer + gb_read(gb, wOAMNextAvailableSlot));
+
+    uint8_t visualPosY = gb_read(gb, hActiveEntityVisualPosY);
+    if (gb_read(gb, hIsSideScrolling) != 0) {
+        visualPosY = (uint8_t)(visualPosY - 4);
+        gb_write(gb, hActiveEntityVisualPosY, visualPosY);
+    }
+    gb_write(gb, oam_dest++, visualPosY);
+
+    uint8_t shake = gb_read(gb, wScreenShakeHorizontal);
+    uint8_t posX = gb_read(gb, hActiveEntityPosX);
+    uint8_t x = (uint8_t)(posX + 4 - shake);
+    gb_write(gb, oam_dest++, x);
+
+    uint16_t list_idx = (uint16_t)(variant * 2);
+    uint8_t tile = display_list[list_idx];
+    gb_write(gb, oam_dest++, tile);
+
+    uint8_t flip = gb_read(gb, hActiveEntityFlipAttribute);
+    uint8_t attr;
+    if (gb_read(gb, hIsGBC) != 0 &&
+        gb_read(gb, wGameplayType) != GAMEPLAY_CREDITS &&
+        flip != 0) {
+        attr = (uint8_t)((display_list[list_idx + 1] & (uint8_t)(~OAMF_PALMASK)) | OAM_GBC_PAL_4);
+    } else {
+        attr = (uint8_t)(display_list[list_idx + 1] ^ flip);
+    }
+    gb_write(gb, oam_dest++, attr);
+
+    gb_write(gb, rSelectROMBank, 0x15);
+    if (callbacks && callbacks->func_015_795D) {
+        callbacks->func_015_795D(gb, entity_index);
+    }
+    if (callbacks && callbacks->func_015_7995) {
+        callbacks->func_015_7995(gb, entity_index);
+    }
+    ReloadSavedBank(gb);
+}
+
+static void RenderActiveEntitySpritesRectInternal(GBState *gb, const uint8_t *display_list, uint8_t sprite_count, uint16_t dest_base, void (*func_015_795D)(GBState *, uint16_t)) {
+    if (!gb || !display_list) return;
+
+    uint8_t variant = gb_read(gb, hActiveEntitySpriteVariant);
+    if (variant == 0xFF) return;
+
+    uint16_t entity_index = gb_read(gb, wActiveEntityIndex);
+    if (SkipDisabledEntityDuringRoomTransition(gb, entity_index)) {
+        return;
+    }
+
+    uint16_t de = dest_base;
+    uint8_t visualPosY = gb_read(gb, hActiveEntityVisualPosY);
+    uint8_t posX = gb_read(gb, hActiveEntityPosX);
+    uint8_t shake = gb_read(gb, wScreenShakeHorizontal);
+    uint8_t tiles_offset = gb_read(gb, hActiveEntityTilesOffset);
+    uint8_t flip = gb_read(gb, hActiveEntityFlipAttribute);
+
+    for (uint8_t i = 0; i < sprite_count; i++) {
+        uint16_t idx = (uint16_t)(i * 4);
+        /* Y */
+        gb_write(gb, de++, (uint8_t)(visualPosY + display_list[idx]));
+        /* X */
+        gb_write(gb, de++, (uint8_t)(posX + display_list[idx + 1] - shake));
+        /* Tile */
+        uint8_t tile = display_list[idx + 2];
+        gb_write(gb, de++, (uint8_t)(tile + tiles_offset));
+        if (tile == 0xFF) {
+            gb_write(gb, (uint16_t)(de - 1), 0);
+        }
+        /* Attr */
+        uint8_t attr = (uint8_t)(display_list[idx + 3] ^ flip);
+        if (gb_read(gb, hIsGBC) != 0 && flip != 0) {
+            attr = (uint8_t)((attr & (uint8_t)(~OAMF_PALMASK)) | OAM_GBC_PAL_4);
+        }
+        gb_write(gb, de++, attr);
+    }
+
+    gb_write(gb, rSelectROMBank, 0x15);
+    if (func_015_795D) {
+        func_015_795D(gb, entity_index);
+    }
+    ReloadSavedBank(gb);
+}
+
+void RenderActiveEntitySpritesRect(GBState *gb, const uint8_t *display_list, uint8_t sprite_count, void (*func_015_795D)(GBState *, uint16_t)) {
+    if (!gb) return;
+    uint16_t dest = (uint16_t)(wDynamicOAMBuffer + gb_read(gb, wOAMNextAvailableSlot));
+    RenderActiveEntitySpritesRectInternal(gb, display_list, sprite_count, dest, func_015_795D);
+}
+
+void RenderActiveEntitySpritesRectUsingAllOAM(GBState *gb, const uint8_t *display_list, uint8_t sprite_count, void (*func_015_795D)(GBState *, uint16_t)) {
+    RenderActiveEntitySpritesRectInternal(gb, display_list, sprite_count, wOAMBuffer, func_015_795D);
+}
+
+void func_015_7964_trampoline(GBState *gb, void (*func_015_7964)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x15);
+    if (func_015_7964) {
+        func_015_7964(gb);
+    }
+    ReloadSavedBank(gb);
+}

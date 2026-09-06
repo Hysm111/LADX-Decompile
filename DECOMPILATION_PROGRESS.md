@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 19.00%
-* **Number of Verified Functions**: 228
-* **Number of Decompiled Functions**: 228
-* **Number Remaining**: ~972 functions
-* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3B86`+)
-* **Current Task**: Decompile and verify Bank 0 entity vector & movement helpers (`00:3B86`+)
-* **Last Completed Task**: Decompiled and verified 7 Bank 0 Entity Animation & Movement pipeline functions (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler_trampoline`, `ExecuteActiveEntityHandler`, `ClearEntitySpeed`, `CopyEntityPositionToActivePosition`) (`00:398D` - `00:3A8D`, `00:3D7F` - `00:3D8A`)
-* **Next Task**: Decompile and verify Bank 0 entity vector & movement helpers (`00:3B86`+) in `code/home/entities.asm`
-* **Last Update Timestamp**: 2026-09-06T18:10:00+03:00
+* **Current Overall Progress**: 19.67%
+* **Number of Verified Functions**: 236
+* **Number of Decompiled Functions**: 236
+* **Number Remaining**: ~964 functions
+* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3DAB`+)
+* **Current Task**: Decompile and verify Bank 0 boss & entity init trampolines (`00:3DAB`+)
+* **Last Completed Task**: Decompiled and verified 8 Bank 0 Entity Sprite Rendering routines (`RenderActiveEntitySpritesPair`, `label_3C71`, `RenderActiveEntitySprite`, `label_3CD9`, `RenderActiveEntitySpritesRectUsingAllOAM`, `RenderActiveEntitySpritesRect`, `SkipDisabledEntityDuringRoomTransition`, `func_015_7964_trampoline`) (`00:3BC0` - `00:3D57`, `00:3DA0`)
+* **Next Task**: Decompile and verify Bank 0 boss init and entity trampolines (`00:3DAB`+) in `code/home/entities.asm`
+* **Last Update Timestamp**: 2026-09-06T18:25:00+03:00
 
 ---
 
@@ -176,10 +176,25 @@
 | `ExecuteActiveEntityHandler` | VERIFIED | PASS | PASS | Reads handler address and bank from EntityHandlersTable ($20:$4000) and jumps to entity code (`00:3A8D`) |
 | `ClearEntitySpeed` | VERIFIED | PASS | PASS | Clears X and Y speeds in wEntitiesSpeedXTable and wEntitiesSpeedYTable for entity slot (`00:3D7F`) |
 | `CopyEntityPositionToActivePosition` | VERIFIED | PASS | PASS | Copies posX and posY to HRAM, and computes visualPosY = posY - posZ (`00:3D8A`) |
+| `RenderActiveEntitySpritesPair` | VERIFIED | PASS | PASS | Renders an 8x16 sprite pair into wDynamicOAMBuffer, applying screen shake, X/Y flip, GBC palette override, and calling Bank $15 helpers (`00:3BC0`) |
+| `label_3C71` | VERIFIED | PASS | PASS | Calls func_015_7995 in Bank $15 and restores saved bank via ReloadSavedBank (`00:3C71`) |
+| `RenderActiveEntitySprite` | VERIFIED | PASS | PASS | Renders a single 8x16 sprite into wDynamicOAMBuffer, adjusting visual Y for side-scrolling rooms and calling Bank $15 helpers (`00:3C77`) |
+| `label_3CD9` | VERIFIED | PASS | PASS | Sets rSelectROMBank to $15 and jumps to label_3C71 (`00:3CD9`) |
+| `RenderActiveEntitySpritesRectUsingAllOAM` | VERIFIED | PASS | PASS | Renders a rectangular group of sprites starting at wOAMBuffer ($C000) (`00:3CE0`) |
+| `RenderActiveEntitySpritesRect` | VERIFIED | PASS | PASS | Renders a rectangular group of sprites starting at wDynamicOAMBuffer + wOAMNextAvailableSlot (`00:3CE6`) |
+| `SkipDisabledEntityDuringRoomTransition` | VERIFIED | PASS | PASS | Checks room transition status, X/Y screen bounds, and sign tables to determine if entity rendering should skip (`00:3D57`) |
+| `func_015_7964_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $15, calls func_015_7964, and restores saved bank via ReloadSavedBank (`00:3DA0`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Entity Sprite Rendering Routines (`00:3BC0`-`00:3D57`, `00:3DA0`)**:
+   - `RenderActiveEntitySpritesPair`: iterates a 4-byte display list entry per variant (`tile0`, `attr0`, `tile1`, `attr1`), computing horizontal flip adjustments (`+8` or `0`), screen shake offset subtraction, and off-screen Y-coordinate relocation (`$F0`) if tile lower nibble is `$0F`. Also handles GBC palette override (`OAM_GBC_PAL_4`). Calls `func_015_795D` and `func_015_7995` in Bank $15 before restoring saved bank.
+   - `RenderActiveEntitySprite`: renders single 8x16 sprite variant, adjusting `hActiveEntityVisualPosY` by `-4` in side-scrolling rooms (`hIsSideScrolling != 0`), applying GBC palette override outside of credits mode, and delegating to Bank $15 helpers.
+   - `RenderActiveEntitySpritesRect` / `RenderActiveEntitySpritesRectUsingAllOAM`: processes arbitrary rectangular sprite definitions (`relY`, `relX`, `tile`, `attr`), replacing `$FF` tile index with 0.
+   - `SkipDisabledEntityDuringRoomTransition`: skips rendering when transition is active and entity coordinates exceed screen bounds (`[posX - 1] >= 0xC0` or `[visualPosY - 1] >= 0x88`) or have non-zero sign table entries.
+   - `func_015_7964_trampoline`: switches to Bank $15, calls `func_015_7964`, and reloads saved bank.
 
 1. **Entity Animation & Dispatch Pipeline (`00:398D`-`00:3A8D`, `00:3D7F`-`00:3D8A`)**:
    - `AnimateEntities`: iterates entity slots in reverse order (`15` down to `0`), setting `wActiveEntityIndex` and checking `wEntitiesStatusTable`. Also decrements `wBossAgonySFXCountdown` triggering `WAVE_SFX_BOSS_DEATH_CRY`, updates `wC111`/`wC1A8` when no dialog is active, computes `wOAMNextAvailableSlot`, and calls Bank $20 helper routines.

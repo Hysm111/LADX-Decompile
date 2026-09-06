@@ -91,6 +91,11 @@
 #define OBJECTS_PER_ROW              10
 
 /* WRAM Entity Tables */
+#define wOAMBuffer                            0xC000
+#define wDynamicOAMBuffer                     0xC030
+#define wScreenShakeHorizontal                0xC155
+#define wEntitiesPosXSignTable                0xC220
+#define wEntitiesPosYSignTable                0xC230
 #define wEntitiesPhysicsFlagsTable            0xC120
 #define wEntitiesPosXTable                    0xC200
 #define wEntitiesPosYTable                    0xC210
@@ -175,6 +180,7 @@
 #define hActiveEntityPosY                     0xFFEF
 #define hActiveEntityState                    0xFFF0
 #define hActiveEntitySpriteVariant            0xFFF1
+#define hActiveEntityTilesOffset              0xFFF5
 #define hLinkSlowWalkingSpeed                 0xFFB2
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3

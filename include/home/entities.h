@@ -406,6 +406,92 @@ void ClearEntitySpeed(GBState *gb, uint16_t entity_index);
  */
 void CopyEntityPositionToActivePosition(GBState *gb, uint16_t entity_index);
 
+/**
+ * SkipDisabledEntityDuringRoomTransition (00:3D57)
+ * Returns true if active entity rendering should be skipped during a room transition.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity slot index
+ * @return true if entity should be skipped
+ */
+bool SkipDisabledEntityDuringRoomTransition(GBState *gb, uint16_t entity_index);
+
+typedef struct {
+    void (*func_015_795D)(GBState *gb, uint16_t entity_index);
+    void (*func_015_7995)(GBState *gb, uint16_t entity_index);
+} EntityRenderCallbacks;
+
+/**
+ * RenderActiveEntitySpritesPair (00:3BC0)
+ * Renders a pair of 8x16 sprites for the active entity into wDynamicOAMBuffer.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param display_list Pointer to OAM display list (4 bytes per variant)
+ * @param callbacks Bank $15 rendering callbacks
+ */
+void RenderActiveEntitySpritesPair(GBState *gb, const uint8_t *display_list, const EntityRenderCallbacks *callbacks);
+
+/**
+ * label_3C71 (00:3C71)
+ * Calls func_015_7995 in Bank $15 and reloads saved bank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ * @param func_015_7995 Target callback in Bank $15
+ */
+void label_3C71(GBState *gb, uint16_t entity_index, void (*func_015_7995)(GBState *, uint16_t));
+
+/**
+ * RenderActiveEntitySprite (00:3C77)
+ * Renders a single 8x16 sprite for the active entity into wDynamicOAMBuffer.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param display_list Pointer to OAM display list (2 bytes per variant)
+ * @param callbacks Bank $15 rendering callbacks
+ */
+void RenderActiveEntitySprite(GBState *gb, const uint8_t *display_list, const EntityRenderCallbacks *callbacks);
+
+/**
+ * label_3CD9 (00:3CD9)
+ * Sets rSelectROMBank to $15 and jumps to label_3C71.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ * @param func_015_7995 Target callback in Bank $15
+ */
+void label_3CD9(GBState *gb, uint16_t entity_index, void (*func_015_7995)(GBState *, uint16_t));
+
+/**
+ * RenderActiveEntitySpritesRect (00:3CE6)
+ * Renders a rectangle of sprites starting at wDynamicOAMBuffer + wOAMNextAvailableSlot.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param display_list Pointer to OAM display list (4 bytes per sprite)
+ * @param sprite_count Number of sprites to render
+ * @param func_015_795D Callback for post-rendering logic in Bank $15
+ */
+void RenderActiveEntitySpritesRect(GBState *gb, const uint8_t *display_list, uint8_t sprite_count, void (*func_015_795D)(GBState *, uint16_t));
+
+/**
+ * RenderActiveEntitySpritesRectUsingAllOAM (00:3CE0)
+ * Renders a rectangle of sprites starting at wOAMBuffer (0xC000).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param display_list Pointer to OAM display list (4 bytes per sprite)
+ * @param sprite_count Number of sprites to render
+ * @param func_015_795D Callback for post-rendering logic in Bank $15
+ */
+void RenderActiveEntitySpritesRectUsingAllOAM(GBState *gb, const uint8_t *display_list, uint8_t sprite_count, void (*func_015_795D)(GBState *, uint16_t));
+
+/**
+ * func_015_7964_trampoline (00:3DA0)
+ * Switches to Bank $15, calls func_015_7964, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_015_7964 Target callback in Bank $15
+ */
+void func_015_7964_trampoline(GBState *gb, void (*func_015_7964)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif
