@@ -253,6 +253,161 @@ static void test_entities_batch_trampolines(void) {
     assert(gb.rom_bank == 0x03);
 }
 
+
+static void mock_cb_02(GBState *gb) {
+    mock_check_bank_cb(gb, 0x02);
+}
+
+static void test_entities_batch_hitbox_and_collision_trampolines(void) {
+    printf("[*] Running Bank 0 entities hitbox, state, and collision trampolines (00:3AEA-00:3BBF)...\n");
+
+    GBState gb;
+
+    /* 1. ConfigureEntityHitbox - unmapped ROM (fallback table) */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesHitboxFlagsTable + 2, 0x14 | 0x03); /* offset 0x14 */
+    ConfigureEntityHitbox(&gb, 2);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 8) == 0x08);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 9) == 0x13);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 10) == 0x08);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 11) == 0x13);
+
+    /* 2. ConfigureEntityHitbox - mapped ROM */
+    gb_init(&gb);
+    memset(mock_entities_rom, 0, sizeof(mock_entities_rom));
+    mock_entities_rom[HitboxPositions + 0x28 + 0] = 0x0C;
+    mock_entities_rom[HitboxPositions + 0x28 + 1] = 0x07;
+    mock_entities_rom[HitboxPositions + 0x28 + 2] = 0xFC;
+    mock_entities_rom[HitboxPositions + 0x28 + 3] = 0x04;
+    gb_attach_rom(&gb, mock_entities_rom, sizeof(mock_entities_rom));
+
+    gb_write(&gb, wEntitiesHitboxFlagsTable + 5, 0x28 | 0x80); /* offset 0x28, ignore hits bit set */
+    ConfigureEntityHitbox(&gb, 5);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 20) == 0x0C);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 21) == 0x07);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 22) == 0xFC);
+    assert(gb_read(&gb, wEntitiesHitboxPositionTable + 23) == 0x04);
+
+    /* 3. SetEntitySpriteVariant */
+    gb_init(&gb);
+    SetEntitySpriteVariant(&gb, 4, 0x33);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 4) == 0x33);
+
+    /* 4. IncrementEntityState */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesStateTable + 3, 0x05);
+    IncrementEntityState(&gb, 3);
+    assert(gb_read(&gb, wEntitiesStateTable + 3) == 0x06);
+
+    /* 5. HurtBySpikes_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    mock_cb_called = false;
+    HurtBySpikes_trampoline(&gb, mock_cb_02);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x08);
+
+    /* 6. ApplyEntityInteractionWithBackground_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0A);
+    gb.rom_bank = 0x0A;
+    mock_cb_called = false;
+    ApplyEntityInteractionWithBackground_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0A);
+
+    /* 7. label_3B2E */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0B);
+    gb.rom_bank = 0x0B;
+    mock_cb_called = false;
+    label_3B2E(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0B);
+
+    /* 8. DefaultEnemyDamageCollisionHandler_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0C);
+    gb.rom_bank = 0x0C;
+    mock_cb_called = false;
+    DefaultEnemyDamageCollisionHandler_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0C);
+
+    /* 9. label_3B44 */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0D);
+    gb.rom_bank = 0x0D;
+    mock_cb_called = false;
+    label_3B44(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0D);
+
+    /* 10. CheckLinkCollisionWithProjectile_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0E);
+    gb.rom_bank = 0x0E;
+    mock_cb_called = false;
+    CheckLinkCollisionWithProjectile_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0E);
+
+    /* 11. CheckLinkCollisionWithEnemy_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0F);
+    gb.rom_bank = 0x0F;
+    mock_cb_called = false;
+    CheckLinkCollisionWithEnemy_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x0F);
+
+    /* 12. label_3B65 */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x10);
+    gb.rom_bank = 0x10;
+    mock_cb_called = false;
+    label_3B65(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x10);
+
+    /* 13. label_3B70 */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x11);
+    gb.rom_bank = 0x11;
+    mock_cb_called = false;
+    label_3B70(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x11);
+
+    /* 14. label_3B7B */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x12);
+    gb.rom_bank = 0x12;
+    mock_cb_called = false;
+    label_3B7B(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x12);
+
+    /* 15. ApplyVectorTowardsLink_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x13);
+    gb.rom_bank = 0x13;
+    mock_cb_called = false;
+    ApplyVectorTowardsLink_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x13);
+
+    /* 16. GetVectorTowardsLink_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x14);
+    gb.rom_bank = 0x14;
+    mock_cb_called = false;
+    GetVectorTowardsLink_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x14);
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
@@ -260,5 +415,6 @@ void run_entities_tests(void) {
     test_spawn_entity_trampolines();
     test_animate_entities_trampolines();
     test_entities_batch_trampolines();
+    test_entities_batch_hitbox_and_collision_trampolines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

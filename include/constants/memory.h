@@ -98,6 +98,10 @@
 #define wEntitiesPrivateCountdown1Table       0xC2F0
 #define wEntitiesIgnoreHitsCountdownTable     0xC410
 #define wEntitiesSlowTransitionCountdownTable 0xC450
+#define wEntitiesStateTable                   0xC290
+#define wEntitiesHitboxFlagsTable             0xC350
+#define wEntitiesSpriteVariantTable           0xC3B0
+#define wEntitiesHitboxPositionTable          0xD580
 #define wSwordMoblinAlertingSoundCounter      0xC502
 
 /* WRAM Transient VFX Tables */

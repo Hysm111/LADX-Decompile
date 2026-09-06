@@ -184,6 +184,142 @@ void GetEntityDirectionToLink_trampoline(GBState *gb, void (*get_direction)(GBSt
  */
 void label_397B(GBState *gb, void (*func_014_5347)(GBState *));
 
+/**
+ * ConfigureEntityHitbox (00:3AEA)
+ * Copies 4 hitbox position bytes from HitboxPositions to wEntitiesHitboxPositionTable for entity index.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ConfigureEntityHitbox(GBState *gb, uint16_t entity_index);
+
+/**
+ * SetEntitySpriteVariant (00:3B0C)
+ * Sets the entity sprite variant in wEntitiesSpriteVariantTable for entity index.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @param variant Variant value to assign
+ */
+void SetEntitySpriteVariant(GBState *gb, uint16_t entity_index, uint8_t variant);
+
+/**
+ * IncrementEntityState (00:3B12)
+ * Increments the entity state in wEntitiesStateTable for entity index.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void IncrementEntityState(GBState *gb, uint16_t entity_index);
+
+/**
+ * HurtBySpikes_trampoline (00:3B18)
+ * Switches to Bank $02, calls hurt_by_spikes, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param hurt_by_spikes Target callback in Bank $02
+ */
+void HurtBySpikes_trampoline(GBState *gb, void (*hurt_by_spikes)(GBState *));
+
+/**
+ * ApplyEntityInteractionWithBackground_trampoline (00:3B23)
+ * Switches to Bank $03, calls apply_interaction, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param apply_interaction Target callback in Bank $03
+ */
+void ApplyEntityInteractionWithBackground_trampoline(GBState *gb, void (*apply_interaction)(GBState *));
+
+/**
+ * label_3B2E (00:3B2E)
+ * Switches to Bank $03, calls apply_sword_intersection, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param apply_sword_intersection Target callback in Bank $03
+ */
+void label_3B2E(GBState *gb, void (*apply_sword_intersection)(GBState *));
+
+/**
+ * DefaultEnemyDamageCollisionHandler_trampoline (00:3B39)
+ * Switches to Bank $03, calls default_handler, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param default_handler Target callback in Bank $03
+ */
+void DefaultEnemyDamageCollisionHandler_trampoline(GBState *gb, void (*default_handler)(GBState *));
+
+/**
+ * label_3B44 (00:3B44)
+ * Switches to Bank $03, calls func_003_6c6b, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_003_6c6b Target callback in Bank $03
+ */
+void label_3B44(GBState *gb, void (*func_003_6c6b)(GBState *));
+
+/**
+ * CheckLinkCollisionWithProjectile_trampoline (00:3B4F)
+ * Switches to Bank $03, calls check_collision, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param check_collision Target callback in Bank $03
+ */
+void CheckLinkCollisionWithProjectile_trampoline(GBState *gb, void (*check_collision)(GBState *));
+
+/**
+ * CheckLinkCollisionWithEnemy_trampoline (00:3B5A)
+ * Switches to Bank $03, calls check_collision, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param check_collision Target callback in Bank $03
+ */
+void CheckLinkCollisionWithEnemy_trampoline(GBState *gb, void (*check_collision)(GBState *));
+
+/**
+ * label_3B65 (00:3B65)
+ * Switches to Bank $03, calls func_003_73eb, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_003_73eb Target callback in Bank $03
+ */
+void label_3B65(GBState *gb, void (*func_003_73eb)(GBState *));
+
+/**
+ * label_3B70 (00:3B70)
+ * Switches to Bank $03, calls func_003_6e2b, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_003_6e2b Target callback in Bank $03
+ */
+void label_3B70(GBState *gb, void (*func_003_6e2b)(GBState *));
+
+/**
+ * label_3B7B (00:3B7B)
+ * Switches to Bank $03, calls func_003_75a2, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_003_75a2 Target callback in Bank $03
+ */
+void label_3B7B(GBState *gb, void (*func_003_75a2)(GBState *));
+
+/**
+ * ApplyVectorTowardsLink_trampoline (00:3BAA)
+ * Switches to Bank $03, calls apply_vector, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param apply_vector Target callback in Bank $03
+ */
+void ApplyVectorTowardsLink_trampoline(GBState *gb, void (*apply_vector)(GBState *));
+
+/**
+ * GetVectorTowardsLink_trampoline (00:3BB5)
+ * Switches to Bank $03, calls get_vector, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param get_vector Target callback in Bank $03
+ */
+void GetVectorTowardsLink_trampoline(GBState *gb, void (*get_vector)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

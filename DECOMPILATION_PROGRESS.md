@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 17.17%
-* **Number of Verified Functions**: 206
-* **Number of Decompiled Functions**: 206
-* **Number Remaining**: ~994 functions
+* **Current Overall Progress**: 18.42%
+* **Number of Verified Functions**: 221
+* **Number of Decompiled Functions**: 221
+* **Number Remaining**: ~979 functions
 * **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:398D`+)
-* **Current Task**: Decompile and verify `AnimateEntities` loop and helper pipeline (`00:398D`+)
-* **Last Completed Task**: Decompiled and verified 8 Bank 0 Entities helpers & trampolines (`CanBowWowEatEntity`, `label_3935`, `LiftableRockStartSmashingAnimation_trampoline`, `label_394D`, `CreateFollowingNpcEntity_trampoline`, `ConfigureNewEntity_trampoline`, `GetEntityDirectionToLink_trampoline`, `label_397B`) (`00:3925` - `00:3988`)
-* **Next Task**: Decompile and verify Bank 0 `AnimateEntities` (`00:398D`) in `code/home/entities.asm`
-* **Last Update Timestamp**: 2026-09-06T17:40:00+03:00
+* **Current Task**: Decompile and verify Bank 0 entity animation & rendering pipeline (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler`, `RenderActiveEntitySpritesPair`) (`00:398D`+)
+* **Last Completed Task**: Decompiled and verified 15 Bank 0 Entities Hitbox & Collision routines (`ConfigureEntityHitbox`, `SetEntitySpriteVariant`, `IncrementEntityState`, `HurtBySpikes_trampoline`, `ApplyEntityInteractionWithBackground_trampoline`, `label_3B2E`, `DefaultEnemyDamageCollisionHandler_trampoline`, `label_3B44`, `CheckLinkCollisionWithProjectile_trampoline`, `CheckLinkCollisionWithEnemy_trampoline`, `label_3B65`, `label_3B70`, `label_3B7B`, `ApplyVectorTowardsLink_trampoline`, `GetVectorTowardsLink_trampoline`) (`00:3AEA` - `00:3BBF`)
+* **Next Task**: Decompile and verify Bank 0 entity animation pipeline (`AnimateEntities`, `ResetEntity_trampoline`, `AnimateEntity`, `ExecuteActiveEntityHandler`) (`00:398D`+)
+* **Last Update Timestamp**: 2026-09-06T17:55:00+03:00
 
 ---
 
@@ -154,10 +154,32 @@
 | `ConfigureNewEntity_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ConfigureNewEntity, and restores saved bank (`00:3965`) |
 | `GetEntityDirectionToLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GetEntityDirectionToLink_03, and restores saved bank (`00:3970`) |
 | `label_397B` | VERIFIED | PASS | PASS | Switches to Bank $14, calls func_014_5347, and sets bank to $03 (`00:397B`) |
+| `ConfigureEntityHitbox` | VERIFIED | PASS | PASS | Copies 4 bytes from HitboxPositions table ($3AAA) into wEntitiesHitboxPositionTable based on hitbox flags (`00:3AEA`) |
+| `SetEntitySpriteVariant` | VERIFIED | PASS | PASS | Writes sprite variant index into wEntitiesSpriteVariantTable for entity (`00:3B0C`) |
+| `IncrementEntityState` | VERIFIED | PASS | PASS | Increments state byte in wEntitiesStateTable for entity (`00:3B12`) |
+| `HurtBySpikes_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $02, calls HurtBySpikes, and restores saved bank (`00:3B18`) |
+| `ApplyEntityInteractionWithBackground_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ApplyEntityInteractionWithBackground, and restores saved bank (`00:3B23`) |
+| `label_3B2E` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ApplySwordIntersectionWithObjects, and restores saved bank (`00:3B2E`) |
+| `DefaultEnemyDamageCollisionHandler_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls DefaultEnemyDamageCollisionHandler, and restores saved bank (`00:3B39`) |
+| `label_3B44` | VERIFIED | PASS | PASS | Switches to Bank $03, calls func_003_6c6b, and restores saved bank (`00:3B44`) |
+| `CheckLinkCollisionWithProjectile_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls CheckLinkCollisionWithProjectile, and restores saved bank (`00:3B4F`) |
+| `CheckLinkCollisionWithEnemy_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls CheckLinkCollisionWithEnemy, and restores saved bank (`00:3B5A`) |
+| `label_3B65` | VERIFIED | PASS | PASS | Switches to Bank $03, calls func_003_73eb, and restores saved bank (`00:3B65`) |
+| `label_3B70` | VERIFIED | PASS | PASS | Switches to Bank $03, calls func_003_6e2b, and restores saved bank (`00:3B70`) |
+| `label_3B7B` | VERIFIED | PASS | PASS | Switches to Bank $03, calls func_003_75a2, and restores saved bank (`00:3B7B`) |
+| `ApplyVectorTowardsLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ApplyVectorTowardsLink, and restores saved bank (`00:3BAA`) |
+| `GetVectorTowardsLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GetVectorTowardsLink, and restores saved bank (`00:3BB5`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Entities Hitbox & Collision Trampolines (`00:3AEA`-`00:3BBF`)**:
+   - `ConfigureEntityHitbox`: masks `wEntitiesHitboxFlagsTable` with `$7C` to select one of 16 4-byte entries from `HitboxPositions` (`$3AAA`), and writes the 4 hitbox coordinate/extent bytes to `wEntitiesHitboxPositionTable + (bc * 4)`.
+   - `SetEntitySpriteVariant`: stores variant byte into `wEntitiesSpriteVariantTable + bc`.
+   - `IncrementEntityState`: increments `wEntitiesStateTable + bc`.
+   - Bank $02 trampoline: `HurtBySpikes_trampoline`.
+   - Bank $03 trampolines: `ApplyEntityInteractionWithBackground_trampoline`, `label_3B2E`, `DefaultEnemyDamageCollisionHandler_trampoline`, `label_3B44`, `CheckLinkCollisionWithProjectile_trampoline`, `CheckLinkCollisionWithEnemy_trampoline`, `label_3B65`, `label_3B70`, `label_3B7B`, `ApplyVectorTowardsLink_trampoline`, `GetVectorTowardsLink_trampoline`.
 
 1. **Entities Trampolines & Helpers (`00:3925`-`00:3988`)**:
    - `CanBowWowEatEntity`: selects Bank $14 in `rSelectROMBank`, reads byte at `BowWowEatableEntitiesTable` (`$5218 + entity_type`), resets `rSelectROMBank` to `$05`, and returns the byte.
