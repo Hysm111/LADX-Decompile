@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 22.67%
-* **Number of Verified Functions**: 272
-* **Number of Decompiled Functions**: 272
-* **Number Remaining**: ~928 functions
-* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm`, `00:2321`+)
-* **Current Task**: Decompile and verify Bank 0 dialog routines
-* **Last Completed Task**: Decompiled and verified 12 Bank 0 Dialog state machine, opening/closing, and input handlers (`OpenDialogInTable0`, `OpenDialogInTable1`, `OpenDialogInTable2`, `DialogOpenAnimationStartHandler`, `DialogOpenAnimationHandler`, `DialogClosingEndHandler`, `DialogOpenAnimationEndHandler`, `IncrementDialogState` / `IncrementDialogStateAndReturn`, `UpdateDialogState`, `DialogFinishedHandler`, `DialogClosingBeginHandler`, `DialogLetterAnimationStartHandler`) (`00:236B` - `00:24CA`)
-* **Next Task**: Decompile and verify next batch in `code/home/dialog.asm` (e.g. `ExecuteDialog` dispatcher, dialog character rendering and scrolling routines)
-* **Last Update Timestamp**: 2026-09-06T19:10:00+03:00
+* **Current Overall Progress**: 23.25%
+* **Number of Verified Functions**: 279
+* **Number of Decompiled Functions**: 279
+* **Number Remaining**: ~921 functions
+* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm`, `00:24CD`+)
+* **Current Task**: Decompile and verify Bank 0 dialog text rendering and scrolling
+* **Last Completed Task**: Decompiled and verified 7 Bank 0 Dialog dispatcher, BG backup, scrolling, choice, and arrow routines (`ExecuteDialog`, `func_23E4`, `DialogScrollingStartHandler`, `DialogScrollingEndHandler`, `SkipDialog`, `DialogChoiceHandler`, `DrawDialogArrowTrampoline`) (`00:2321` - `00:27BB`)
+* **Next Task**: Decompile and verify remaining Bank 0 dialog text rendering and line scroll routines in `code/home/dialog.asm`
+* **Last Update Timestamp**: 2026-09-06T19:25:00+03:00
 
 ---
 
@@ -220,10 +220,24 @@
 | `DialogFinishedHandler` | VERIFIED | PASS | PASS | Advances dialog state to closing when user presses A or B (`00:248A`) |
 | `DialogClosingBeginHandler` | VERIFIED | PASS | PASS | Dispatches to AnimateDialogClosing in Bank $1C (`00:24AF`) |
 | `DialogLetterAnimationStartHandler` | VERIFIED | PASS | PASS | Decrements scroll delay or invokes ClearLetterPixels in Bank $1C and advances state (`00:24B7`) |
+| `ExecuteDialog` | VERIFIED | PASS | PASS | Dialog state machine dispatcher: sets BG tile, wraps next char position, and dispatches to handler (`00:2321`) |
+| `func_23E4` | VERIFIED | PASS | PASS | Backs up 18x2 BG map tiles under dialog box to wD500 buffer during dialog opening on DMG & CGB (`00:23E4`) |
+| `DialogScrollingStartHandler` | VERIFIED | PASS | PASS | Scrolling start handler stub returning immediately (`00:2714`) |
+| `DialogScrollingEndHandler` | VERIFIED | PASS | PASS | Scrolling end handler stub returning immediately (`00:2768`) |
+| `SkipDialog` | VERIFIED | PASS | PASS | Sets wDialogAskSelectionIndex to 2 and transitions dialog to closing state (`00:278B`) |
+| `DialogChoiceHandler` | VERIFIED | PASS | PASS | Handles choice prompt input: toggles selection on Left/Right, draws cursor marker, advances on A (`00:2793`) |
+| `DrawDialogArrowTrampoline` | VERIFIED | PASS | PASS | Switches to Bank $17 and invokes DrawDialogArrow ($7D7C) (`00:27BB`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Dialog Dispatcher, BG Tile Backup, & Choice Selection (`00:2321`-`00:27BB`)**:
+   - `ExecuteDialog`: sets `hDialogBackgroundTile` to `DIALOG_BG_TILE_LIGHT` ($7F) during `GAMEPLAY_CREDITS` and `DIALOG_BG_TILE_DARK` ($7E) otherwise; wraps `wDialogNextCharPosition` past 32 chars (`(char_lo & 0x0F) | 0x10`); dispatches according to `(wDialogState & ~0x80) - 1`.
+   - `func_23E4`: computes source VRAM and destination `wD500` offsets from overlapping lookup tables (`s_dialog_save_table`), copies 2 rows of 18 tiles with 32-column row wrapping on DMG, and copies both tile indices (VRAM 0 -> WRAM 1) and color attributes (VRAM 1 -> WRAM 2) on CGB.
+   - `DialogChoiceHandler`: checks joypad state; Right/Left toggles selection (`wDialogAskSelectionIndex = (sel + 1) & 1`) and plays `JINGLE_MOVE_SELECTION` ($0A); checks frame counter bit 4 to invoke `DrawDialogChoiceMarker` in Bank `$17`; advances to closing state on A button.
+   - `SkipDialog`: sets `wDialogAskSelectionIndex = 2` and transitions dialog to closing state.
+   - `DrawDialogArrowTrampoline`: switches to Bank `$17` and dispatches to `DrawDialogArrow`.
 
 1. **Dialog State Machine & Initialization (`00:236B`-`00:24CA`)**:
    - `OpenDialogInTable0`: tests `hLinkPositionY < 0x48`. If true, sets `DIALOG_BOX_BOTTOM_FLAG | DIALOG_OPENING_1` (`0x81`), placing the box at bottom; otherwise `DIALOG_OPENING_1` (`0x01`). Resets ask selection, character index, name index, and sets `wDialogSFX` to `$0F`.

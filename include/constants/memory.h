@@ -40,6 +40,8 @@
 #define wEntityTilesSpriteslotIndexA 0xC197
 #define wC19C                   0xC19C
 #define wC19D                   0xC19D
+#define wBGOriginHigh                 0xC12E
+#define wBGOriginLow                  0xC12F
 #define wNameIndex                    0xC108
 #define wDialogIndexHi                0xC112
 #define wDialogCooldown               0xC134
@@ -67,6 +69,7 @@
 #define wD474                   0xD474
 #define wD478                   0xD478
 #define wD47F                   0xD47F
+#define wD500                   0xD500
 #define wDrawCommand            0xD601
 #define wOverworldRoomStatus    0xD800
 #define wIndoorARoomStatus           0xD900

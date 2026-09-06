@@ -117,6 +117,49 @@ void DialogClosingBeginHandler(GBState *gb, void (*func_01C_4AA8)(GBState *));
  */
 void DialogLetterAnimationStartHandler(GBState *gb, void (*clear_letter_pixels)(GBState *));
 
+/**
+ * ExecuteDialog (00:2321)
+ * Main dialog dispatcher; configures background tile, wraps next char position,
+ * and dispatches to handler for current wDialogState.
+ */
+void ExecuteDialog(GBState *gb, void (*state_handlers[15])(GBState *));
+
+/**
+ * func_23E4 (00:23E4)
+ * Backs up 18x2 BG map tiles under the dialog box to wD500 buffer during dialog opening.
+ */
+void func_23E4(GBState *gb);
+
+/**
+ * DialogScrollingStartHandler (00:2714)
+ * Empty handler returning immediately.
+ */
+void DialogScrollingStartHandler(GBState *gb);
+
+/**
+ * DialogScrollingEndHandler (00:2768)
+ * Empty handler returning immediately.
+ */
+void DialogScrollingEndHandler(GBState *gb);
+
+/**
+ * SkipDialog (00:278B)
+ * Sets wDialogAskSelectionIndex to 2 and transitions dialog to closing state.
+ */
+void SkipDialog(GBState *gb);
+
+/**
+ * DialogChoiceHandler (00:2793)
+ * Handles input on ask/choice dialogs, toggling selection and advancing on A press.
+ */
+void DialogChoiceHandler(GBState *gb, void (*draw_dialog_choice_marker)(GBState *));
+
+/**
+ * DrawDialogArrowTrampoline (00:27BB)
+ * Switches to Bank $17 and invokes DrawDialogArrow ($7D7C).
+ */
+void DrawDialogArrowTrampoline(GBState *gb, void (*draw_dialog_arrow)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif
