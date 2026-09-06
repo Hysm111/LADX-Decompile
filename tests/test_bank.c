@@ -4,6 +4,7 @@
 #include "home/bank.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
+#include "constants/gfx.h"
 
 static int failures = 0;
 
@@ -279,6 +280,123 @@ static void test_bank_trampolines(void) {
     TEST_ASSERT(gb.rom_bank == 0x25, "LoadBaseTiles_trampoline did not restore stacked bank (0x25)");
 }
 
+static void hook_bank24(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x24, "Target callback not executed in bank 0x24");
+}
+
+static void hook_bank0f(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == BANK_FontTiles, "Target callback not executed in BANK(FontTiles)");
+    TEST_ASSERT(gb_read(gb, wCurrentBank) == BANK_FontTiles, "wCurrentBank not set to BANK(FontTiles)");
+}
+
+static void hook_bank36_switch(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x36, "Target callback not executed in bank 0x36");
+    TEST_ASSERT(gb_read(gb, wCurrentBank) == 0x36, "wCurrentBank not set to 0x36");
+}
+
+static void hook_bank36_select(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x36, "Target callback not executed in bank 0x36");
+}
+
+static void hook_bank3d(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x3D, "Target callback not executed in bank 0x3D");
+}
+
+static void test_bank_trampolines_batch2(void) {
+    GBState gb;
+
+    /* 1. ChangeBGColumnPaletteAndExecuteDrawCommands */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x02);
+    /* Setup draw command at wDrawCommand (0xD601) */
+    gb_write(&gb, wDrawCommand + 0, 0x98);
+    gb_write(&gb, wDrawCommand + 1, 0x20);
+    gb_write(&gb, wDrawCommand + 2, 0x01); /* copy row, count = 2 (0x01 + 1) */
+    gb_write(&gb, wDrawCommand + 3, 0x44);
+    gb_write(&gb, wDrawCommand + 4, 0x55);
+    gb_write(&gb, wDrawCommand + 5, 0x00); /* end */
+    tramp_called = 0;
+    ChangeBGColumnPaletteAndExecuteDrawCommands(&gb, 0x12, hook_bank24);
+    TEST_ASSERT(tramp_called == 1, "ChangeBGColumnPaletteAndExecuteDrawCommands callback not called");
+    TEST_ASSERT(gb_read(&gb, 0x9820) == 0x44, "Draw commands not executed (byte 0)");
+    TEST_ASSERT(gb_read(&gb, 0x9821) == 0x55, "Draw commands not executed (byte 1)");
+    TEST_ASSERT(gb.rom_bank == 0x12, "ROM bank not restored to stacked bank (0x12)");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x12, "wCurrentBank not restored to stacked bank (0x12)");
+
+    /* 2. func_A9B */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x01);
+    tramp_called = 0;
+    func_A9B(&gb, 0x07, hook_bank0f);
+    TEST_ASSERT(tramp_called == 1, "func_A9B callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x07, "ROM bank not restored to stacked bank (0x07)");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == BANK_FontTiles, "wCurrentBank should remain at BANK(FontTiles)");
+
+    /* 3. Spawn2x2RubbleEntities_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x01);
+    tramp_called = 0;
+    Spawn2x2RubbleEntities_trampoline(&gb, 0x04, hook_bank36_switch);
+    TEST_ASSERT(tramp_called == 1, "Spawn2x2RubbleEntities_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x04, "ROM bank not restored to stacked bank (0x04)");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x04, "wCurrentBank not restored to stacked bank (0x04)");
+
+    /* 4. func_A5F */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_A5F(&gb, 0x08, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_A5F callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x08, "func_A5F did not restore stacked bank (0x08)");
+
+    /* 5. func_036_703E_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_036_703E_trampoline(&gb, 0x09, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "func_036_703E_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x09, "func_036_703E_trampoline did not restore stacked bank (0x09)");
+
+    /* 6. cycleInstrumentItemColor_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    cycleInstrumentItemColor_trampoline(&gb, 0x0A, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "cycleInstrumentItemColor_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x0A, "cycleInstrumentItemColor_trampoline did not restore stacked bank (0x0A)");
+
+    /* 7. func_036_4A77_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x02);
+    tramp_called = 0;
+    func_036_4A77_trampoline(&gb, 0x0B, hook_bank36_switch);
+    TEST_ASSERT(tramp_called == 1, "func_036_4A77_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x0B, "func_036_4A77_trampoline did not restore stacked bank (0x0B)");
+
+    /* 8. GetOwlStatueDialogId_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    GetOwlStatueDialogId_trampoline(&gb, 0x0C, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "GetOwlStatueDialogId_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x0C, "GetOwlStatueDialogId_trampoline did not restore stacked bank (0x0C)");
+
+    /* 9. SpawnPhotographer_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    SpawnPhotographer_trampoline(&gb, 0x0D, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "SpawnPhotographer_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x0D, "SpawnPhotographer_trampoline did not restore stacked bank (0x0D)");
+
+    /* 10. LoadPhotoBgMap_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    LoadPhotoBgMap_trampoline(&gb, hook_bank3d);
+    TEST_ASSERT(tramp_called == 1, "LoadPhotoBgMap_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x3D, "LoadPhotoBgMap_trampoline ROM bank should be 0x3D");
+}
+
 int run_bank_tests(void) {
     printf("[*] Running AdjustBankNumberForGBC tests...\n");
     test_adjust_bank_number_for_gbc();
@@ -315,6 +433,7 @@ int run_bank_tests(void) {
 
     printf("[*] Running Bank Trampolines tests...\n");
     test_bank_trampolines();
+    test_bank_trampolines_batch2();
 
     if (failures == 0) {
         printf("  [PASS] All bank.asm functions verified successfully!\n");

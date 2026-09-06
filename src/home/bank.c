@@ -2,6 +2,7 @@
 #include "home/copy_data.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
+#include "constants/gfx.h"
 
 uint8_t AdjustBankNumberForGBC(GBState *gb, uint8_t bank) {
     if (!gb) return bank;
@@ -206,4 +207,104 @@ void LoadBaseTiles_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_f
         target_func(gb);
     }
     RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void ChangeBGColumnPaletteAndExecuteDrawCommands(GBState *gb, uint8_t stacked_bank, void (*change_palette)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x24);
+    if (change_palette) {
+        change_palette(gb);
+    }
+    ExecuteDrawCommands(gb, wDrawCommand);
+    RestoreStackedBank(gb, stacked_bank);
+}
+
+void func_A9B(GBState *gb, uint8_t stacked_bank, void (*execute_dialog)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, BANK_FontTiles);
+    if (execute_dialog) {
+        execute_dialog(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void Spawn2x2RubbleEntities_trampoline(GBState *gb, uint8_t stacked_bank, void (*spawn_func)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, 0x36);
+    if (spawn_func) {
+        spawn_func(gb);
+    }
+    RestoreStackedBank(gb, stacked_bank);
+}
+
+void func_A5F(GBState *gb, uint8_t stacked_bank, void (*render_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (render_func) {
+        render_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_703E_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void cycleInstrumentItemColor_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_4A77_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void GetOwlStatueDialogId_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void SpawnPhotographer_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void LoadPhotoBgMap_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x3D);
+    if (target_func) {
+        target_func(gb);
+    }
 }

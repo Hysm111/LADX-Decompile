@@ -20,4 +20,8 @@
 #define BANK_DungeonMinimapTiles     0x12
 #define DungeonMinimapTiles          0x7E00
 
+/* Font Graphic assets */
+#define BANK_FontTiles               0x0F
+#define FontTiles                    0x5000
+
 #endif /* LADX_CONSTANTS_GFX_H */

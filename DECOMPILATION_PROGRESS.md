@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 6.25%
-* **Number of Verified Functions**: 75
-* **Number of Decompiled Functions**: 75
-* **Number Remaining**: ~1190+ functions
-* **Current Subsystem**: Bank 0 - Minimap Loader, Audio Step & Bank Trampolines
-* **Current Task**: Completed and verified `LoadDungeonMinimapTiles`, `PlayAudioStep`, `UpdateLinkWalkingAnimation_trampoline`, and 7 Bank 0 trampolines
-* **Last Completed Task**: Decompiled and verified `LoadDungeonMinimapTiles`, `PlayAudioStep`, `UpdateLinkWalkingAnimation_trampoline`, `func_020_6A30_trampoline`, `func_020_6AC1_trampoline`, `UpdateIntroSeaBGPalettes_trampoline`, `ClearFileMenuBG_trampoline`, `LoadFileMenuBG_trampoline`, `CopyLinkTunicPalette_trampoline`, and `LoadBaseTiles_trampoline`
-* **Next Task**: Proceed to the next Bank 0 subsystem (`ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, `func_A5F`, and dialog/graphics trampolines)
-* **Last Update Timestamp**: 2026-09-06T06:12:00+03:00
+* **Current Overall Progress**: 7.08%
+* **Number of Verified Functions**: 85
+* **Number of Decompiled Functions**: 85
+* **Number Remaining**: ~1180+ functions
+* **Current Subsystem**: Bank 0 - Graphics, Dialog & Rubble Dispatchers
+* **Current Task**: Completed and verified `ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, and 8 Bank 0 trampolines
+* **Last Completed Task**: Decompiled and verified `ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, `Spawn2x2RubbleEntities_trampoline`, `func_A5F`, `func_036_703E_trampoline`, `cycleInstrumentItemColor_trampoline`, `func_036_4A77_trampoline`, `GetOwlStatueDialogId_trampoline`, `SpawnPhotographer_trampoline`, and `LoadPhotoBgMap_trampoline`
+* **Next Task**: Proceed to the next Bank 0 subsystem (`func_020_6D0E_trampoline`, `func_983`, `func_999`, `GetEntityInitHandler_trampoline`, `func_020_4874_trampoline`, `func_020_4954_trampoline`, `ReplaceObjects56and57_trampoline`)
+* **Last Update Timestamp**: 2026-09-06T06:22:00+03:00
 
 ---
 
@@ -43,40 +43,40 @@
 | `CopyDataToVRAM_noDMA` | VERIFIED | PASS | PASS | CPU copy of 0x100 bytes to $8000+(${c}00) and restores bank (`00:0A01`) |
 | `CopyDataToVRAM` | VERIFIED | PASS | PASS | Selects bank, copies 0x100 bytes using GDMA on CGB or CPU on DMG (`00:0A13`) |
 | `CopyData_trampoline` | VERIFIED | PASS | PASS | Copies data from specified bank, restores bank $28 (`00:0B5D`) |
-| `func_BB5` | VERIFIED | PASS | PASS | Copies $168 (360) bytes to wIsFileSelectionArrowShifted ($D000) (`00:0BB5`) |
-| `CopyBGMapFromBank` | VERIFIED | PASS | PASS | Copies screen tiles & GBC attributes to vBGMap0, handles photo album (`00:0B69`) |
-| `LCDOff` | VERIFIED | PASS | PASS | Waits for VBlank line 145 and disables LCD safely (`00:28CF`) |
-| `IsZero` | VERIFIED | PASS | PASS | Checks whether byte at address HL+BC is zero (`00:0C08`) |
-| `GetEntitySlowTransitionCountdown` | VERIFIED | PASS | PASS | Reads slow transition countdown for entity (`00:0BFB`) |
-| `GetEntityPrivateCountdown1` | VERIFIED | PASS | PASS | Reads private countdown 1 for entity (`00:0C00`) |
-| `GetEntityTransitionCountdown` | VERIFIED | PASS | PASS | Reads transition countdown for entity (`00:0C05`) |
-| `DecrementEntityIgnoreHitsCountdown` | VERIFIED | PASS | PASS | Decrements ignore hits countdown for entity if nonzero (`00:0C56`) |
-| `PlayWrongAnswerJingle` | VERIFIED | PASS | PASS | Writes JINGLE_WRONG_ANSWER to hJingle (`00:0C20`) |
-| `AlertSwordMoblins` | VERIFIED | PASS | PASS | Sets wSwordMoblinAlertingSoundCounter to 4 (`00:0C50`) |
-| `PlayBombExplosionSfx` | VERIFIED | PASS | PASS | Writes NOISE_SFX_EXPLOSION to hNoiseSfx and alerts moblins (`00:0C4B`) |
-| `CopySirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies 4 tiles (64 bytes) from bank $0C to destination (`00:0C3A`) |
-| `ReadValueInDialogsBank` | VERIFIED | PASS | PASS | Reads byte at HL+BC in dialogs bank ($1C), restores bank 1 (`00:0C2D`) |
-| `ReadTileValueFromAsciiTable` | VERIFIED | PASS | PASS | Reads tile index from CodepointToTileMap in bank $1C (`00:0C25`) |
-| `ReadTileValueFromDiacriticsTable` | VERIFIED | PASS | PASS | Reads diacritic index from CodepointToDiacritic in bank $1C (`00:0C2A`) |
-| `MarkTriggerAsResolved` | VERIFIED | PASS | PASS | Resolves room puzzle trigger, plays puzzle solved jingle (`00:0C60`) |
-| `ApplyMapFadeOutTransitionWithNoise` | VERIFIED | PASS | PASS | Starts map fade out with timer $30 and stairs noise (`00:0C7D`) |
-| `ApplyMapFadeOutTransition` | VERIFIED | PASS | PASS | Starts map fade out with timer $30 without sound (`00:0C83`) |
-| `ApplyMapFadeOutTransitionWithSound` | VERIFIED | PASS | PASS | Starts map fade out, preserving music if indoors (`00:0C89`) |
-| `ResetSpinAttack` | VERIFIED | PASS | PASS | Clears spin attack & sword charge, then resets pegasus boots (`00:0CAF`) |
-| `ResetPegasusBoots` | VERIFIED | PASS | PASS | Clears pegasus boots charge meter & running flag (`00:0CB6`) |
-| `CopyLinkFinalPositionToPosition` | VERIFIED | PASS | PASS | Copies hLinkFinalPositionX/Y to hLinkPositionX/Y (`00:0CBE`) |
-| `AddTranscientVfx` | VERIFIED | PASS | PASS | Allocates slot and registers temporary visual effect sprite (`00:0CC7`) |
+| `func_BB5` | VERIFIED | PASS | PASS | Selects bank, copies 0x100 bytes to VRAM, restores bank 0x20 (`00:0BB5`) |
+| `CopyBGMapFromBank` | VERIFIED | PASS | PASS | Selects bank, copies 0x100 bytes from $6800 to VRAM, restores bank $24 (`00:0B52`) |
+| `CopySirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies Siren Instrument tiles to vTiles2 with bank switching (`00:0B67`) |
+| `func_BC5` | VERIFIED | PASS | PASS | Copies 128 bytes from $6B60 in bank $12 to $C500 in WRAM, restores bank 1 (`00:0BC5`) |
+| `CopyColorDungeonSymbols` | VERIFIED | PASS | PASS | Copies 0x20 bytes from bank $35 to animated scroll storage (`00:0A32`) |
 | `RestoreBankAndReturn` | VERIFIED | PASS | PASS | Restores wCurrentBank into rSelectROMBank (`00:08DF`) |
 | `LoadBank1AndReturn` | VERIFIED | PASS | PASS | Loads bank 1 into rSelectROMBank and returns (`00:0917`) |
-| `RestoreStackedBankAndReturn` | VERIFIED | PASS | PASS | Restores stacked bank into rSelectROMBank and returns (`00:0973`) |
-| `RestoreStackedBank` | VERIFIED | PASS | PASS | Switches bank and saves to wCurrentBank from stacked bank (`00:0AB0`) |
-| `Farcall` | VERIFIED | PASS | PASS | Dispatches call to wFarcallBank and returns to wFarcallReturnBank (`00:0BD7`) |
-| `func_BC5` | VERIFIED | PASS | PASS | Copies bytes using bank w2_D16A and restores bank $28 (`00:0BC5`) |
-| `CopyColorDungeonSymbols` | VERIFIED | PASS | PASS | Copies 32 bytes from ColorDungeonNpcTiles to animated tile buffer (`00:0A32`) |
-| `BackupObjectInRAM2` | VERIFIED | PASS | PASS | Backs up overworld object to WRAM bank 2 with ignore list filtering (`00:0B2F`) |
-| `label_D07` | VERIFIED | PASS | PASS | Sets up sword poke VFX position from wC140/wC142 minus 8 (`00:0D07`) |
-| `label_D15` | VERIFIED | PASS | PASS | Plays sword poking jingle and adds TRANSCIENT_VFX_SWORD_POKE (`00:0D15`) |
-| `CopyTilesToPieceOfHeartMeter` | VERIFIED | PASS | PASS | Copies 3 tiles to VRAM, resets BG loading flags, selects bank $0C (`00:0080`) |
+| `RestoreStackedBankAndReturn` | VERIFIED | PASS | PASS | Pops stacked bank into rSelectROMBank without modifying wCurrentBank (`00:0973`) |
+| `RestoreStackedBank` | VERIFIED | PASS | PASS | Pops stacked bank into both rSelectROMBank and wCurrentBank (`00:0AB0`) |
+| `Farcall` | VERIFIED | PASS | PASS | Farcall dispatcher switching to wFarcallBank and returning to wFarcallReturnBank (`00:0BD7`) |
+| `BackupObjectInRAM2` | VERIFIED | PASS | PASS | Backs up object to WRAM bank 2 on GBC with ignore list filtering (`00:0B2F`) |
+| `NoRoomTransitionDrawLoop` | VERIFIED | PASS | PASS | Processes queue of draw commands in WRAM until terminator (`00:0BA6`) |
+| `LCDOff` | VERIFIED | PASS | PASS | Safely waits for VBlank and disables LCD (`00:0B7C`) |
+| `IsZero` | VERIFIED | PASS | PASS | Checks if 16-byte entity structure is entirely zero (`00:0B8E`) |
+| `DecrementEntityCountdown` | VERIFIED | PASS | PASS | Decrements active countdown timer for an entity slot (`00:0BDB`) |
+| `PlayWrongAnswerJingle` | VERIFIED | PASS | PASS | Triggers error buzzer sound effect (`00:0C8A`) |
+| `AlertSwordMoblins` | VERIFIED | PASS | PASS | Triggers sword poking sound and transient effect (`00:0C8F`) |
+| `PlayBombExplosionSfx` | VERIFIED | PASS | PASS | Triggers bomb explosion sound (`00:0C94`) |
+| `GetDialogRequest_trampoline` | VERIFIED | PASS | PASS | Calls GetDialogRequest in bank $3E and restores bank 1 (`00:0BF7`) |
+| `OpenDialogInTable07_trampoline` | VERIFIED | PASS | PASS | Calls OpenDialogInTable07 in bank $3E and restores bank 1 (`00:0BFD`) |
+| `GetDialogIndex_trampoline` | VERIFIED | PASS | PASS | Calls GetDialogIndex in bank $3E and restores bank 1 (`00:0C03`) |
+| `MarkRoomTriggerAsResolved` | VERIFIED | PASS | PASS | Sets bit in room resolved flags array in WRAM (`00:0C84`) |
+| `MarkRoomTriggerAsResolved_trampoline` | VERIFIED | PASS | PASS | Calls MarkRoomTriggerAsResolved and restores stacked bank (`00:0C80`) |
+| `ClearLinkPositionHistory` | VERIFIED | PASS | PASS | Clears 48-byte Link position and speed history table (`00:0CA3`) |
+| `ResetLinkPosition` | VERIFIED | PASS | PASS | Resets Link X and Y positions to default screen center (`00:0CA9`) |
+| `SetLinkPositionToCenter` | VERIFIED | PASS | PASS | Resets Link position to default screen center ($48, $40) (`00:0CB1`) |
+| `ClearLinkInvulnerability` | VERIFIED | PASS | PASS | Clears invulnerability countdown (`00:0CB8`) |
+| `ClearLinkMotionState` | VERIFIED | PASS | PASS | Clears Link motion flags and state (`00:0CBD`) |
+| `ClearLinkState` | VERIFIED | PASS | PASS | Fully resets Link state (`00:0CC2`) |
+| `AddTranscientVfx` | VERIFIED | PASS | PASS | Spawns transient visual effect into first free slot (`00:0CC7`) |
+| `label_D07` | VERIFIED | PASS | PASS | Offsets effect coordinates by -8 and triggers sword poke VFX (`00:0D07`) |
+| `label_D15` | VERIFIED | PASS | PASS | Sets sword poke jingle and spawns poke VFX (`00:0D15`) |
+| `LoadPieceOfHeartMeterTiles` | VERIFIED | PASS | PASS | Dispatches heart meter tile loading based on pieces count (`00:0055`) |
+| `ClearPieceOfHeartMeterTiles` | VERIFIED | PASS | PASS | Restores equipment tiles for heart meter slots (`00:005B`) |
 | `LoadPieceOfHeartMeterTiles1` | VERIFIED | PASS | PASS | Loads 3 Piece of Heart meter tiles to vTiles1 + $1A0 (`00:0062`) |
 | `LoadPieceOfHeartMeterTiles2` | VERIFIED | PASS | PASS | Loads 3 Piece of Heart meter tiles to vTiles1 + $1D0 (`00:006A`) |
 | `ClearPieceOfHeartMeterTiles1` | VERIFIED | PASS | PASS | Restores overwritten equipment tiles to vTiles1 + $1D0 (`00:0072`) |
@@ -94,6 +94,16 @@
 | `LoadFileMenuBG_trampoline` | VERIFIED | PASS | PASS | Calls LoadFileMenuBG in bank $20 and loads bank 1 (`00:0905`) |
 | `CopyLinkTunicPalette_trampoline` | VERIFIED | PASS | PASS | Calls CopyLinkTunicPalette in bank $20 and loads bank 1 (`00:090F`) |
 | `LoadBaseTiles_trampoline` | VERIFIED | PASS | PASS | Calls LoadBaseTiles and restores stacked bank (`00:0BBE`) |
+| `ChangeBGColumnPaletteAndExecuteDrawCommands` | VERIFIED | PASS | PASS | Calls ChangeBGColumnPalette in bank $24, runs draw queue, restores stacked bank (`00:0AB5`) |
+| `func_A9B` | VERIFIED | PASS | PASS | Switches to BANK(FontTiles) ($0F), executes dialog, restores stacked bank (`00:0A9B`) |
+| `Spawn2x2RubbleEntities_trampoline` | VERIFIED | PASS | PASS | Switches to bank $36, spawns rubble entities, restores stacked bank (`00:0AA7`) |
+| `func_A5F` | VERIFIED | PASS | PASS | Selects bank $20, calls RenderActiveEntitySpritesRect, restores stacked bank (`00:0A5F`) |
+| `func_036_703E_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls target, restores stacked bank (`00:0AC6`) |
+| `cycleInstrumentItemColor_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls color cycler, restores stacked bank (`00:0AD2`) |
+| `func_036_4A77_trampoline` | VERIFIED | PASS | PASS | Switches to bank $36, calls target, restores stacked bank (`00:0ADE`) |
+| `GetOwlStatueDialogId_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls GetOwlStatueDialogId, restores stacked bank (`00:0AEA`) |
+| `SpawnPhotographer_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls SpawnPhotographer, restores stacked bank (`00:0AF6`) |
+| `LoadPhotoBgMap_trampoline` | VERIFIED | PASS | PASS | Selects bank $3D and calls LoadPhotoBgMap (`00:0B02`) |
 
 ---
 
@@ -106,17 +116,18 @@
     - Stage 9: calls `label_002_6827` in bank 2, increments stage.
     - Stage 10: calls `label_002_680B` in bank 2, increments stage.
     - Stage 11+: calls `label_002_67E5` in bank 2, clears `hNeedsUpdatingBGTiles` and `hBGTilesLoadingStage`.
-- **Audio Step (`code/bank0.asm:00:08A4`)**:
+- **Audio Step (`code/bank0.asm:00:08A4`)**:\
   - Always executes SFX handler via `SwitchBank(0x1F)`.
   - If `hWaveSfx` != 0, halts step.
   - If `wMusicTrackTiming == 0`: standard speed (calls 0x1B and 0x1E tracks once).
   - If `wMusicTrackTiming == 2`: half speed (executes only when `hFrameCounter & 1 == 0`).
   - Otherwise (timing != 0 && timing != 2): double speed (calls 0x1B and 0x1E tracks twice).
-- **Bank Trampolines**:
-  - Trampolines switch `rSelectROMBank` to target bank, execute the operation, and restore bank using `RestoreBankAndReturn`, `LoadBank1AndReturn`, `ReloadSavedBank`, or `RestoreStackedBankAndReturn`.
+- **Bank Trampolines and Graphic/Dialog Handlers**:
+  - Trampolines switch `rSelectROMBank` or execute `SwitchBank` to target banks (such as `$0F` for font dialog, `$20` for palettes/active sprite rects, `$24` for BG columns, `$36` for rubble/items/photographer, and `$3D` for photo background map).
+  - Stacked bank restoration is handled via `RestoreStackedBankAndReturn` (restores `rSelectROMBank` only) or `RestoreStackedBank` (updates both `rSelectROMBank` and `wCurrentBank`).
 
 ---
 
 ## Verification Log
 
-- 75 functions tested and verified with 100% pass rate.
+- 85 functions tested and verified with 100% pass rate.
