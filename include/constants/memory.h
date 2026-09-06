@@ -63,6 +63,11 @@
 #define wIsRoosterFollowingLink 0xDB7B
 #define BOW_WOW_FOLLOWING       0x01
 
+/* Room Objects in WRAM */
+#define wRoomObjectsArea             0xD700
+#define wRoomObjects                 0xD711
+#define OBJECTS_PER_ROW              10
+
 /* WRAM Entity Tables */
 #define wEntitiesPhysicsFlagsTable            0xC120
 #define wEntitiesPosXTable                    0xC200

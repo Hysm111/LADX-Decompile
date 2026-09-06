@@ -425,8 +425,140 @@ void WriteObjectToBG_DMG(GBState *gb, uint16_t de, uint16_t hl) {
     gb_write(gb, de + 0x21, gb_read(gb, src + 3));
 }
 
-void SwitchToObjectsTilemapBank(GBState *gb) {
-    if (!gb) return;
+uint8_t SwitchToObjectsTilemapBank(GBState *gb) {
+    if (!gb) return 0;
     uint8_t bank = (gb_read(gb, wIsIndoor) != 0) ? BANK_IndoorObjectsTilemapDMG : BANK_OverworldObjectsTilemapDMG;
     gb_write(gb, rSelectROMBank, bank);
+    return bank;
+}
+
+void WriteOverworldObjectToBG(GBState *gb, uint16_t de, uint16_t hl,
+                              void (*get_bg_attributes)(GBState *, uint16_t, uint16_t)) {
+    if (!gb) return;
+
+    gb_write(gb, rSVBK, 2);
+    uint8_t c = gb_read(gb, hl);
+    gb_write(gb, rSVBK, 0);
+
+    doCopyObjectToBG(gb, de, hl, c, get_bg_attributes);
+}
+
+void WriteIndoorObjectToBG(GBState *gb, uint16_t de, uint16_t hl,
+                            void (*get_bg_attributes)(GBState *, uint16_t, uint16_t)) {
+    if (!gb) return;
+
+    uint8_t c = gb_read(gb, hl);
+    doCopyObjectToBG(gb, de, hl, c, get_bg_attributes);
+}
+
+void doCopyObjectToBG(GBState *gb, uint16_t de, uint16_t hl, uint8_t obj_attr_val,
+                      void (*get_bg_attributes)(GBState *, uint16_t, uint16_t)) {
+    if (!gb) return;
+
+    uint16_t bc = (uint16_t)obj_attr_val * 4;
+
+    gb_write(gb, rSelectROMBank, 0x1A);
+    if (get_bg_attributes) {
+        get_bg_attributes(gb, hl, bc);
+    }
+
+    SwitchToObjectsTilemapBank(gb);
+
+    uint16_t tilemap;
+    uint8_t map_id = gb_read(gb, hMapId);
+    if (gb_read(gb, wIsIndoor) != 0) {
+        if (map_id == MAP_COLOR_DUNGEON ||
+            (map_id == MAP_HOUSE && gb_read(gb, hMapRoom) == ROOM_INDOOR_B_CAMERA_SHOP)) {
+            tilemap = ColorDungeonObjectsTilemap;
+        } else {
+            tilemap = IndoorObjectsTilemapCGB;
+        }
+    } else {
+        tilemap = OverworldObjectsTilemapCGB;
+    }
+
+    uint16_t src_tile = tilemap + bc;
+
+    /* Copy tile numbers to BG map for tiles on the upper row */
+    CopyWord(gb, de, src_tile);
+    src_tile += 2;
+
+    /* Copy tile attributes to BG map for tiles on the upper row */
+    uint8_t attr_bank = gb_read(gb, hMultiPurpose8);
+    gb_write(gb, rSelectROMBank, attr_bank);
+    uint16_t attr_addr = ((uint16_t)gb_read(gb, hMultiPurpose9) << 8) | gb_read(gb, hMultiPurposeA);
+    gb_write(gb, rVBK, 1);
+    CopyWord(gb, de, attr_addr);
+    attr_addr += 2;
+
+    /* Restore RAM and ROM banks */
+    gb_write(gb, rVBK, 0);
+    SwitchToObjectsTilemapBank(gb);
+
+    /* Update palette offset */
+    gb_write(gb, hMultiPurpose9, (uint8_t)(attr_addr >> 8));
+    gb_write(gb, hMultiPurposeA, (uint8_t)(attr_addr & 0xFF));
+
+    /* Move BG target down by one row (+ 0x20) */
+    uint16_t de_row2 = de + 0x20;
+
+    /* Copy tile numbers for tiles on the lower row */
+    CopyWord(gb, de_row2, src_tile);
+
+    /* Copy palettes for tiles on the lower row */
+    gb_write(gb, rSelectROMBank, attr_bank);
+    attr_addr = ((uint16_t)gb_read(gb, hMultiPurpose9) << 8) | gb_read(gb, hMultiPurposeA);
+    gb_write(gb, rVBK, 1);
+    CopyWord(gb, de_row2, attr_addr);
+
+    /* Restore RAM and ROM banks */
+    gb_write(gb, rVBK, 0);
+    SwitchToObjectsTilemapBank(gb);
+}
+
+void LoadRoomTilemap(GBState *gb,
+                     void (*get_bg_attributes)(GBState *, uint16_t, uint16_t),
+                     void (*update_minimap_arrow)(GBState *)) {
+    if (!gb) return;
+
+    uint8_t bank = SwitchToObjectsTilemapBank(gb);
+    SwitchBank(gb, bank);
+
+    uint16_t de = vBGMap0;
+    uint16_t hl = wRoomObjects;
+    uint8_t c = 0x80;
+
+    while (c > 0) {
+        if (gb_read(gb, hIsGBC) == 0) {
+            WriteObjectToBG_DMG(gb, de, hl);
+        } else {
+            if (gb_read(gb, wIsIndoor) != 0) {
+                WriteIndoorObjectToBG(gb, de, hl, get_bg_attributes);
+            } else {
+                WriteOverworldObjectToBG(gb, de, hl, get_bg_attributes);
+            }
+        }
+
+        hl++;
+        if ((hl & 0x0F) == (OBJECTS_PER_ROW + 1)) {
+            hl = (hl & 0xFFF0) + 0x11;
+        }
+
+        uint8_t e = (uint8_t)(de & 0xFF);
+        uint8_t d = (uint8_t)(de >> 8);
+        e += 2;
+        if ((e & 0x1F) == (SCRN_X / 8)) {
+            uint16_t new_e = (uint16_t)(e & 0xE0) + 0x40;
+            e = (uint8_t)new_e;
+            d += (uint8_t)(new_e >> 8);
+        }
+        de = ((uint16_t)d << 8) | e;
+
+        c--;
+    }
+
+    gb_write(gb, rSelectROMBank, 1);
+    if (update_minimap_arrow) {
+        update_minimap_arrow(gb);
+    }
 }

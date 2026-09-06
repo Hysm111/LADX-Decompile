@@ -83,6 +83,29 @@ static void setup_mock_data(void) {
     mock_rom[ROM_BANK_OFFSET(0x0D, 0x5200)] = 0x52;
     mock_rom[ROM_BANK_OFFSET(0x2D, 0x5200)] = 0x52;
 
+    /* Objects tilemaps */
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapCGB + 4 + 0)] = 0xA1;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapCGB + 4 + 1)] = 0xA2;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapCGB + 4 + 2)] = 0xA3;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapCGB + 4 + 3)] = 0xA4;
+
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapCGB + 4 + 0)] = 0xB1;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapCGB + 4 + 1)] = 0xB2;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapCGB + 4 + 2)] = 0xB3;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapCGB + 4 + 3)] = 0xB4;
+
+    mock_rom[ROM_BANK_OFFSET(0x08, ColorDungeonObjectsTilemap + 4 + 0)] = 0xC1;
+    mock_rom[ROM_BANK_OFFSET(0x08, ColorDungeonObjectsTilemap + 4 + 1)] = 0xC2;
+    mock_rom[ROM_BANK_OFFSET(0x08, ColorDungeonObjectsTilemap + 4 + 2)] = 0xC3;
+    mock_rom[ROM_BANK_OFFSET(0x08, ColorDungeonObjectsTilemap + 4 + 3)] = 0xC4;
+
+    /* Object tile attributes in Bank 0x1B */
+    mock_rom[ROM_BANK_OFFSET(0x1B, 0x5000 + 0)] = 0x05;
+    mock_rom[ROM_BANK_OFFSET(0x1B, 0x5000 + 1)] = 0x06;
+    mock_rom[ROM_BANK_OFFSET(0x1B, 0x5000 + 2)] = 0x07;
+    mock_rom[ROM_BANK_OFFSET(0x1B, 0x5000 + 3)] = 0x08;
+
+
     /* Bank $0E: Npc1Tiles (BowWow follower 0xA4 -> offset 0x6400) */
     mock_rom[ROM_BANK_OFFSET(0x0E, 0x6400)] = 0x94;
 
@@ -546,6 +569,154 @@ static void test_load_room_specific_tiles(void) {
     TEST_ASSERT(gb_read(&gb, vTiles1 + 0x700) == 0xC5, "Camera shop indoor tiles not copied to vTiles1+0x700");
 }
 
+static void mock_get_bg_attributes(GBState *gb, uint16_t hl, uint16_t bc) {
+    (void)hl;
+    (void)bc;
+    gb_write(gb, hMultiPurpose8, 0x1B);
+    gb_write(gb, hMultiPurpose9, 0x50);
+    gb_write(gb, hMultiPurposeA, 0x00);
+}
+
+static bool minimap_arrow_called = false;
+static void mock_update_minimap_arrow(GBState *gb) {
+    (void)gb;
+    minimap_arrow_called = true;
+}
+
+static void test_write_overworld_and_indoor_object_to_bg(void) {
+    GBState gb;
+
+    /* 1. WriteOverworldObjectToBG */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapId, 0);
+
+    /* Write object ID 1 into WRAM bank 2 at wRoomObjects ($D711) */
+    gb_write(&gb, rSVBK, 2);
+    gb_write(&gb, wRoomObjects, 1);
+    /* Write dummy value into WRAM bank 1 to verify bank 2 was read */
+    gb_write(&gb, rSVBK, 1);
+    gb_write(&gb, wRoomObjects, 99);
+
+    WriteOverworldObjectToBG(&gb, vBGMap0 + 4, wRoomObjects, mock_get_bg_attributes);
+
+    /* Verify tiles copied to vBGMap0 upper and lower rows in VRAM bank 0 */
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 4) == 0xA1, "Overworld object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 5) == 0xA2, "Overworld object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 4 + 0x20) == 0xA3, "Overworld object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 5 + 0x20) == 0xA4, "Overworld object bottom-right tile mismatch");
+
+    /* Verify attributes copied to VRAM bank 1 */
+    gb_write(&gb, rVBK, 1);
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 4) == 0x05, "Overworld object top-left attribute mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 5) == 0x06, "Overworld object top-right attribute mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 4 + 0x20) == 0x07, "Overworld object bottom-left attribute mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 5 + 0x20) == 0x08, "Overworld object bottom-right attribute mismatch");
+    gb_write(&gb, rVBK, 0);
+
+    TEST_ASSERT(gb.wram_bank == 1, "WRAM bank not restored to 1");
+
+    /* 2. WriteIndoorObjectToBG - default indoor */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, 1);
+    gb_write(&gb, hMapRoom, 0);
+    gb_write(&gb, wRoomObjects, 1);
+
+    WriteIndoorObjectToBG(&gb, vBGMap0 + 8, wRoomObjects, mock_get_bg_attributes);
+
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 8) == 0xB1, "Indoor object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 9) == 0xB2, "Indoor object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 8 + 0x20) == 0xB3, "Indoor object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 9 + 0x20) == 0xB4, "Indoor object bottom-right tile mismatch");
+
+    gb_write(&gb, rVBK, 1);
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 8) == 0x05, "Indoor object top-left attribute mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 8 + 0x20) == 0x07, "Indoor object bottom-left attribute mismatch");
+    gb_write(&gb, rVBK, 0);
+
+    /* 3. WriteIndoorObjectToBG - Color Dungeon */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_COLOR_DUNGEON);
+    gb_write(&gb, wRoomObjects, 1);
+
+    WriteIndoorObjectToBG(&gb, vBGMap0 + 12, wRoomObjects, mock_get_bg_attributes);
+
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 12) == 0xC1, "Color Dungeon object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 13) == 0xC2, "Color Dungeon object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 12 + 0x20) == 0xC3, "Color Dungeon object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 13 + 0x20) == 0xC4, "Color Dungeon object bottom-right tile mismatch");
+
+    /* 4. WriteIndoorObjectToBG - Camera shop */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_HOUSE);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_B_CAMERA_SHOP);
+    gb_write(&gb, wRoomObjects, 1);
+
+    WriteIndoorObjectToBG(&gb, vBGMap0 + 16, wRoomObjects, mock_get_bg_attributes);
+
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 16) == 0xC1, "Camera shop object top-left tile mismatch");
+}
+
+static void test_load_room_tilemap(void) {
+    GBState gb;
+
+    /* 1. DMG path */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapId, 0);
+    gb_write(&gb, wRoomObjects, 1); /* First object has ID 1 */
+
+    minimap_arrow_called = false;
+    LoadRoomTilemap(&gb, NULL, mock_update_minimap_arrow);
+
+    TEST_ASSERT(minimap_arrow_called, "UpdateMinimapEntranceArrow callback was not called in DMG");
+    TEST_ASSERT(gb.rom_bank == 1, "ROM bank not restored to 1");
+    TEST_ASSERT(gb_read(&gb, vBGMap0) == 0x11, "DMG tile 0 mismatch at vBGMap0");
+
+    /* 2. GBC Overworld path with row line wrap */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapId, 0);
+
+    /* Setup object at row 0, col 0 ($D711) */
+    gb_write(&gb, rSVBK, 2);
+    gb_write(&gb, wRoomObjects, 1);
+    /* Setup object at row 1, col 0 ($D721) */
+    gb_write(&gb, wRoomObjects + 0x10, 1);
+    gb_write(&gb, rSVBK, 0);
+
+    minimap_arrow_called = false;
+    LoadRoomTilemap(&gb, mock_get_bg_attributes, mock_update_minimap_arrow);
+
+    TEST_ASSERT(minimap_arrow_called, "UpdateMinimapEntranceArrow callback was not called in GBC");
+    /* Verify first object at (0, 0) -> vBGMap0 */
+    TEST_ASSERT(gb_read(&gb, vBGMap0) == 0xA1, "GBC row 0 col 0 tile mismatch");
+    gb_write(&gb, rVBK, 1);
+    TEST_ASSERT(gb_read(&gb, vBGMap0) == 0x05, "GBC row 0 col 0 attribute mismatch");
+    gb_write(&gb, rVBK, 0);
+
+    /* Verify second row first object at (row 1, col 0) -> vBGMap0 + 0x40 */
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 0x40) == 0xA1, "GBC row 1 col 0 tile mismatch (row jump failed)");
+    gb_write(&gb, rVBK, 1);
+    TEST_ASSERT(gb_read(&gb, vBGMap0 + 0x40) == 0x05, "GBC row 1 col 0 attribute mismatch");
+    gb_write(&gb, rVBK, 0);
+}
+
 int run_gfx_tests(void) {
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
@@ -567,6 +738,8 @@ int run_gfx_tests(void) {
     test_switch_to_objects_tilemap_bank();
     test_write_object_to_bg_dmg();
     test_load_room_specific_tiles();
+    test_write_overworld_and_indoor_object_to_bg();
+    test_load_room_tilemap();
 
     if (gfx_failures == 0) {
         printf("  [PASS] All gfx.asm / credits tile loaders verified successfully!\n\n");

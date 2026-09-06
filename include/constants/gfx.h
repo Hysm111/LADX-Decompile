@@ -18,6 +18,8 @@
 /* Graphic asset ROM addresses in Bank $08 */
 #define BANK_IndoorObjectsTilemapDMG 0x08
 #define IndoorObjectsTilemapDMG      0x4000
+#define BANK_IndoorObjectsTilemapCGB 0x08
+#define IndoorObjectsTilemapCGB      0x43B0
 
 /* Graphic asset ROM addresses in Bank $0C */
 #define BANK_LinkCharacterTiles      0x0C
@@ -105,9 +107,11 @@
 #define BANK_Overworld2Tiles         0x0F
 #define Overworld2Tiles              0x5A00
 
-/* Overworld objects tilemap in Bank $1A */
+/* Overworld objects tilemaps in Bank $1A */
 #define BANK_OverworldObjectsTilemapDMG 0x1A
 #define OverworldObjectsTilemapDMG   0x6749
+#define BANK_OverworldObjectsTilemapCGB 0x1A
+#define OverworldObjectsTilemapCGB   0x6B1D
 
 /* Color Dungeon objects tilemap */
 #define ColorDungeonObjectsTilemap   0x4760

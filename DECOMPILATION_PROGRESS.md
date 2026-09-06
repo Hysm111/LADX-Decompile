@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 12.67%
-* **Number of Verified Functions**: 152
-* **Number of Decompiled Functions**: 152
-* **Number Remaining**: ~1048+ functions
-* **Current Subsystem**: Bank 0 - Graphic & Scene Loaders (`00:2D79` - `00:2E6E`)
-* **Current Task**: Completed and verified LoadIntroSequenceTiles, LoadTitleScreenTiles, LoadWorldMapTiles, LoadStaticPictureTiles, LoadFaceShrineReliefTiles, LoadSchulePaintingTiles, LoadChristinePortraitTiles, LoadEaglesTowerTopTiles, LoadMarinBeachTiles, LoadSaveMenuTiles
-* **Last Completed Task**: Decompiled and verified Bank 0 scene and artwork tile loaders (`00:2D79` - `00:2E6E`)
-* **Next Task**: Continue Bank 0 room-specific and animated tile loading routines (`LoadRoomSpecificTiles`, `AnimateTiles`)
+* **Current Overall Progress**: 13.33%
+* **Number of Verified Functions**: 160
+* **Number of Decompiled Functions**: 160
+* **Number Remaining**: ~1040+ functions
+* **Current Subsystem**: Bank 0 - Room Loading and Entity Initialization (`00:30F4`+)
+* **Current Task**: Decompile and verify LoadRoom and associated subroutines (`00:30F4`)
+* **Last Completed Task**: Decompiled and verified Bank 0 CGB room object copying and room tilemap loading routines (`00:300E` - `00:30F3`)
+* **Next Task**: Continue Bank 0 Room loading and entity initialization (`LoadRoom` at `00:30F4`)
 * **Last Update Timestamp**: 2026-09-06T16:35:00+03:00
 
 ---
@@ -104,10 +104,20 @@
 | `CopyWord` | VERIFIED | PASS | PASS | Copies two consecutive bytes from hl to de (`00:2FC7`) |
 | `WriteObjectToBG_DMG` | VERIFIED | PASS | PASS | Retrieves 2x2 tile indices for an object and writes them to BG map (`00:2FCD`) |
 | `SwitchToObjectsTilemapBank` | VERIFIED | PASS | PASS | Switches rSelectROMBank to indoor ($08) or overworld ($1A) objects tilemap bank (`00:3905`) |
+| `WriteOverworldObjectToBG` | VERIFIED | PASS | PASS | Reads object attribute byte from WRAM2 and copies tiles/palettes to BG (`00:300E`) |
+| `WriteIndoorObjectToBG` | VERIFIED | PASS | PASS | Reads indoor object byte and copies tiles/palettes to BG (`00:3018`) |
+| `doCopyObjectToBG` | VERIFIED | PASS | PASS | Copies 2x2 tiles and attributes for an object to BG map with 32-tile row stride (`00:3019`) |
+| `LoadRoomTilemap` | VERIFIED | PASS | PASS | Loops 128 times copying room objects to BG map with 10-object and 20-tile row strides, calls UpdateMinimapEntranceArrowAndReturn (`00:309B`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Room Tilemap Loading & CGB Object Copying (`00:300E`-`00:30F3`)**:
+   - `WriteOverworldObjectToBG`: switches WRAM bank to 2 via `rSVBK` to read the object attribute value from `wRoomObjects`, restores WRAM bank to 1 (`rSVBK = 0`), and jumps to `doCopyObjectToBG`.
+   - `WriteIndoorObjectToBG`: reads the object attribute value directly from current WRAM bank and falls through to `doCopyObjectToBG`.
+   - `doCopyObjectToBG`: scales attribute value by 4, queries BG attributes via `GetBGAttributesAddressForObject` in bank `$1A`, selects the appropriate CGB objects tilemap (`OverworldObjectsTilemapCGB` in bank `$1A`, `ColorDungeonObjectsTilemap` in bank `$08`, or `IndoorObjectsTilemapCGB` in bank `$08`), copies 2 tile indices into `vBGMap0`, then switches `rVBK = 1` and copies 2 attribute bytes from the bank specified in `hMultiPurpose8`. It repeats this for the lower row at offset `+ 0x20` (32 tiles).
+   - `LoadRoomTilemap`: sets `rSelectROMBank` and `wCurrentBank` using `SwitchToObjectsTilemapBank` and `SwitchBank`. Initializes `de = vBGMap0`, `hl = wRoomObjects`, `c = $80` (128 objects). In DMG mode, dispatches to `WriteObjectToBG_DMG`; in CGB mode, dispatches to `WriteIndoorObjectToBG` or `WriteOverworldObjectToBG`. Advances `hl` with row wrap at `OBJECTS_PER_ROW + 1` (`hl = (hl & $FFF0) + $11`), and advances `de` by 2 tiles with row wrap at `SCRN_X / TILE_WIDTH` (`de = (de & $FFE0) + $40`). At completion, jumps to `UpdateMinimapEntranceArrowAndReturn` in bank 1.
 
 1. **Room-Specific Tiles & Object Tilemaps (`00:2E73`-`00:300D`, `00:3905`)**:
    - `LoadRoomSpecificTiles` loads 4 rows of 16 entity tiles into `vTiles0 + $400`, dynamically overridden by current followers (Bow-Wow `$A4`, Ghost `$D8`, Rooster `$DD`, Marin `$8F`) unless in dungeons/specific indoor rooms. It then branches by indoor vs outdoor and side-scrolling vs top-view to load BG tiles into `vTiles2`. In Color Dungeon, it calls back into bank `$20`.

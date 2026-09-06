@@ -277,7 +277,62 @@ void WriteObjectToBG_DMG(GBState *gb, uint16_t de, uint16_t hl);
  *
  * @param gb Pointer to Game Boy hardware state
  */
-void SwitchToObjectsTilemapBank(GBState *gb);
+uint8_t SwitchToObjectsTilemapBank(GBState *gb);
+
+/**
+ * WriteOverworldObjectToBG (00:300E)
+ * Given an overworld object pointer in wRoomObjects, reads its attribute value
+ * from WRAM bank 2 and writes the 2x2 tile indices and palettes to the BG map.
+ * (CGB only)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Target address in BG map
+ * @param hl Pointer to object byte in wRoomObjects
+ * @param get_bg_attributes Callback to Bank $1A GetBGAttributesAddressForObject
+ */
+void WriteOverworldObjectToBG(GBState *gb, uint16_t de, uint16_t hl,
+                              void (*get_bg_attributes)(GBState *, uint16_t, uint16_t));
+
+/**
+ * WriteIndoorObjectToBG (00:3018)
+ * Given an indoor object pointer in wRoomObjects, reads its attribute value
+ * from current WRAM bank and writes the 2x2 tile indices and palettes to the BG map.
+ * (CGB only)
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Target address in BG map
+ * @param hl Pointer to object byte in wRoomObjects
+ * @param get_bg_attributes Callback to Bank $1A GetBGAttributesAddressForObject
+ */
+void WriteIndoorObjectToBG(GBState *gb, uint16_t de, uint16_t hl,
+                            void (*get_bg_attributes)(GBState *, uint16_t, uint16_t));
+
+/**
+ * doCopyObjectToBG (00:3019)
+ * Internal helper: copies 2x2 tiles and attributes for an object to BG map.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Target address in BG map
+ * @param hl Pointer to object byte in wRoomObjects
+ * @param obj_attr_val Object attribute value read from object map
+ * @param get_bg_attributes Callback to Bank $1A GetBGAttributesAddressForObject
+ */
+void doCopyObjectToBG(GBState *gb, uint16_t de, uint16_t hl, uint8_t obj_attr_val,
+                      void (*get_bg_attributes)(GBState *, uint16_t, uint16_t));
+
+/**
+ * LoadRoomTilemap (00:309B)
+ * Copies the entire room tilemap (128 objects) to BG video memory (vBGMap0).
+ * Handles both DMG (WriteObjectToBG_DMG) and CGB (WriteIndoorObjectToBG / WriteOverworldObjectToBG).
+ * At completion, jumps to UpdateMinimapEntranceArrowAndReturn in bank 1.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param get_bg_attributes Callback to Bank $1A GetBGAttributesAddressForObject
+ * @param update_minimap_arrow Callback to Bank $01 UpdateMinimapEntranceArrowAndReturn
+ */
+void LoadRoomTilemap(GBState *gb,
+                     void (*get_bg_attributes)(GBState *, uint16_t, uint16_t),
+                     void (*update_minimap_arrow)(GBState *));
 
 #ifdef __cplusplus
 }
