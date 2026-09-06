@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 21.25%
-* **Number of Verified Functions**: 255
-* **Number of Decompiled Functions**: 255
-* **Number Remaining**: ~945 functions
-* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3E8E`+)
-* **Current Task**: Decompile and verify Bank 0 entity recoil and physics helpers (`00:3E8E`+)
-* **Last Completed Task**: Decompiled and verified 19 Bank 0 Boss & Entity init trampolines and UnloadAllEntities (`EntityInitMiniMoldorm_trampoline`, `EntityInitMoldorm_trampoline`, `EntityInitFacade_trampoline`, `EntityInitSlimeEye_trampoline`, `EntityInitGenie_trampoline`, `EntityInitSlimeEel_trampoline`, `EntityInitDodongoSnake_trampoline`, `EntityInitHotHead_trampoline`, `EntityInitEvilEagle_trampoline`, `Entity67Handler_trampoline`, `CheckPositionForMapTransition_trampoline`, `GhiniMovement_trampoline`, `SmashRock_trampoline`, `LoadHeartsAndRupeesCount`, `SpawnChestWithItemAndRestoreBank3`, `DrawABButtonSlots`, `GiveInventoryItem_trampoline`, `func_006_783C_trampoline`, `UnloadAllEntities`) (`00:3DAB` - `00:3E8D`)
-* **Next Task**: Decompile and verify Bank 0 entity recoil and physics helpers (`00:3E8E`+) in `code/home/entities.asm`
-* **Last Update Timestamp**: 2026-09-06T18:40:00+03:00
+* **Current Overall Progress**: 21.67%
+* **Number of Verified Functions**: 260
+* **Number of Decompiled Functions**: 260
+* **Number Remaining**: ~940 functions
+* **Current Subsystem**: Bank 0 - Completed `code/home/entities.asm`! Next subsystem: Bank 0 `code/home/` (e.g. `code/home/dialog.asm` or `code/home/audio.asm`)
+* **Current Task**: Decompile and verify next Bank 0 subsystem
+* **Last Completed Task**: Decompiled and verified 5 Bank 0 Entity Recoil, Boss Intro, and Kill Enemy routines (`label_3E8E`, `StopEntityRecoilOnCollision`, `BossIntro`, `DidKillEnemy`, `UnloadEntity` / `UnloadEntityAndReturn`) (`00:3E8E` - `00:3F92`), completing all of `code/home/entities.asm`!
+* **Next Task**: Audit and select next logical unfinished Bank 0 subsystem in `code/home/`
+* **Last Update Timestamp**: 2026-09-06T18:55:00+03:00
 
 ---
 
@@ -203,10 +203,22 @@
 | `GiveInventoryItem_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GiveInventoryItem with player item, and restores saved bank (`00:3E6B`) |
 | `func_006_783C_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $06, calls func_006_783C, and restores Bank $03 (`00:3E76`) |
 | `UnloadAllEntities` | VERIFIED | PASS | PASS | Clears all 16 entity status entries in wEntitiesStatusTable to 0 (`00:3E83`) |
+| `label_3E8E` | VERIFIED | PASS | PASS | Spawns smoke VFX at active entity position when power recoil is active and frame counter matches (`00:3E8E`) |
+| `StopEntityRecoilOnCollision` | VERIFIED | PASS | PASS | Detects horizontal/vertical collision during recoil and clears ignore hits countdown (`00:3EAF`) |
+| `BossIntro` | VERIFIED | PASS | PASS | Triggers boss/miniboss music and plays intro monologue dialog based on map ID and active entity (`00:3EE8`) |
+| `DidKillEnemy` | VERIFIED | PASS | PASS | Drops item via SpawnEnemyDrop, increments kill count, records kill order, updates room cleared flags, and unloads entity (`00:3F50`) |
+| `UnloadEntity` | VERIFIED | PASS | PASS | Disables entity by writing ENTITY_STATUS_DISABLED to wEntitiesStatusTable slot (`00:3F8D`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Entity Recoil, Boss Intro, and Kill Enemy Routines (`00:3E8E`-`00:3F92`)**:
+   - `label_3E8E`: triggers transient smoke VFX (`TRANSCIENT_VFX_SMOKE`, 8) at entity's X and visual Y coordinates every 4 frames during power recoiling (`wEntitiesPowerRecoilingTable`).
+   - `StopEntityRecoilOnCollision`: calculates absolute velocities for X and Y, selects directional collision mask (`0x03` for horizontal dominant, `0x0C` for vertical dominant), and resets `wEntitiesIgnoreHitsCountdownTable` if a collision occurs.
+   - `BossIntro`: handles delay countdown, ensures single-fire execution via `wDidBossIntro`, assigns `MUSIC_MINIBOSS` ($50) or `MUSIC_BOSS` ($19), and displays corresponding intro dialogs (`Dialog0DA` for Desert Lanmola, `Dialog026` for Grim Creeper, and index into `BossIntroDialogTable` for standard bosses).
+   - `DidKillEnemy`: invokes `SpawnEnemyDrop` in Bank `$03`, increments `wKillCount`, logs `wKillOrder`, marks bit in `wEntitiesClearedRooms` for load order < 8, and unloads the entity.
+   - `UnloadEntity` / `UnloadEntityAndReturn`: zeros `wEntitiesStatusTable[bc]` to disable the entity slot. This completes all functions in `code/home/entities.asm`.
 
 1. **Boss & Entity Init Trampolines (`00:3DAB`-`00:3E8D`)**:
    - Boss init trampolines switch into specific ROM banks: Mini-Moldorm, Moldorm, Facade, Slime Eye, and Ghini movement use Bank `$04`; Genie uses Bank `$36`; Slime Eel, Dodongo Snake, Hot Head, Evil Eagle, and Entity 67 use Bank `$05`.

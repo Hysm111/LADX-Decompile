@@ -8,6 +8,8 @@
 #include "constants/gameplay.h"
 #include "constants/maps.h"
 #include "constants/sfx.h"
+#include "constants/audio.h"
+#include "constants/dialog.h"
 
 void test_is_zero(void) {
     printf("[*] Running IsZero tests...\n");
@@ -979,6 +981,147 @@ static void test_boss_and_entity_init_trampolines(void) {
     }
 }
 
+
+static int test_drop_cb_called = 0;
+static uint16_t test_drop_cb_entity = 0;
+static void mock_spawn_enemy_drop(GBState *gb, uint16_t entity_index) {
+    test_drop_cb_called++;
+    test_drop_cb_entity = entity_index;
+    assert(gb->rom_bank == 0x03);
+}
+
+static int test_dialog_cb_called = 0;
+static uint8_t test_dialog_id = 0;
+static void mock_open_dialog(GBState *gb, uint8_t dialog_id) {
+    (void)gb;
+    test_dialog_cb_called++;
+    test_dialog_id = dialog_id;
+}
+
+static void test_recoil_and_kill_enemy_routines(void) {
+    printf("[*] Running Recoil, BossIntro, and DidKillEnemy routines (00:3E8E-00:3F92)...\n");
+
+    GBState gb;
+
+    /* 1. label_3E8E */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesPowerRecoilingTable + 1, 0); /* not recoiling */
+    label_3E8E(&gb, 1);
+    /* no vfx created, countdown remains 0 */
+    assert(gb_read(&gb, wTranscientVfxCountdownTable + 0) == 0);
+
+    /* Recoiling, frame matches */
+    gb_write(&gb, wEntitiesPowerRecoilingTable + 1, 1);
+    gb_write(&gb, hFrameCounter, 1); /* (1 ^ 1) & 3 == 0 */
+    gb_write(&gb, hActiveEntityPosX, 0x44);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x55);
+    label_3E8E(&gb, 1);
+    assert(gb_read(&gb, hMultiPurpose0) == 0x44);
+    assert(gb_read(&gb, hMultiPurpose1) == 0x55);
+    /* VFX slot countdown set to 0x0F */
+    assert(gb_read(&gb, wTranscientVfxCountdownTable + 0x0F) == 0x0F);
+
+    /* 2. StopEntityRecoilOnCollision */
+    gb_init(&gb);
+    /* Horizontal dominant: vx = -4 (0xFC, abs=4), vy = 2, abs_vx > abs_vy */
+    gb_write(&gb, wEntitiesRecoilVelocityX + 2, 0xFC);
+    gb_write(&gb, wEntitiesRecoilVelocityY + 2, 0x02);
+    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 2, 10);
+    gb_write(&gb, wEntitiesCollisionsTable + 2, 0x01); /* right collision */
+    StopEntityRecoilOnCollision(&gb, 2);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 2) == 0);
+
+    /* Vertical dominant: vx = 1, vy = -5 (0xFB, abs=5), abs_vy >= abs_vx */
+    gb_write(&gb, wEntitiesRecoilVelocityX + 3, 0x01);
+    gb_write(&gb, wEntitiesRecoilVelocityY + 3, 0xFB);
+    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 3, 10);
+    gb_write(&gb, wEntitiesCollisionsTable + 3, 0x04); /* top collision (mask 0x0C) */
+    StopEntityRecoilOnCollision(&gb, 3);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 3) == 0);
+
+    /* No collision match */
+    gb_write(&gb, wEntitiesRecoilVelocityX + 4, 0x05);
+    gb_write(&gb, wEntitiesRecoilVelocityY + 4, 0x01);
+    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 4, 10);
+    gb_write(&gb, wEntitiesCollisionsTable + 4, 0x04); /* only vertical bit set, but recoil is horizontal */
+    StopEntityRecoilOnCollision(&gb, 4);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 10);
+
+    /* 3. BossIntro */
+    gb_init(&gb);
+    gb_write(&gb, wRoomTransitionState, 0);
+    gb_write(&gb, wInventoryAppearing, 0);
+    gb_write(&gb, wBossIntroDelay, 2);
+    gb_write(&gb, wDidBossIntro, 0);
+    test_dialog_cb_called = 0;
+    BossIntro(&gb, 0, mock_open_dialog);
+    assert(gb_read(&gb, wBossIntroDelay) == 1);
+    assert(test_dialog_cb_called == 0);
+
+    BossIntro(&gb, 0, mock_open_dialog);
+    assert(gb_read(&gb, wBossIntroDelay) == 0);
+    assert(test_dialog_cb_called == 0);
+
+    /* Now delay is 0, triggers boss intro */
+    gb_write(&gb, wEntitiesOptions1Table + 0, 0x00); /* boss */
+    gb_write(&gb, wTransitionSequenceCounter, 0x04);
+    gb_write(&gb, hActiveEntityType, 0x20); /* standard boss */
+    gb_write(&gb, hMapId, MAP_BOTTLE_GROTTO); /* map 1 -> dialog 0xB4 */
+    BossIntro(&gb, 0, mock_open_dialog);
+    assert(gb_read(&gb, wDidBossIntro) == 1);
+    assert(gb_read(&gb, wMusicTrackToPlay) == MUSIC_BOSS);
+    assert(gb_read(&gb, hDefaultMusicTrackAlt) == MUSIC_BOSS);
+    assert(test_dialog_cb_called == 1);
+    assert(test_dialog_id == 0xB4);
+
+    /* Desert Lanmola dialog */
+    gb_write(&gb, wDidBossIntro, 0);
+    gb_write(&gb, hActiveEntityType, ENTITY_DESERT_LANMOLA);
+    test_dialog_cb_called = 0;
+    BossIntro(&gb, 0, mock_open_dialog);
+    assert(test_dialog_cb_called == 1);
+    assert(test_dialog_id == Dialog0DA);
+
+    /* Grim Creeper dialog */
+    gb_write(&gb, wDidBossIntro, 0);
+    gb_write(&gb, hActiveEntityType, ENTITY_GRIM_CREEPER);
+    test_dialog_cb_called = 0;
+    BossIntro(&gb, 0, mock_open_dialog);
+    assert(test_dialog_cb_called == 1);
+    assert(test_dialog_id == Dialog026);
+
+    /* 4. DidKillEnemy & UnloadEntity */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x07;
+    gb_write(&gb, wEntitiesLoadOrderTable + 1, 0x02);
+    gb_write(&gb, wEntitiesStatusTable + 1, 1);
+    gb_write(&gb, wKillCount, 0);
+    gb_write(&gb, hMapRoom, 0x2A);
+    gb_write(&gb, wEntitiesClearedRooms + 0x2A, 0);
+    test_drop_cb_called = 0;
+
+    DidKillEnemy(&gb, 1, mock_spawn_enemy_drop);
+    assert(test_drop_cb_called == 1);
+    assert(test_drop_cb_entity == 1);
+    assert(gb_read(&gb, wEnemyWasKilled) == 0x03);
+    assert(gb_read(&gb, wKillCount) == 1);
+    assert(gb_read(&gb, wKillOrder + 0) == 0x02);
+    /* load_order 2 -> bit 1 << 2 = 4 */
+    assert(gb_read(&gb, wEntitiesClearedRooms + 0x2A) == 0x04);
+    assert(gb_read(&gb, wEntitiesStatusTable + 1) == 0); /* unloaded */
+    assert(gb.rom_bank == 0x07);
+
+    /* UnloadEntity and UnloadEntityAndReturn */
+    gb_write(&gb, wEntitiesStatusTable + 5, 2);
+    UnloadEntity(&gb, 5);
+    assert(gb_read(&gb, wEntitiesStatusTable + 5) == 0);
+
+    gb_write(&gb, wEntitiesStatusTable + 6, 3);
+    UnloadEntityAndReturn(&gb, 6);
+    assert(gb_read(&gb, wEntitiesStatusTable + 6) == 0);
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
@@ -990,5 +1133,6 @@ void run_entities_tests(void) {
     test_animate_entities_pipeline();
     test_entity_rendering_routines();
     test_boss_and_entity_init_trampolines();
+    test_recoil_and_kill_enemy_routines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

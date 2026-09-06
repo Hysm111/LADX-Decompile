@@ -4,6 +4,9 @@
 #define ENTITY_TRADING_ITEM 0xAF
 #define BowWowEatableEntitiesTable 0x5218
 #define HitboxPositions 0x3AAA
+#define BossIntroDialogTable         0x3EDF
+#define ENTITY_DESERT_LANMOLA        0x87
+#define ENTITY_GRIM_CREEPER          0xBC
 
 #define MAX_ENTITIES 16
 

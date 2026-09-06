@@ -110,6 +110,18 @@
 #define wEntitiesHitboxFlagsTable             0xC350
 #define wEntitiesSpriteVariantTable           0xC3B0
 #define wEntitiesHitboxPositionTable          0xD580
+#define wEntitiesCollisionsTable              0xC2A0
+#define wEntitiesRecoilVelocityX              0xC3F0
+#define wEntitiesRecoilVelocityY              0xC400
+#define wEntitiesOptions1Table                0xC430
+#define wEntitiesLoadOrderTable               0xC460
+#define wEntitiesPowerRecoilingTable          0xC4A0
+#define wEntitiesClearedRooms                 0xCF00
+#define wEnemyWasKilled                       0xC113
+#define wInventoryAppearing                   0xC14F
+#define wBossIntroDelay                       0xC165
+#define wTransitionSequenceCounter           0xC16B
+#define wDidBossIntro                         0xC1BD
 #define wEntitiesStatusTable                  0xC280
 #define wEntitiesTypeTable                    0xC3A0
 #define wActiveEntityIndex                    0xC123
@@ -182,6 +194,7 @@
 #define hActiveEntitySpriteVariant            0xFFF1
 #define hActiveEntityTilesOffset              0xFFF5
 #define hLinkSlowWalkingSpeed                 0xFFB2
+#define hDefaultMusicTrackAlt                 0xFFBD
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3
 #define hNoiseSfx                    0xFFF4

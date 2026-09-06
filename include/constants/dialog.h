@@ -4,6 +4,8 @@
 #include "common.h"
 
 /* Dialog background tile constants */
+#define Dialog026                  0x26
+#define Dialog0DA                  0xDA
 #define DIALOG_BG_TILE_DARK        0x7E
 #define DIALOG_BG_TILE_LIGHT       0x7F
 

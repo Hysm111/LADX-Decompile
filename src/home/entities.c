@@ -6,6 +6,10 @@
 #include "constants/sfx.h"
 #include "constants/maps.h"
 #include "constants/gameplay.h"
+#include "home/vfx.h"
+#include "constants/vfx.h"
+#include "constants/audio.h"
+#include "constants/dialog.h"
 
 uint8_t IsZero(GBState *gb, uint16_t hl, uint16_t bc) {
     if (!gb) return 0;
@@ -901,4 +905,132 @@ void UnloadAllEntities(GBState *gb) {
     for (uint16_t i = 0; i < MAX_ENTITIES; i++) {
         gb_write(gb, (uint16_t)(wEntitiesStatusTable + i), 0);
     }
+}
+
+void label_3E8E(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    if (gb_read(gb, (uint16_t)(wEntitiesPowerRecoilingTable + entity_index)) == 0) {
+        return;
+    }
+    uint8_t frame = gb_read(gb, hFrameCounter);
+    if (((frame ^ (uint8_t)entity_index) & 0x03) != 0) {
+        return;
+    }
+    gb_write(gb, hMultiPurpose0, gb_read(gb, hActiveEntityPosX));
+    gb_write(gb, hMultiPurpose1, gb_read(gb, hActiveEntityVisualPosY));
+    uint8_t vfx_slot = AddTranscientVfx(gb, TRANSCIENT_VFX_SMOKE);
+    gb_write(gb, (uint16_t)(wTranscientVfxCountdownTable + vfx_slot), 0x0F);
+}
+
+void StopEntityRecoilOnCollision(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+
+    uint8_t vx = gb_read(gb, (uint16_t)(wEntitiesRecoilVelocityX + entity_index));
+    uint8_t abs_vx = (vx & 0x80) ? (uint8_t)(~vx + 1) : vx;
+    gb_write(gb, hMultiPurpose0, abs_vx);
+
+    uint8_t vy = gb_read(gb, (uint16_t)(wEntitiesRecoilVelocityY + entity_index));
+    uint8_t abs_vy = (vy & 0x80) ? (uint8_t)(~vy + 1) : vy;
+
+    uint8_t mask = 0x03;
+    if (abs_vy >= abs_vx) {
+        mask = 0x0C;
+    }
+
+    uint8_t collisions = gb_read(gb, (uint16_t)(wEntitiesCollisionsTable + entity_index));
+    if ((collisions & mask) != 0) {
+        gb_write(gb, (uint16_t)(wEntitiesIgnoreHitsCountdownTable + entity_index), 0);
+    }
+}
+
+void BossIntro(GBState *gb, uint16_t entity_index, void (*open_dialog)(GBState *, uint8_t dialog_id)) {
+    if (!gb) return;
+
+    if ((gb_read(gb, wRoomTransitionState) | gb_read(gb, wInventoryAppearing)) != 0) {
+        return;
+    }
+
+    uint8_t delay = gb_read(gb, wBossIntroDelay);
+    if (delay != 0) {
+        gb_write(gb, wBossIntroDelay, (uint8_t)(delay - 1));
+        return;
+    }
+
+    if (gb_read(gb, wDidBossIntro) != 0) {
+        return;
+    }
+    gb_write(gb, wDidBossIntro, 1);
+
+    uint8_t opt = gb_read(gb, (uint16_t)(wEntitiesOptions1Table + entity_index));
+    uint8_t music = (opt & 0x04) ? MUSIC_MINIBOSS : MUSIC_BOSS;
+    gb_write(gb, wMusicTrackToPlay, music);
+    gb_write(gb, hDefaultMusicTrackAlt, music);
+
+    if (gb_read(gb, wTransitionSequenceCounter) != 0x04) {
+        return;
+    }
+
+    uint8_t type = gb_read(gb, hActiveEntityType);
+    uint8_t dialog_id;
+    if (type == ENTITY_DESERT_LANMOLA) {
+        dialog_id = Dialog0DA;
+    } else if (type == ENTITY_GRIM_CREEPER) {
+        dialog_id = Dialog026;
+    } else {
+        if ((opt & 0x04) != 0) {
+            return;
+        }
+        uint8_t map = gb_read(gb, hMapId);
+        if (map == MAP_COLOR_DUNGEON || map == MAP_FACE_SHRINE) {
+            return;
+        }
+        static const uint8_t s_BossIntroDialogTable[] = {
+            0xB0, 0xB4, 0xB1, 0xB2, 0xB3, 0xB6, 0xBA, 0xBC, 0xB8
+        };
+        dialog_id = s_BossIntroDialogTable[map];
+    }
+
+    if (open_dialog) {
+        open_dialog(gb, dialog_id);
+    }
+}
+
+void DidKillEnemy(GBState *gb, uint16_t entity_index, void (*spawn_enemy_drop)(GBState *, uint16_t)) {
+    if (!gb) return;
+
+    gb_write(gb, wEnemyWasKilled, 0x03);
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (spawn_enemy_drop) {
+        spawn_enemy_drop(gb, entity_index);
+    }
+    ReloadSavedBank(gb);
+
+    uint8_t load_order = gb_read(gb, (uint16_t)(wEntitiesLoadOrderTable + entity_index));
+    if (load_order == 0xFF) {
+        UnloadEntity(gb, entity_index);
+        return;
+    }
+
+    uint8_t kill_count = gb_read(gb, wKillCount);
+    gb_write(gb, wKillCount, (uint8_t)(kill_count + 1));
+    gb_write(gb, (uint16_t)(wKillOrder + kill_count), load_order);
+
+    if (load_order < 0x08) {
+        static const uint8_t s_data_3F48[8] = { 1, 2, 4, 8, 0x10, 0x20, 0x40, 0x80 };
+        uint8_t bit = s_data_3F48[load_order];
+        uint8_t room = gb_read(gb, hMapRoom);
+        uint8_t cleared = gb_read(gb, (uint16_t)(wEntitiesClearedRooms + room));
+        gb_write(gb, (uint16_t)(wEntitiesClearedRooms + room), (uint8_t)(cleared | bit));
+    }
+
+    UnloadEntity(gb, entity_index);
+}
+
+void UnloadEntity(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    gb_write(gb, (uint16_t)(wEntitiesStatusTable + entity_index), 0);
+}
+
+void UnloadEntityAndReturn(GBState *gb, uint16_t entity_index) {
+    UnloadEntity(gb, entity_index);
 }

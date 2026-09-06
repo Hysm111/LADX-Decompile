@@ -588,6 +588,54 @@ void func_006_783C_trampoline(GBState *gb, void (*func)(GBState *));
  */
 void UnloadAllEntities(GBState *gb);
 
+/**
+ * label_3E8E (00:3E8E)
+ * Spawns a smoke VFX if entity has power recoil active and frame counter matches.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ */
+void label_3E8E(GBState *gb, uint16_t entity_index);
+
+/**
+ * StopEntityRecoilOnCollision (00:3EAF)
+ * Clears wEntitiesIgnoreHitsCountdownTable when a recoiling entity collides with obstacles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ */
+void StopEntityRecoilOnCollision(GBState *gb, uint16_t entity_index);
+
+/**
+ * BossIntro (00:3EE8)
+ * Handles boss/miniboss music trigger and intro dialog playback.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ * @param open_dialog Callback to OpenDialogInTable0
+ */
+void BossIntro(GBState *gb, uint16_t entity_index, void (*open_dialog)(GBState *, uint8_t dialog_id));
+
+/**
+ * DidKillEnemy (00:3F50)
+ * Handles enemy defeat drops, kill count/order recording, room clearing flags, and unloads entity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ * @param spawn_enemy_drop Callback to SpawnEnemyDrop in Bank $03
+ */
+void DidKillEnemy(GBState *gb, uint16_t entity_index, void (*spawn_enemy_drop)(GBState *, uint16_t));
+
+/**
+ * UnloadEntity / UnloadEntityAndReturn (00:3F8D)
+ * Sets entity status to 0 (disabled).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Active entity index
+ */
+void UnloadEntity(GBState *gb, uint16_t entity_index);
+void UnloadEntityAndReturn(GBState *gb, uint16_t entity_index);
+
 #ifdef __cplusplus
 }
 #endif
