@@ -189,3 +189,15 @@ uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de) {
     gb_write(gb, rSelectROMBank, 0x03);
     return flags;
 }
+
+uint16_t GetRoomStatusAddressForMapPosition_trampoline(GBState *gb, uint16_t de, uint16_t (*get_address)(GBState *, uint16_t)) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, 0x14);
+    uint16_t result = 0;
+    if (get_address) {
+        result = get_address(gb, de);
+    }
+    ReloadSavedBank(gb);
+    return result;
+}

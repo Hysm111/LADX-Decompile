@@ -94,6 +94,18 @@ uint8_t GetObjectPhysicsFlags_trampoline(GBState *gb, uint16_t de);
  */
 uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de);
 
+/**
+ * GetRoomStatusAddressForMapPosition_trampoline (00:2BC1)
+ * Farcalls GetRoomStatusAddressForMapPosition in bank $14 with room position in DE,
+ * then restores saved ROM bank via ReloadSavedBank and returns address in HL.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Room position
+ * @param get_address Callback to GetRoomStatusAddressForMapPosition
+ * @return Room status address in WRAM
+ */
+uint16_t GetRoomStatusAddressForMapPosition_trampoline(GBState *gb, uint16_t de, uint16_t (*get_address)(GBState *, uint16_t));
+
 #ifdef __cplusplus
 }
 #endif

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 11.25%
-* **Number of Verified Functions**: 135
-* **Number of Decompiled Functions**: 135
-* **Number Remaining**: ~1065+ functions
-* **Current Subsystem**: Bank 0 - Room Trampolines, Object Physics & Credits Graphic Loaders
-* **Current Task**: Completed and verified LoadTileset0F_trampoline, GetChestsStatusForRoom_trampoline, PlayBoomerangSfx_trampoline, func_2A07, GetObjectPhysicsFlags, GetObjectPhysicsFlags_trampoline, GetObjectPhysicsFlagsAndRestoreBank3, LoadCreditsKoholintDisappearingTiles, LoadCreditsStairsTiles, LoadTileset15, LoadCreditsKoholintViewsTiles, LoadCreditsLinkOnSeaCloseTiles, LoadCreditsSunAboveTiles, LoadCreditsLinkOnSeaLargeTiles
-* **Last Completed Task**: Decompiled and verified Bank 0 room trampolines, static object physics flags lookup, and ending/credits tile loading routines (`00:28E8` - `00:2B25`)
-* **Next Task**: Continue Bank 0 remaining routines (`LoadCreditsRollTiles`, `func_2B92`, or main gameplay loops `WorldHandler`, `WorldInteractiveHandler`)
-* **Last Update Timestamp**: 2026-09-06T08:15:00+03:00
+* **Current Overall Progress**: 11.83%
+* **Number of Verified Functions**: 142
+* **Number of Decompiled Functions**: 142
+* **Number Remaining**: ~1058+ functions
+* **Current Subsystem**: Bank 0 - Room Trampolines, Base/Menu Tile Loaders & Credits Sequences
+* **Current Task**: Completed and verified LoadCreditsRollTiles, LoadCreditsLinkFaceCloseUpTiles, LoadCreditsLinkSeatedOnLogTiles, func_2B92, GetRoomStatusAddressForMapPosition_trampoline, LoadBaseTiles, LoadMenuTiles
+* **Last Completed Task**: Decompiled and verified Bank 0 ending scenes, credits roll, room status address trampoline, and base/menu tile loading routines (`00:2B26` - `00:2C27`)
+* **Next Task**: Continue Bank 0 graphic loaders (`LoadIntroSequenceTiles`, `LoadTitleScreenTiles`, `LoadWorldMapTiles`, `LoadStaticPictureTiles`, `LoadEaglesTowerTopTiles`, `LoadMarinBeachTiles`, `LoadSaveMenuTiles`)
+* **Last Update Timestamp**: 2026-09-06T16:25:00+03:00
 
 ---
 
@@ -83,6 +83,13 @@
 | `LoadCreditsLinkOnSeaCloseTiles` | VERIFIED | PASS | PASS | Loads Link on sea close tiles (DMG: EndingTiles, GBC: PhotoAlbumTiles bank $35) (`00:2AEA`) |
 | `LoadCreditsSunAboveTiles` | VERIFIED | PASS | PASS | Loads sun above sea view tiles to vTiles0 and vTiles1 (`00:2AF9`) |
 | `LoadCreditsLinkOnSeaLargeTiles` | VERIFIED | PASS | PASS | Loads large Link on sea view tiles to vTiles0 and vTiles1 (`00:2AFE`) |
+| `LoadCreditsRollTiles` | VERIFIED | PASS | PASS | Loads rolling credits font and NPC tiles with audio steps interspersed (`00:2B26`) |
+| `LoadCreditsLinkFaceCloseUpTiles` | VERIFIED | PASS | PASS | Loads Link face close-up ending scene (DMG: EndingTiles, GBC: EndingCGBAltTiles) (`00:2B72`) |
+| `LoadCreditsLinkSeatedOnLogTiles` | VERIFIED | PASS | PASS | Loads Link seated on log ending scene (DMG: EndingTiles, GBC: PhotoAlbumTiles) (`00:2B81`) |
+| `func_2B92` | VERIFIED | PASS | PASS | Helper loading 0x80 tiles to vTiles0, and 0x80 tiles each to vTiles1 and vTiles2 (`00:2B92`) |
+| `GetRoomStatusAddressForMapPosition_trampoline` | VERIFIED | PASS | PASS | Farcalls GetRoomStatusAddressForMapPosition in bank $14, reloads saved bank (`00:2BC1`) |
+| `LoadBaseTiles` | VERIFIED | PASS | PASS | Loads Link sprites and inventory equipment tiles, restores bank 1 (`00:2BCF`) |
+| `LoadMenuTiles` | VERIFIED | PASS | PASS | Calls LoadBaseTiles, then loads menu UI tiles and font tiles (`00:2C03`) |
 
 ---
 
@@ -95,10 +102,17 @@
    - `GetObjectPhysicsFlags_trampoline` preserves and restores the calling bank via `ReloadSavedBank`.
    - `GetObjectPhysicsFlagsAndRestoreBank3` specifically restores ROM bank `0x03`.
 
-2. **Credits & Ending Graphic Loaders (`00:2A37`-`00:2AFE`)**:
-   - `LoadTileset15` copies tiles from multiple banks: `EndingTiles` (bank `$13`/`$33`), `Overworld1Tiles` (bank `$0C`/`$2C`), and `Npc4Tiles` (bank `$12`/`$32`).
-   - `LoadCreditsStairsTiles` chains immediately from `LoadTileset15`, copying additional tiles from bank `$12` to `vTiles0 + $400`.
-   - `LoadCreditsLinkOnSeaCloseTiles` distinguishes DMG and GBC hardware via `hIsGBC`:
-     - DMG: Loads tiles from `EndingTiles` in bank `$13`.
-     - GBC: Loads photo album / close-up tiles from `PhotoAlbumTiles` at `$6800` in bank `$35`.
-     - Both then load sea surface tiles from `EndingTiles + $1800` into `vTiles1`.
+2. **Credits & Ending Graphic Loaders (`00:2A37`-`00:2BBF`)**:
+   - `LoadCreditsRollTiles` coordinates audio stepping via `PlayAudioStep` between copying large font tiles, Npc3 tiles, and credits roll text tiles.
+   - `LoadCreditsLinkFaceCloseUpTiles` and `LoadCreditsLinkSeatedOnLogTiles` handle DMG vs CGB tile asset selection:
+     - Close-up: uses `EndingTiles + $3800` (bank `$13`) on DMG, `EndingCGBAltTiles` (bank `$35`) on CGB.
+     - Seated on log: uses `EndingTiles + $800` (bank `$13`) on DMG, `PhotoAlbumTiles + $800` (bank `$35`) on CGB.
+     - Common ending tile layers are copied to `vTiles1` (`EndingTiles + $3000`) and `vTiles2` (`EndingTiles + $2800`).
+
+3. **Base and Menu Tile Loaders (`00:2BCF`-`00:2C25`)**:
+   - `LoadBaseTiles` loads core gameplay tiles:
+     - `LinkCharacterTiles` (`0x4000`, bank `$0C`) to `vTiles0` (`0x400` bytes)
+     - `InventoryEquipmentItemsTiles` (`0x4800`, bank `$0C`) to `vTiles1` (`0x1000` bytes)
+     - `Items1Tiles + $3A0` (`0x47A0`, bank `$0C`) to `vTiles1 + $600` (`0x20` bytes)
+     - Explicitly resets bank to `$01` via `SwitchBank`.
+   - `LoadMenuTiles` chains from `LoadBaseTiles`, loading `MenuTiles` (`0x4000`, bank `$0F`, `0x400` bytes) to `vTiles1` and `FontTiles` (`0x5000`, bank `$0F`, `0x800` bytes) to `vTiles2`.

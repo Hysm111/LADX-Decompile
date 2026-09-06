@@ -198,6 +198,13 @@ static void mock_func_2a07_cb(GBState *gb) {
     TEST_ASSERT(gb->rom_bank == 0x01, "func_001_5A59 not called in bank 0x01");
 }
 
+static int mock_get_status_calls = 0;
+static uint16_t mock_get_status_addr(GBState *gb, uint16_t de) {
+    mock_get_status_calls++;
+    TEST_ASSERT(gb->rom_bank == 0x14, "GetRoomStatusAddressForMapPosition bank not 0x14");
+    return 0xD800 + de;
+}
+
 static void test_room_trampolines_and_physics(void) {
     GBState gb;
     gb_init(&gb);
@@ -254,6 +261,15 @@ static void test_room_trampolines_and_physics(void) {
     flags = GetObjectPhysicsFlagsAndRestoreBank3(&gb, 0x0A);
     TEST_ASSERT(flags == 0x42, "RestoreBank3 physics flags mismatch");
     TEST_ASSERT(gb.rom_bank == 0x03, "RestoreBank3 bank not set to 0x03");
+
+    /* 8. GetRoomStatusAddressForMapPosition_trampoline */
+    mock_get_status_calls = 0;
+    gb_write(&gb, wCurrentBank, 0x03);
+    gb.rom_bank = 0x03;
+    uint16_t room_addr = GetRoomStatusAddressForMapPosition_trampoline(&gb, 0x2A, mock_get_status_addr);
+    TEST_ASSERT(mock_get_status_calls == 1, "GetRoomStatusAddressForMapPosition callback not called");
+    TEST_ASSERT(room_addr == 0xD82A, "GetRoomStatusAddressForMapPosition return address mismatch");
+    TEST_ASSERT(gb.rom_bank == 0x03, "GetRoomStatusAddressForMapPosition bank not restored to 0x03");
 }
 
 void run_room_tests(void) {
