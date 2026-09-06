@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 14.25%
-* **Number of Verified Functions**: 171
-* **Number of Decompiled Functions**: 171
-* **Number Remaining**: ~1029 functions
-* **Current Subsystem**: Bank 0 - Room Loading and Entity Initialization (`00:30F4`+)
-* **Current Task**: Complete Bank 0 Room loading pipeline (`LoadRoom` at `00:30F4`, door handlers `00:32E0`-`00:33CA`, and `LoadRoomEntities` at `00:37FE`)
-* **Last Completed Task**: Decompiled and verified 11 Bank 0 Room Object / Macro routines (`FillRoomWithConsecutiveObjects`, `SetupDestroyableObjectIfNeeded2`, `CopyObjectToActiveRoomMap`, `SetBankForRoom`, `CopyIndoorsMacroObjectsToRoom`, `CopyOutdoorsMacroObjectsToRoom`, `SetupDestroyableObjectIfNeeded`, `ObjectPositionToRoomObjectAddress`, `FillRoomMapWithObject`, `LoadRoomTemplate_trampoline`, `LoadWorldMapBGMap_trampoline`) (`00:34EF` - `00:38FC`)
-* **Next Task**: Continue Bank 0 Room loading and door handling (`LoadRoom` at `00:30F4` / `LoadRoomEntities` at `00:37FE`)
-* **Last Update Timestamp**: 2026-09-06T16:35:00+03:00
+* **Current Overall Progress**: 16.17%
+* **Number of Verified Functions**: 194
+* **Number of Decompiled Functions**: 194
+* **Number Remaining**: ~1006 functions
+* **Current Subsystem**: Bank 0 - Room Loading (`00:30F4`+)
+* **Current Task**: Reconcile progress and prepare Bank 0 LoadRoom pipeline (`LoadRoom` at `00:30F4`)
+* **Last Completed Task**: Decompiled and verified 23 Bank 0 Door Objects & Room Object Parsing routines (`MakeListOfDoorPositions`, `UpdateIndoorRoomStatus`, `LoadObject_KeyDoor*`, `LoadObject_ShutterDoor*`, `LoadObject_OpenDoor*`, `LoadObject_BossDoor`, `LoadObject_StairsDoor`, `LoadObject_RevolvingDoor`, `LoadObject_OneWayArrow`, `LoadObject_DungeonEntrance`, `LoadObject_IndoorEntrance`, `DispatchIndoorDoorObject`, `ExpandOverworldObjectMacro`, `LoadRoomObject`) (`00:35FA` - `00:37E6`, `00:32DF`, `00:32A9`)
+* **Next Task**: Decompile and verify Bank 0 `LoadRoom` (`00:30F4`)
+* **Last Update Timestamp**: 2026-09-06T17:05:00+03:00
 
 ---
 

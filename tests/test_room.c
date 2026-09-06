@@ -810,6 +810,17 @@ static void test_load_room_object(void) {
     consumed = LoadRoomObject(&gb, 0xC500);
     TEST_ASSERT(consumed == 2, "Door object should consume 2 bytes");
     TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x30) == 0x2D, "Door object should be loaded via door handler");
+
+    /* 17. Overworld Macro Object Expansion */
+    gb_init(&gb);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, 0x10);
+    gb_write(&gb, 0xC500, 0x30);
+    gb_write(&gb, 0xC501, OBJECT_MACROS_SECTION); /* $F5 */
+    consumed = LoadRoomObject(&gb, 0xC500);
+    TEST_ASSERT(consumed == 2, "Macro object should consume 2 bytes");
+    TEST_ASSERT(gb.rom_bank == BANK_OverworldRoomsFirstHalf, "Macro object should restore room bank");
+    ExpandOverworldObjectMacro(&gb, 0xF5, 0x22);
 }
 void run_room_tests(void) {
     printf("[*] Running LoadRoomObject tests...\n");
