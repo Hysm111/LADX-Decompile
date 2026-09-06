@@ -8,6 +8,9 @@ void gb_init(GBState *gb) {
     gb->rom_bank = 1;
     gb->wram_bank = 1;
     gb->vram_bank = 0;
+    gb->sram_bank = 0;
+    gb->sram_enabled = false;
+    gb->joypad_input = 0;
 }
 
 void gb_attach_rom(GBState *gb, const uint8_t *rom_data, uint32_t rom_size) {
@@ -22,7 +25,7 @@ uint8_t *gb_get_ptr(GBState *gb, uint16_t addr) {
     } else if (addr < 0xA000) {
         return &gb->vram[gb->vram_bank][addr - 0x8000];
     } else if (addr < 0xC000) {
-        return &gb->sram[0][addr - 0xA000];
+        return &gb->sram[gb->sram_bank][addr - 0xA000];
     } else if (addr < 0xD000) {
         return &gb->wram[0][addr - 0xC000];
     } else if (addr < 0xE000) {
@@ -46,14 +49,16 @@ uint8_t *gb_get_ptr(GBState *gb, uint16_t addr) {
 
 const uint8_t *gb_get_const_ptr(const GBState *gb, uint16_t addr) {
     if (addr < 0x4000) {
-        if (gb->rom && gb->rom_size > addr) {
+        if (gb->rom && addr < gb->rom_size) {
             return &gb->rom[addr];
         }
         return NULL;
     } else if (addr < 0x8000) {
-        size_t rom_offset = (size_t)gb->rom_bank * 0x4000 + (addr - 0x4000);
-        if (gb->rom && gb->rom_size > rom_offset) {
-            return &gb->rom[rom_offset];
+        if (gb->rom) {
+            size_t offset = (size_t)gb->rom_bank * 0x4000 + (addr - 0x4000);
+            if (offset < gb->rom_size) {
+                return &gb->rom[offset];
+            }
         }
         return NULL;
     }
@@ -67,8 +72,16 @@ uint8_t gb_read(const GBState *gb, uint16_t addr) {
 }
 
 void gb_write(GBState *gb, uint16_t addr, uint8_t val) {
+    if (addr < 0x2000) {
+        gb->sram_enabled = ((val & 0x0F) == CART_SRAM_ENABLE);
+        return;
+    }
     if (addr == rSelectROMBank) {
         gb->rom_bank = (val == 0) ? 1 : (val & 0x7F);
+        return;
+    }
+    if (addr >= 0x4000 && addr < 0x6000) {
+        gb->sram_bank = val & 0x03;
         return;
     }
     if (addr == rSVBK) {

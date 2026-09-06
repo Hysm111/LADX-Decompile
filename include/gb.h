@@ -4,6 +4,7 @@
 #include "common.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +25,9 @@ typedef struct {
     uint8_t rom_bank;          /* Current banked ROM (0x4000-0x7FFF) */
     uint8_t wram_bank;         /* Current WRAM bank (1-7) */
     uint8_t vram_bank;         /* Current VRAM bank (0-1) */
+    uint8_t sram_bank;         /* Current SRAM bank (0-3) */
+    bool sram_enabled;         /* External SRAM enabled */
+    uint8_t joypad_input;      /* Physical controller inputs (active-high bitmask) */
 } GBState;
 
 /* Initialize or reset GB state */

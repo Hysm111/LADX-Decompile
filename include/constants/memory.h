@@ -20,6 +20,7 @@
 #define wActiveEntityIndex      0xC123
 #define wRoomTransitionState    0xC124
 #define wRoomTransitionDirection 0xC125
+#define wRandomSeed             0xC13D
 #define wC140                   0xC140
 #define wC142                   0xC142
 #define wIsRunningWithPegasusBoots 0xC14A
@@ -33,6 +34,7 @@
 #define wC19D                   0xC19D
 #define wDialogState            0xC19F
 #define wC1CF                   0xC1CF
+#define wMusicTrackToPlay       0xD368
 #define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
 #define wD464                   0xD464
@@ -48,6 +50,7 @@
 #define wDrawCommandVRAM1       0xDC91
 #define wAnimatedScrollingTilesStorage 0xDCC0
 #define wDDD8                   0xDDD8
+#define wPaletteUnknownE        0xDDD5
 #define wFarcallBank            0xDE01
 #define wFarcallAdressHigh      0xDE02
 #define wFarcallAdressLow       0xDE03
@@ -76,14 +79,21 @@
 #define hNeedsUpdatingEntityTilesA   0xFF91
 #define hBGTilesLoadingStage         0xFF92
 #define hWorldTileset                0xFF94
+#define hBaseScrollX                 0xFF96
+#define hBaseScrollY                 0xFF97
 #define hLinkPositionX               0xFF98
 #define hLinkPositionY               0xFF99
+#define hLinkPhysicsModifier         0xFF9C
 #define hLinkFinalPositionX          0xFF9F
 #define hLinkFinalPositionY          0xFFA0
 #define hMusicFadeOutTimer           0xFFA8
+#define hMusicFadeInTimer            0xFFAB
 #define hContinueMusicAfterWarp      0xFFBC
 #define hNextDefaultMusicTrack       0xFFBF
 #define hPressedButtonsMask          0xFFCB
+#define hJoypadState                 0xFFCC
+#define hIntersectedObjectTop        0xFFCD
+#define hIntersectedObjectLeft       0xFFCE
 #define hIntersectedObjectBGAddressHigh 0xFFCF
 #define hIntersectedObjectBGAddressLow  0xFFD0
 #define hInterrupts                  0xFFD2

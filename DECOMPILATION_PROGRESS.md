@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 9.25%
-* **Number of Verified Functions**: 111
-* **Number of Decompiled Functions**: 111
-* **Number Remaining**: ~1140+ functions
-* **Current Subsystem**: Bank 0 - Room Tilesets, Save Screen & Gameplay Flow
-* **Current Task**: Completed and verified SelectRoomTilesets, CheckPresentSaveScreen, AnimateEntitiesAndRestoreBank trampolines, and returnFromGameplayHandler
-* **Last Completed Task**: Decompiled and verified `SelectRoomTilesets`, `CheckPresentSaveScreen`, `AnimateEntitiesAndRestoreBank`, `AnimateEntitiesAndRestoreBank17`, `AnimateEntitiesAndRestoreBank01`, `AnimateEntitiesAndRestoreBank02`, `returnFromGameplayHandler`
+* **Current Overall Progress**: 10.08%
+* **Number of Verified Functions**: 121
+* **Number of Decompiled Functions**: 121
+* **Number Remaining**: ~1130+ functions
+* **Current Subsystem**: Bank 0 - Audio Controls, Hardware Interfaces & Gameplay Dispatch
+* **Current Task**: Completed and verified SetWorldMusicTrack, EnableSRAM, SelectMusicTrackAfterTransition_trampoline, ResetMusicFadeTimer, func_27F2, SynchronizeDungeonsItemFlags_trampoline, GetRandomByte, ReadJoypadState, GetIntersectedObjectBGAddress, TableJump
+* **Last Completed Task**: Decompiled and verified `SetWorldMusicTrack`, `EnableSRAM`, `SelectMusicTrackAfterTransition_trampoline`, `ResetMusicFadeTimer`, `func_27F2`, `SynchronizeDungeonsItemFlags_trampoline`, `GetRandomByte`, `ReadJoypadState`, `GetIntersectedObjectBGAddress`, `TableJump`
 * **Next Task**: Continue Bank 0 gameplay loops and handlers (`WorldHandler`, `WorldInteractiveHandler`, `ApplyGotItem`)
-* **Last Update Timestamp**: 2026-09-06T07:10:00+03:00
+* **Last Update Timestamp**: 2026-09-06T07:30:00+03:00
 
 ---
 
@@ -128,6 +128,16 @@
 | `AnimateEntitiesAndRestoreBank01` | VERIFIED | PASS | PASS | Switches to bank 3, calls AnimateEntities, restores bank $01 (`00:0EFC`) |
 | `AnimateEntitiesAndRestoreBank02` | VERIFIED | PASS | PASS | Switches to bank 3, calls AnimateEntities, restores bank $02 (`00:0F05`) |
 | `returnFromGameplayHandler` | VERIFIED | PASS | PASS | Common return path presenting dialog (bank $0F) and loading CGB BG palettes (bank $24) (`00:101A`) |
+| `SetWorldMusicTrack` | VERIFIED | PASS | PASS | Sets music track, resets fade timers (`00:27C3`) |
+| `EnableSRAM` | VERIFIED | PASS | PASS | Sets RAM bank 0 and writes CART_SRAM_ENABLE to rRAMG (`00:27D0`) |
+| `SelectMusicTrackAfterTransition_trampoline` | VERIFIED | PASS | PASS | Switches to bank $02, calls SelectMusicTrackAfterTransition, restores bank (`00:27DD`) |
+| `ResetMusicFadeTimer` | VERIFIED | PASS | PASS | Sets fade-out timer to MUSIC_FADE_OUT_TIMER_MAX ($38) and zeroes fade-in timer (`00:27EA`) |
+| `func_27F2` | VERIFIED | PASS | PASS | If hContinueMusicAfterWarp is 0, calls func_01F_4003 in bank $1F, restores bank (`00:27F2`) |
+| `SynchronizeDungeonsItemFlags_trampoline` | VERIFIED | PASS | PASS | Calls SynchronizeDungeonsItemFlags in bank $01, restores bank (`00:2802`) |
+| `GetRandomByte` | VERIFIED | PASS | PASS | Advances seed with rrca(hFrameCounter + wRandomSeed + rLY) and returns random byte (`00:280D`) |
+| `ReadJoypadState` | VERIFIED | PASS | PASS | Reads P1 joypad matrix, handles interactivity and pass-out motion (`00:281E`) |
+| `GetIntersectedObjectBGAddress` | VERIFIED | PASS | PASS | Calculates BG tilemap address for intersected object from scroll and coords (`00:2887`) |
+| `TableJump` | VERIFIED | PASS | PASS | Jump table dispatcher for `rst 0` (`00:28C0`) |
 
 ---
 
@@ -147,3 +157,18 @@
 - **Gameplay Handler Return Path (`code/bank0.asm:00:101A`)**:
   - Switches to `BANK(FontTiles)` (`$0F`) to execute pending dialogs via `ExecuteDialog`.
   - If running on Game Boy Color (`hIsGBC != 0`), switches to `BANK(LoadBGPalettes)` (`$24`) and executes `LoadBGPalettes`.
+
+- **Hardware Joypad Reading (`code/bank0.asm:00:281E`)**:
+  - Checks if room transition is active (`wRoomTransitionState != 0`); if so, returns early without modifying joypad states.
+  - Checks gameplay interactivity: if in world gameplay (`wGameplayType == GAMEPLAY_WORLD`), requires `wGameplaySubtype == GAMEPLAY_WORLD_INTERACTIVE`.
+  - An exception exists for Link passing out (`wLinkMotionState == LINK_MOTION_PASS_OUT` and `hLinkPhysicsModifier == 4`), which allows input reading even before transition finishes.
+  - Otherwise, requires `wTransitionSequenceCounter == 4` and `wPaletteUnknownE == 0`. If conditions are not met, clears `hPressedButtonsMask` and `hJoypadState`.
+  - Reads buttons by strobing `rP1` with `J_BUTTONS` (`$20`), then d-pad with `J_DPAD` (`$10`), inverts the active-low signals, shifts d-pad to high nibble, combines both, computes newly pressed buttons using `(prev ^ curr) & curr`, updates `hJoypadState` and `hPressedButtonsMask`, and resets `rP1` to `$30`.
+- **Random Number Generation (`code/bank0.asm:00:280D`)**:
+  - The RNG advances by summing `hFrameCounter`, the current `wRandomSeed`, and the LCD scanline register `rLY`.
+  - The sum is rotated right 1 bit circularly (`rrca`), stored back to `wRandomSeed`, and returned in register A.
+- **Cartridge SRAM Enabling (`code/bank0.asm:00:27D0`)**:
+  - Maps external cartridge RAM bank 0 (`rRAMB = 0`), then writes `CART_SRAM_ENABLE` (`$0A`) to `rRAMG` (`$0000`) to enable battery-backed SRAM.
+- **Table Jump Dispatcher (`code/bank0.asm:00:28C0`)**:
+  - Invoked via `rst 0` (`JP_TABLE` macro).
+  - Pops the return address off the stack (pointing to the table immediately following `rst 0`), multiplies the table index by 2, loads the target address word, and jumps to it.

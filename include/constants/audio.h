@@ -1,0 +1,8 @@
+#ifndef LADX_CONSTANTS_AUDIO_H
+#define LADX_CONSTANTS_AUDIO_H
+
+#include "common.h"
+
+#define MUSIC_FADE_OUT_TIMER_MAX 0x38
+
+#endif /* LADX_CONSTANTS_AUDIO_H */

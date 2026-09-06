@@ -30,6 +30,12 @@
 #define vBGMap0          0x9800
 #define vBGMap1          0x9C00
 
+/* External MBC / Cartridge registers */
+#define rRAMG            0x0000
+#define rSelectROMBank   0x2100
+#define rRAMB            0x4000
+#define CART_SRAM_ENABLE 0x0A
+
 /* Hardware I/O registers */
 #define rP1              0xFF00
 #define rSB              0xFF01
@@ -97,8 +103,5 @@
 #define IEF_TIMER        0x04
 #define IEF_SERIAL       0x08
 #define IEF_HILO         0x10
-
-/* MBC Bank selection registers */
-#define rSelectROMBank   0x2100
 
 #endif /* LADX_CONSTANTS_HARDWARE_H */

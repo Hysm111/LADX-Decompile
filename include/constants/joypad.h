@@ -1,6 +1,10 @@
 #ifndef LADX_CONSTANTS_JOYPAD_H
 #define LADX_CONSTANTS_JOYPAD_H
 
+/* Select the corresponding button matrix in rP1 */
+#define J_DPAD    0x10
+#define J_BUTTONS 0x20
+
 /* Joypad button bit masks */
 #define J_RIGHT  (1 << 0)
 #define J_LEFT   (1 << 1)
