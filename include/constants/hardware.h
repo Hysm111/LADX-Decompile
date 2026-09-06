@@ -125,3 +125,6 @@
 #define hDungeonTitleMessageCountdown   0xFFB4
 #define hMultiPurposeD                  0xFFE4
 #define hLinkAnimationState          0xFF9D
+#define hReplaceTiles                   0xFFA5
+#define hAnimatedTilesFrameCount        0xFFA6
+#define hAnimatedTilesDataOffset        0xFFA7

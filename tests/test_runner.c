@@ -15,6 +15,7 @@ extern void run_vfx_tests(void);
 extern void run_ui_tests(void);
 extern int run_gfx_tests(void);
 extern void run_check_items_to_use_tests(void);
+extern void run_animated_tiles_tests(void);
 
 int main(void) {
     int total_failures = 0;
@@ -37,6 +38,7 @@ int main(void) {
     run_ui_tests();
     total_failures += run_gfx_tests();
     run_check_items_to_use_tests();
+    run_animated_tiles_tests();
 
     printf("========================================\n");
     if (total_failures == 0) {

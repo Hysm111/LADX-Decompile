@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 28.08%
-* **Number of Verified Functions**: 337
-* **Number of Decompiled Functions**: 337
-* **Number Remaining**: ~863 functions
-* **Current Subsystem**: Bank 0 - Link Motion & Map Transitions (`code/bank0.asm`, `00:1794`-`00:1ACB`)
-* **Current Task**: Bank 0 Link Motion & Map Transition Handlers completed
-* **Last Completed Task**: Decompiled and verified 10 Bank 0 Link motion, transition, and animation routines (`ApplyLinkMotionState`, `func_1819`, `func_1828`, `LinkMotionMapFadeOutHandler`, `SetSpawnLocation`, `label_19DA`, `LinkMotionMapFadeInHandler`, `func_1A22`, `func_1A39`, `UpdateLinkWalkingAnimation`) (`00:1794` - `00:1ACB`)
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Animated background tiles & Link sprite graphics `00:1ACC` - `00:1E2A`)
-* **Last Update Timestamp**: 2026-09-06T23:10:00+03:00
+* **Current Overall Progress**: 30.33%
+* **Number of Verified Functions**: 364
+* **Number of Decompiled Functions**: 364
+* **Number Remaining**: ~836 functions
+* **Current Subsystem**: Bank 0 - Animated Background Tiles (`code/home/animated_tiles.asm`, `00:1ACC`-`00:1D2D`)
+* **Current Task**: Bank 0 Animated Background Tiles Subsystem completed
+* **Last Completed Task**: Decompiled and verified 27 Bank 0 animated background tile routines and cadence handlers (`AnimateMarinBeachTiles`, `AnimateCounterTilesGroup`, `LoadAnimatedTilesFrameAtOffset`, `AnimateTideTilesGroup`, `AnimateVillageTilesGroup`, `AnimateWaterDungeonTilesGroup`, `AnimateSlowWaterfallTilesGroup`, `AnimateTilesSlowSpeed`, `AnimateDungeon1TilesGroup`, `LoadAnimatedTilesFrame`, `AnimateUndergroundTilesGroup`, `AnimateLavaTilesGroup`, `AnimateDungeon2TilesGroup`, `label_1CB8`, `AnimateWarpTilesGroup`, `AnimateTilesMediumSpeed`, `AnimateWaterCurrentsTilesGroup`, `AnimateTilesFastSpeed`, `AnimateWaterfallTilesGroup`, `IncrementAnimatedTilesDataOffset`, `AnimateLightBeamTilesGroup`, `AnimateBubblesTilesGroup`, `AnimateWeatherVaneTilesGroup`, `AnimateCrystalBlockTilesGroup`, `AnimatePhotoTilesGroup`, `CopyLinkTilesPair`, `SkipTilesGroupAnimation`) (`00:1ACC` - `00:1D2D`)
+* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Link V-Blank sprite rendering & dynamic tile replacements `00:1D2E` - `00:1F48`)
+* **Last Update Timestamp**: 2026-09-06T23:35:00+03:00
 
 ---
 
@@ -285,10 +285,46 @@
 | `func_1A22` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $6C4F and FadeOutMusic with direct bank select, restoring saved ROM bank (`00:1A22`) |
 | `func_1A39` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $6C7A and helper $563B with direct bank select, restoring saved ROM bank (`00:1A39`) |
 | `UpdateLinkWalkingAnimation` | VERIFIED | PASS | PASS | Updates hLinkAnimationState from direction, step cadence, equipped shield tier, active shield use, side-scrolling, pushing, lifting, and swimming states (`00:1A50`) |
+| `AnimateMarinBeachTiles` | VERIFIED | PASS | PASS | Copies Marin beach dialogue wave animation tiles to vTiles2+$500 on 8-frame cadence when no draw command is active (`00:1ACC`) |
+| `AnimateCounterTilesGroup` | VERIFIED | PASS | PASS | Calls bank $01 LoadCounterAnimatedTiles on 8-frame cadence and reloads bank $0C (`00:1BF9`) |
+| `LoadAnimatedTilesFrameAtOffset` | VERIFIED | PASS | PASS | Loads 64-byte tile data from specified group high byte and offset into vTiles2+$6C0 (`00:1C13`) |
+| `AnimateTideTilesGroup` | VERIFIED | PASS | PASS | Updates tide animated tiles (group $6B) on slow 16-frame cadence (`00:1C16`) |
+| `AnimateVillageTilesGroup` | VERIFIED | PASS | PASS | Updates village animated tiles (group $6C) on slow 16-frame cadence (`00:1C1A`) |
+| `AnimateWaterDungeonTilesGroup` | VERIFIED | PASS | PASS | Updates water dungeon animated tiles (group $73) on slow 16-frame cadence (`00:1C1E`) |
+| `AnimateSlowWaterfallTilesGroup` | VERIFIED | PASS | PASS | Updates slow waterfall animated tiles (group $6A) on slow 16-frame cadence (`00:1C22`) |
+| `AnimateTilesSlowSpeed` | VERIFIED | PASS | PASS | Executes slow animated tile updates on (hAnimatedTilesFrameCount & 0x0F) == 0, advancing offset by $40 (`00:1C24`) |
+| `AnimateDungeon1TilesGroup` | VERIFIED | PASS | PASS | Updates Dungeon 1 water/torch animation on 8-frame cadence using AnimatedTilesDataOffsets table (`00:1C39`) |
+| `LoadAnimatedTilesFrame` | VERIFIED | PASS | PASS | Copies 64 bytes of animated tile data to VRAM with special dual-copy handling for Color Dungeon ($FF) (`00:1C51`) |
+| `AnimateUndergroundTilesGroup` | VERIFIED | PASS | PASS | Updates underground/cave animated tiles (group $6E) on slow 16-frame cadence (`00:1C8A`) |
+| `AnimateLavaTilesGroup` | VERIFIED | PASS | PASS | Updates lava animated tiles (group $6F) on 8-frame cadence using AnimatedTilesDataOffsets table (`00:1C8E`) |
+| `AnimateDungeon2TilesGroup` | VERIFIED | PASS | PASS | Updates Dungeon 2 animated scrolling tiles from wAnimatedScrollingTilesStorage, branching for Color Dungeon ($8400) (`00:1CA9`) |
+| `label_1CB8` | VERIFIED | PASS | PASS | Updates scrolling tiles to $90C0 on 4-frame cadence or falls back to AnimateDungeon1TilesGroup (`00:1CB8`) |
+| `AnimateWarpTilesGroup` | VERIFIED | PASS | PASS | Updates warp tile animated graphics (group $70) on medium 8-frame cadence (`00:1CC6`) |
+| `AnimateTilesMediumSpeed` | VERIFIED | PASS | PASS | Executes medium-speed tile updates on (hAnimatedTilesFrameCount & 0x07) == 0, advancing offset by $40 (`00:1CC8`) |
+| `AnimateWaterCurrentsTilesGroup` | VERIFIED | PASS | PASS | Updates water current tiles (group $71) on fast 4-frame cadence (`00:1CD3`) |
+| `AnimateTilesFastSpeed` | VERIFIED | PASS | PASS | Executes fast-speed tile updates on (hAnimatedTilesFrameCount & 0x03) == 0, advancing offset by $40 (`00:1CD6`) |
+| `AnimateWaterfallTilesGroup` | VERIFIED | PASS | PASS | Updates fast waterfall tiles (group $72) on fast 4-frame cadence (`00:1CE1`) |
+| `IncrementAnimatedTilesDataOffset` | VERIFIED | PASS | PASS | Adds $40 to hAnimatedTilesDataOffset register and returns the updated offset (`00:1CEE`) |
+| `AnimateLightBeamTilesGroup` | VERIFIED | PASS | PASS | Updates light beam tiles (group $75) on fast 4-frame cadence (`00:1CF7`) |
+| `AnimateBubblesTilesGroup` | VERIFIED | PASS | PASS | Updates bubbles animated tiles (group $74) on medium 8-frame cadence (`00:1CFB`) |
+| `AnimateWeatherVaneTilesGroup` | VERIFIED | PASS | PASS | Updates weather vane animated tiles (group $77) on medium 8-frame cadence (`00:1CFF`) |
+| `AnimateCrystalBlockTilesGroup` | VERIFIED | PASS | PASS | Updates crystal block animated tiles (group $76) on medium 8-frame cadence (`00:1D03`) |
+| `AnimatePhotoTilesGroup` | VERIFIED | PASS | PASS | Dispatches photo album animated graphics handler in bank $38 (`00:1D07`) |
+| `CopyLinkTilesPair` | VERIFIED | PASS | PASS | Copies D bytes of Link sprite graphics from BC to HL in bank $0C, then switches to bank $20 (`00:1D0A`) |
+| `SkipTilesGroupAnimation` | VERIFIED | PASS | PASS | Bypasses tile group update, calling bank $20 helper $54F5 and setting ROM bank $0C (`00:1D1E`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Animated Background Tiles Subsystem (`00:1ACC`-`00:1D2D`)**:
+   - Animated tiles run on varying cadences checked during V-Blank:
+     - Slow speed (every 16 frames: `hAnimatedTilesFrameCount & 0x0F == 0`): Tide ($6B), Village ($6C), Water Dungeon ($73), Slow Waterfall ($6A), Underground ($6E).
+     - Medium speed (every 8 frames: `hAnimatedTilesFrameCount & 0x07 == 0`): Warp ($70), Bubbles ($74), Weather Vane ($77), Crystal Blocks ($76).
+     - Fast speed (every 4 frames: `hAnimatedTilesFrameCount & 0x03 == 0`): Currents ($71), Waterfall ($72), Light Beam ($75).
+     - Custom frame tables: Dungeon 1 ($6D) and Lava ($6F) index into `AnimatedTilesDataOffsets` (`{0, $40, $80, $C0, $C0, $C0, $80, $40}`) using `(frameCount >> 3) & 7`.
+     - Dungeon 2 scrolling tiles: read from `wAnimatedScrollingTilesStorage` ($DCC0) into $8400 (Color Dungeon) or $90C0 (non-Color Dungeon).
+   - In all cadence checks, when the frame count does not match the cadence mask, `SkipTilesGroupAnimation` is called to dispatch bank $20 auxiliary helper $54F5 and ensure ROM bank $0C is selected.
 
 1. **Link Motion Handlers & Map Transition Subsystem (`00:1794`-`00:1ACB`)**:
    - `ApplyLinkMotionState`: ignores swimming; if sword active (`wC16A != 0`), configures OAM multipurpose positions, applies 4-frame flash during full charge (`wSwordCharge >= MAX_SWORD_CHARGE`), and dispatches to Bank $20; if magic rod attack step (`countdown & 0x80`), spawns `ENTITY_MAGIC_ROD_FIREBALL` on frame 0x0C if no dialog or transition is pending, plays `NOISE_SFX_MAGIC_ROD`, and restores countdown.
