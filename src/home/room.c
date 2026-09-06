@@ -4,6 +4,7 @@
 #include "constants/memory.h"
 #include "constants/maps.h"
 #include "constants/rooms.h"
+#include "constants/gfx.h"
 #include "constants/tilesets.h"
 #include "constants/sfx.h"
 
@@ -200,4 +201,183 @@ uint16_t GetRoomStatusAddressForMapPosition_trampoline(GBState *gb, uint16_t de,
     }
     ReloadSavedBank(gb);
     return result;
+}
+
+void FillRoomWithConsecutiveObjects(GBState *gb, uint16_t hl, uint8_t obj_type, uint8_t count) {
+    if (!gb) return;
+
+    while (count > 0) {
+        gb_write(gb, hl, obj_type);
+        hl++;
+        if (gb_read(gb, hMultiPurpose0) & 0x40) {
+            hl += 0x0F;
+        }
+        count--;
+    }
+}
+
+void SetupDestroyableObjectIfNeeded2(GBState *gb, uint16_t hl, uint8_t obj_id) {
+    if (!gb) return;
+
+    if (obj_id == OBJECT_SHORT_GRASS) {
+        return;
+    }
+
+    uint8_t room = gb_read(gb, hMapRoom);
+
+    if (obj_id == OBJECT_ROCKY_GROUND) {
+        if (room != ROOM_OW_GIANT_SKULL) {
+            return;
+        }
+        BackupObjectInRAM2(gb, hl, 0x1A);
+        return;
+    }
+
+    if (obj_id == OBJECT_ROCKY_CAVE_DOOR) {
+        if (room == ROOM_OW_EAGLES_TOWER || room == UNKNOWN_ROOM_0C || room == UNKNOWN_ROOM_1B) {
+            return;
+        }
+    }
+
+    uint8_t bank = (room >= ROOM_SECTION_OW_SECOND_HALF) ? 0x1A : 0x09;
+    BackupObjectInRAM2(gb, hl, bank);
+}
+
+void CopyObjectToActiveRoomMap(GBState *gb, uint8_t pos, uint8_t obj_val) {
+    if (!gb) return;
+
+    uint16_t hl = wRoomObjects + pos;
+    gb_write(gb, hl, obj_val);
+    SetupDestroyableObjectIfNeeded2(gb, hl, obj_val);
+}
+
+uint8_t SetBankForRoom(GBState *gb) {
+    if (!gb) return 0;
+
+    uint8_t bank = (gb_read(gb, hMapRoom) >= ROOM_SECTION_OW_SECOND_HALF) ?
+                   BANK_OverworldRoomsSecondHalf : BANK_OverworldRoomsFirstHalf;
+    gb_write(gb, rSelectROMBank, bank);
+    return bank;
+}
+
+void SetupDestroyableObjectIfNeeded(GBState *gb, uint16_t hl, uint8_t obj_id) {
+    if (!gb) return;
+
+    if (obj_id == OBJECT_SHORT_GRASS) {
+        return;
+    }
+
+    uint8_t room = gb_read(gb, hMapRoom);
+
+    if (obj_id == OBJECT_ROCKY_GROUND) {
+        if (room != ROOM_OW_GIANT_SKULL) {
+            return;
+        }
+        BackupObjectInRAM2(gb, hl, 0x24);
+        return;
+    }
+
+    if (obj_id == OBJECT_ROCKY_CAVE_DOOR) {
+        if (room == ROOM_OW_EAGLES_TOWER || room == UNKNOWN_ROOM_0C || room == UNKNOWN_ROOM_1B) {
+            return;
+        }
+    }
+
+    BackupObjectInRAM2(gb, hl, 0x24);
+}
+
+void FillRoomMapWithObject(GBState *gb, uint8_t obj_type) {
+    if (!gb) return;
+
+    gb_write(gb, hMultiPurposeH, obj_type);
+
+    uint16_t hl = wRoomObjects;
+    uint8_t d = TILES_PER_MAP;
+
+    while (d > 0) {
+        uint8_t col = (uint8_t)(hl & 0x0F);
+        if (col != 0 && col < (OBJECTS_PER_ROW + 1)) {
+            gb_write(gb, hl, obj_type);
+        }
+        hl++;
+        d--;
+    }
+}
+
+void LoadRoomTemplate_trampoline(GBState *gb, uint8_t template_id,
+                                void (*load_room_template)(GBState *, uint8_t)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, BANK_LoadRoomTemplate);
+    if (load_room_template) {
+        load_room_template(gb, template_id);
+    }
+    gb_write(gb, rSelectROMBank, gb_read(gb, hRoomBank));
+}
+
+void LoadWorldMapBGMap_trampoline(GBState *gb, void (*load_world_map_bg_map)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, BANK_LoadWorldMapBGMap);
+    if (load_world_map_bg_map) {
+        load_world_map_bg_map(gb);
+    }
+}
+
+uint16_t ObjectPositionToRoomObjectAddress(uint8_t pos) {
+    return wRoomObjects + pos;
+}
+
+void CopyIndoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint16_t de) {
+    if (!gb) return;
+
+    while (1) {
+        uint8_t offset = gb_read(gb, bc);
+        if (offset == 0xFF) {
+            break;
+        }
+
+        uint16_t target_hl = hl + offset;
+        uint8_t obj_id = gb_read(gb, de);
+
+        if (obj_id == OBJECT_ROCKY_CAVE_DOOR || obj_id == 0xE2 || obj_id == OBJECT_CAVE_DOOR) {
+            uint8_t pos = (uint8_t)((target_hl & 0xFF) - 0x11);
+            uint8_t c19c = gb_read(gb, wC19C);
+            gb_write(gb, wC19C, (c19c + 1) & 0x03);
+            gb_write(gb, wWarpPositions + c19c, pos);
+        }
+
+        gb_write(gb, target_hl, obj_id);
+        SetupDestroyableObjectIfNeeded2(gb, target_hl, obj_id);
+
+        de++;
+        bc++;
+    }
+}
+
+void CopyOutdoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint16_t de) {
+    if (!gb) return;
+
+    while (1) {
+        uint8_t offset = gb_read(gb, bc);
+        if (offset == 0xFF) {
+            break;
+        }
+
+        uint16_t target_hl = hl + offset;
+        uint8_t obj_id = gb_read(gb, de);
+
+        if (obj_id == OBJECT_ROCKY_CAVE_DOOR || obj_id == 0xE2 || obj_id == OBJECT_CAVE_DOOR) {
+            uint8_t pos = (uint8_t)((target_hl & 0xFF) - 0x11);
+            uint8_t c19c = gb_read(gb, wC19C);
+            gb_write(gb, wC19C, (c19c + 1) & 0x03);
+            gb_write(gb, wWarpPositions + c19c, pos);
+        }
+
+        gb_write(gb, target_hl, obj_id);
+        SetupDestroyableObjectIfNeeded(gb, target_hl, obj_id);
+
+        de++;
+        bc++;
+    }
 }

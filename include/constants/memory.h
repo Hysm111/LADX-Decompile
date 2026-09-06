@@ -31,12 +31,14 @@
 #define wRoomEventEffectExecuted 0xC18F
 #define wLoadedEntitySpritesheets 0xC193
 #define wEntityTilesSpriteslotIndexA 0xC197
+#define wC19C                   0xC19C
 #define wC19D                   0xC19D
 #define wDialogState            0xC19F
 #define wC1CF                   0xC1CF
 #define wMusicTrackToPlay       0xD368
 #define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
+#define wWarpPositions          0xD416
 #define wD464                   0xD464
 #define wD474                   0xD474
 #define wD478                   0xD478
@@ -121,6 +123,9 @@
 #define hMultiPurposeA               0xFFE1
 #define hMultiPurposeF               0xFFE6
 #define hFrameCounter                0xFFE7
+#define hMultiPurposeG               0xFFE8
+#define hRoomBank                    0xFFE8
+#define hMultiPurposeH               0xFFE9
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3
 #define hNoiseSfx                    0xFFF4

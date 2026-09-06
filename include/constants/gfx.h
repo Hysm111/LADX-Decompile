@@ -15,6 +15,15 @@
 /* Special tile during room transitions treated as transparent */
 #define TRANSITION_TRANSPARENT_TILE 0xEE
 
+/* Map / Object Dimensions */
+#define TILES_PER_MAP                0x80
+
+/* Object Types */
+#define OBJECT_SHORT_GRASS           0x04
+#define OBJECT_ROCKY_GROUND          0x09
+#define OBJECT_ROCKY_CAVE_DOOR       0xE1
+#define OBJECT_CAVE_DOOR             0xE3
+
 /* Graphic asset ROM addresses in Bank $08 */
 #define BANK_IndoorObjectsTilemapDMG 0x08
 #define IndoorObjectsTilemapDMG      0x4000

@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 13.33%
-* **Number of Verified Functions**: 160
-* **Number of Decompiled Functions**: 160
-* **Number Remaining**: ~1040+ functions
+* **Current Overall Progress**: 14.25%
+* **Number of Verified Functions**: 171
+* **Number of Decompiled Functions**: 171
+* **Number Remaining**: ~1029 functions
 * **Current Subsystem**: Bank 0 - Room Loading and Entity Initialization (`00:30F4`+)
-* **Current Task**: Decompile and verify LoadRoom and associated subroutines (`00:30F4`)
-* **Last Completed Task**: Decompiled and verified Bank 0 CGB room object copying and room tilemap loading routines (`00:300E` - `00:30F3`)
-* **Next Task**: Continue Bank 0 Room loading and entity initialization (`LoadRoom` at `00:30F4`)
+* **Current Task**: Complete Bank 0 Room loading pipeline (`LoadRoom` at `00:30F4`, door handlers `00:32E0`-`00:33CA`, and `LoadRoomEntities` at `00:37FE`)
+* **Last Completed Task**: Decompiled and verified 11 Bank 0 Room Object / Macro routines (`FillRoomWithConsecutiveObjects`, `SetupDestroyableObjectIfNeeded2`, `CopyObjectToActiveRoomMap`, `SetBankForRoom`, `CopyIndoorsMacroObjectsToRoom`, `CopyOutdoorsMacroObjectsToRoom`, `SetupDestroyableObjectIfNeeded`, `ObjectPositionToRoomObjectAddress`, `FillRoomMapWithObject`, `LoadRoomTemplate_trampoline`, `LoadWorldMapBGMap_trampoline`) (`00:34EF` - `00:38FC`)
+* **Next Task**: Continue Bank 0 Room loading and door handling (`LoadRoom` at `00:30F4` / `LoadRoomEntities` at `00:37FE`)
 * **Last Update Timestamp**: 2026-09-06T16:35:00+03:00
 
 ---
@@ -108,10 +108,33 @@
 | `WriteIndoorObjectToBG` | VERIFIED | PASS | PASS | Reads indoor object byte and copies tiles/palettes to BG (`00:3018`) |
 | `doCopyObjectToBG` | VERIFIED | PASS | PASS | Copies 2x2 tiles and attributes for an object to BG map with 32-tile row stride (`00:3019`) |
 | `LoadRoomTilemap` | VERIFIED | PASS | PASS | Loops 128 times copying room objects to BG map with 10-object and 20-tile row strides, calls UpdateMinimapEntranceArrowAndReturn (`00:309B`) |
+| `FillRoomWithConsecutiveObjects` | VERIFIED | PASS | PASS | Writes consecutive objects into wRoomObjects horizontally or vertically (+16 with hMultiPurpose0 bit 6) (`00:34EF`) |
+| `SetupDestroyableObjectIfNeeded2` | VERIFIED | PASS | PASS | Evaluates overworld destroyable objects (grass/rocky ground/cave door) and backs up to WRAM2 with bank 9 or 1A (`00:3500`) |
+| `CopyObjectToActiveRoomMap` | VERIFIED | PASS | PASS | Writes single room object to wRoomObjects + pos and calls SetupDestroyableObjectIfNeeded2 (`00:352D`) |
+| `SetBankForRoom` | VERIFIED | PASS | PASS | Sets rSelectROMBank to BANK(OverworldRoomsFirstHalf) ($09) or OverworldRoomsSecondHalf ($1A) based on hMapRoom (`00:353B`) |
+| `CopyIndoorsMacroObjectsToRoom` | VERIFIED | PASS | PASS | Unpacks indoor macro objects list, registers warp doors to wWarpPositions, and backs up to WRAM2 (`00:354B`) |
+| `CopyOutdoorsMacroObjectsToRoom` | VERIFIED | PASS | PASS | Unpacks outdoor macro objects list, registers warp doors to wWarpPositions, and backs up to WRAM2 with bank $24 (`00:358B`) |
+| `SetupDestroyableObjectIfNeeded` | VERIFIED | PASS | PASS | Evaluates macro destroyable objects and backs up to WRAM2 with fixed return bank $24 (`00:35CB`) |
+| `ObjectPositionToRoomObjectAddress` | VERIFIED | PASS | PASS | Translates room object position byte to pointer within wRoomObjects (0xD711 + pos) (`00:35EE`) |
+| `FillRoomMapWithObject` | VERIFIED | PASS | PASS | Fills active 10x8 room map in wRoomObjects with object type, skipping row padding/borders (`00:37E7`) |
+| `LoadRoomTemplate_trampoline` | VERIFIED | PASS | PASS | Switches to bank $14, invokes LoadRoomTemplate, and restores bank from hRoomBank (`00:38EA`) |
+| `LoadWorldMapBGMap_trampoline` | VERIFIED | PASS | PASS | Switches to bank $20 and invokes LoadWorldMapBGMap (`00:38FC`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Room Objects & Macro Processing Subroutines (`00:34EF`-`00:38FC`)**:
+   - `FillRoomWithConsecutiveObjects`: loops `count` times writing `obj_type` to `hl`. Advances `hl` by 1 horizontally, or by 16 (`+ 0x0F` after `ldi`) if `hMultiPurpose0` bit 6 is set (vertical span).
+   - `SetupDestroyableObjectIfNeeded2`: filters out `OBJECT_SHORT_GRASS` (`$04`). For `OBJECT_ROCKY_GROUND` (`$09`), only backs up if room is `ROOM_OW_GIANT_SKULL` (`$97`) to bank `$1A`. For `OBJECT_ROCKY_CAVE_DOOR` (`$E1`), ignores Eagle's Tower (`$0E`), room `$0C`, and room `$1B`. Otherwise, selects bank `$1A` (if `hMapRoom >= $80`) or bank `$09` (if `hMapRoom < $80`) and calls `BackupObjectInRAM2`.
+   - `CopyObjectToActiveRoomMap`: writes object type to `wRoomObjects + pos` and triggers `SetupDestroyableObjectIfNeeded2`.
+   - `SetBankForRoom`: switches `rSelectROMBank` to `BANK(OverworldRoomsFirstHalf)` (`$09`) if `hMapRoom < $80` or `BANK(OverworldRoomsSecondHalf)` (`$1A`) if `hMapRoom >= $80`. Returns selected bank.
+   - `CopyIndoorsMacroObjectsToRoom` & `CopyOutdoorsMacroObjectsToRoom`: iterates over an `$FF`-terminated offset list, computing `target_hl = hl + offset` and reading each object ID. For door objects (`$E1`, `$E2`, `$E3`), records tile index `(target_hl & 0xFF) - 0x11` into `wWarpPositions` ring buffer indexed by `wC19C` (incremented mod 4). Calls `SetupDestroyableObjectIfNeeded2` (bank 9/1A) or `SetupDestroyableObjectIfNeeded` (fixed bank `$24`).
+   - `SetupDestroyableObjectIfNeeded`: identical ignore filtering to `SetupDestroyableObjectIfNeeded2`, but invokes `BackupObjectInRAM2` with return bank `$24` (macro bank context).
+   - `ObjectPositionToRoomObjectAddress`: returns `wRoomObjects + pos`.
+   - `FillRoomMapWithObject`: stores object type in `hMultiPurposeH` and iterates 128 times starting at `wRoomObjects` (`$D711`). Only writes to active room columns (`1 <= (hl & 0x0F) <= 10`), preserving the 6 border/padding columns per row.
+   - `LoadRoomTemplate_trampoline`: farcalls `LoadRoomTemplate` in bank `$14` and restores bank from `hRoomBank`.
+   - `LoadWorldMapBGMap_trampoline`: switches to bank `$20` and calls `LoadWorldMapBGMap`.
 
 1. **Room Tilemap Loading & CGB Object Copying (`00:300E`-`00:30F3`)**:
    - `WriteOverworldObjectToBG`: switches WRAM bank to 2 via `rSVBK` to read the object attribute value from `wRoomObjects`, restores WRAM bank to 1 (`rSVBK = 0`), and jumps to `doCopyObjectToBG`.

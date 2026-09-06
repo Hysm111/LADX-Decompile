@@ -6,6 +6,8 @@
 #include "constants/memory.h"
 #include "constants/maps.h"
 #include "constants/rooms.h"
+#include "constants/gfx.h"
+#include "constants/memory.h"
 #include "constants/tilesets.h"
 #include "constants/sfx.h"
 
@@ -272,7 +274,196 @@ static void test_room_trampolines_and_physics(void) {
     TEST_ASSERT(gb.rom_bank == 0x03, "GetRoomStatusAddressForMapPosition bank not restored to 0x03");
 }
 
+
+static int mock_load_template_calls = 0;
+static uint8_t mock_last_template_id = 0;
+static void mock_load_room_template_cb(GBState *gb, uint8_t template_id) {
+    (void)gb;
+    mock_load_template_calls++;
+    mock_last_template_id = template_id;
+}
+
+static int mock_load_world_map_calls = 0;
+static void mock_load_world_map_cb(GBState *gb) {
+    (void)gb;
+    mock_load_world_map_calls++;
+}
+
+static void test_room_objects_and_macros(void) {
+    GBState gb;
+
+    /* 1. FillRoomWithConsecutiveObjects - horizontal */
+    gb_init(&gb);
+    gb_write(&gb, hMultiPurpose0, 0x00); /* horizontal */
+    FillRoomWithConsecutiveObjects(&gb, wRoomObjects, 0x22, 4);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0) == 0x22, "Horizontal object 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 1) == 0x22, "Horizontal object 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 2) == 0x22, "Horizontal object 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 3) == 0x22, "Horizontal object 3 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 4) == 0x00, "Horizontal overflow occurred");
+
+    /* 2. FillRoomWithConsecutiveObjects - vertical (advance +16) */
+    gb_init(&gb);
+    gb_write(&gb, hMultiPurpose0, 0x40); /* vertical */
+    FillRoomWithConsecutiveObjects(&gb, wRoomObjects, 0x33, 3);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x00) == 0x33, "Vertical object 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x10) == 0x33, "Vertical object 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x20) == 0x33, "Vertical object 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x01) == 0x00, "Vertical adjacent tile polluted");
+
+    /* 3. SetBankForRoom */
+    gb_init(&gb);
+    gb_write(&gb, hMapRoom, 0x10); /* < 0x80 */
+    uint8_t bank = SetBankForRoom(&gb);
+    TEST_ASSERT(bank == BANK_OverworldRoomsFirstHalf, "SetBankForRoom first half mismatch");
+    TEST_ASSERT(gb.rom_bank == BANK_OverworldRoomsFirstHalf, "SetBankForRoom rSelectROMBank mismatch");
+
+    gb_write(&gb, hMapRoom, 0x85); /* >= 0x80 */
+    bank = SetBankForRoom(&gb);
+    TEST_ASSERT(bank == BANK_OverworldRoomsSecondHalf, "SetBankForRoom second half mismatch");
+    TEST_ASSERT(gb.rom_bank == BANK_OverworldRoomsSecondHalf, "SetBankForRoom second half rSelectROMBank mismatch");
+
+    /* 4. SetupDestroyableObjectIfNeeded2 & SetupDestroyableObjectIfNeeded */
+    /* On GBC with hIsGBC=1, BackupObjectInRAM2 writes to WRAM bank 2 if not ignored */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hMapRoom, 0x10);
+
+    /* Test OBJECT_SHORT_GRASS: ignored */
+    SetupDestroyableObjectIfNeeded2(&gb, wRoomObjects, OBJECT_SHORT_GRASS);
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects) == 0, "OBJECT_SHORT_GRASS should not be backed up");
+    gb_write(&gb, rSVBK, 0);
+
+    /* Test OBJECT_ROCKY_GROUND on non-Giant Skull: ignored */
+    gb_write(&gb, hMapRoom, 0x10);
+    SetupDestroyableObjectIfNeeded2(&gb, wRoomObjects, OBJECT_ROCKY_GROUND);
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects) == 0, "Rocky ground should not be backed up outside Giant Skull");
+    gb_write(&gb, rSVBK, 0);
+
+    /* Test OBJECT_ROCKY_GROUND (0x09, in interactive list) on Giant Skull: backed up */
+    gb_write(&gb, hMapRoom, ROOM_OW_GIANT_SKULL);
+    gb_write(&gb, wRoomObjects, OBJECT_ROCKY_GROUND);
+    SetupDestroyableObjectIfNeeded2(&gb, wRoomObjects, OBJECT_ROCKY_GROUND);
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects) == OBJECT_ROCKY_GROUND, "Rocky ground should be backed up on Giant Skull");
+    gb_write(&gb, rSVBK, 0);
+
+    /* Test OBJECT_ROCKY_CAVE_DOOR on Eagle's tower: ignored */
+    gb_write(&gb, hMapRoom, ROOM_OW_EAGLES_TOWER);
+    SetupDestroyableObjectIfNeeded2(&gb, wRoomObjects + 1, OBJECT_ROCKY_CAVE_DOOR);
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 1) == 0, "Rocky cave door ignored in Eagles Tower");
+    gb_write(&gb, rSVBK, 0);
+
+    /* Test SetupDestroyableObjectIfNeeded (macro version with bank 0x24) */
+    gb_write(&gb, hMapRoom, 0x30);
+    gb_write(&gb, wRoomObjects + 2, 0x5E); /* 0x5E is in interactive list */
+    SetupDestroyableObjectIfNeeded(&gb, wRoomObjects + 2, 0x5E);
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 2) == 0x5E, "Macro destroyable object backed up to WRAM2");
+    gb_write(&gb, rSVBK, 0);
+    TEST_ASSERT(gb.rom_bank == 0x24, "Macro destroyable object return bank not 0x24");
+
+    /* 5. CopyObjectToActiveRoomMap */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hMapRoom, 0x10);
+    CopyObjectToActiveRoomMap(&gb, 0x05, 0x5E); /* 0x5E is in interactive list */
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x05) == 0x5E, "CopyObjectToActiveRoomMap object value mismatch");
+    gb_write(&gb, rSVBK, 2);
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x05) == 0x5E, "CopyObjectToActiveRoomMap WRAM2 backup mismatch");
+    gb_write(&gb, rSVBK, 0);
+
+    /* 6. FillRoomMapWithObject */
+    gb_init(&gb);
+    /* Pre-fill wRoomObjectsArea ($D700-$D7FF) with canary 0xEE */
+    for (uint16_t addr = wRoomObjectsArea; addr < wRoomObjectsArea + 0x100; addr++) {
+        gb_write(&gb, addr, 0xEE);
+    }
+    FillRoomMapWithObject(&gb, 0x5A);
+
+    TEST_ASSERT(gb_read(&gb, hMultiPurposeH) == 0x5A, "FillRoomMapWithObject hMultiPurposeH not set");
+    /* Verify row 1 (0xD710-0xD71F): col 0 ($D710) is 0xEE, cols 1-10 ($D711-$D71A) are 0x5A, cols 11-15 ($D71B-$D71F) are 0xEE */
+    TEST_ASSERT(gb_read(&gb, 0xD710) == 0xEE, "Border col 0 should not be overwritten");
+    for (uint16_t col = 1; col <= 10; col++) {
+        TEST_ASSERT(gb_read(&gb, 0xD710 + col) == 0x5A, "Active room object tile mismatch");
+    }
+    for (uint16_t col = 11; col <= 15; col++) {
+        TEST_ASSERT(gb_read(&gb, 0xD710 + col) == 0xEE, "Border col > 10 should not be overwritten");
+    }
+
+    /* 7. LoadRoomTemplate_trampoline */
+    gb_init(&gb);
+    mock_load_template_calls = 0;
+    mock_last_template_id = 0;
+    gb_write(&gb, hRoomBank, 0x0A);
+    LoadRoomTemplate_trampoline(&gb, 0x03, mock_load_room_template_cb);
+    TEST_ASSERT(mock_load_template_calls == 1, "LoadRoomTemplate callback not called");
+    TEST_ASSERT(mock_last_template_id == 0x03, "LoadRoomTemplate template_id mismatch");
+    TEST_ASSERT(gb.rom_bank == 0x0A, "LoadRoomTemplate did not restore hRoomBank (0x0A)");
+
+    /* 9. ObjectPositionToRoomObjectAddress */
+    TEST_ASSERT(ObjectPositionToRoomObjectAddress(0x25) == (wRoomObjects + 0x25), "ObjectPositionToRoomObjectAddress mismatch");
+
+    /* 10. CopyIndoorsMacroObjectsToRoom */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wC19C, 0);
+
+    /* Setup mock offsets in WRAM at 0xC500, and mock IDs at 0xC510 */
+    uint16_t offsets_addr = 0xC500;
+    uint16_t ids_addr = 0xC510;
+    gb_write(&gb, offsets_addr + 0, 0x00);
+    gb_write(&gb, offsets_addr + 1, 0x01);
+    gb_write(&gb, offsets_addr + 2, 0xFF); /* Sentinel */
+
+    gb_write(&gb, ids_addr + 0, OBJECT_CAVE_DOOR);
+    gb_write(&gb, ids_addr + 1, 0x5E);
+
+    uint16_t base_hl = wRoomObjects + 0x10; /* 0xD721 */
+    CopyIndoorsMacroObjectsToRoom(&gb, base_hl, offsets_addr, ids_addr);
+
+    TEST_ASSERT(gb_read(&gb, base_hl + 0x00) == OBJECT_CAVE_DOOR, "Door object not copied");
+    TEST_ASSERT(gb_read(&gb, base_hl + 0x01) == 0x5E, "Second object not copied");
+    TEST_ASSERT(gb_read(&gb, wC19C) == 1, "wC19C counter not incremented for door");
+    TEST_ASSERT(gb_read(&gb, wWarpPositions + 0) == 0x10, "wWarpPositions[0] incorrect");
+
+    /* 11. CopyOutdoorsMacroObjectsToRoom */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hMapRoom, 0x30);
+    gb_write(&gb, wC19C, 2);
+
+    gb_write(&gb, offsets_addr + 0, 0x00);
+    gb_write(&gb, offsets_addr + 1, 0x10);
+    gb_write(&gb, offsets_addr + 2, 0xFF); /* Sentinel */
+
+    gb_write(&gb, ids_addr + 0, OBJECT_ROCKY_CAVE_DOOR);
+    gb_write(&gb, ids_addr + 1, 0x5E);
+
+    base_hl = wRoomObjects + 0x05; /* 0xD716 */
+    CopyOutdoorsMacroObjectsToRoom(&gb, base_hl, offsets_addr, ids_addr);
+
+    TEST_ASSERT(gb_read(&gb, base_hl + 0x00) == OBJECT_ROCKY_CAVE_DOOR, "Outdoor door not copied");
+    TEST_ASSERT(gb_read(&gb, base_hl + 0x10) == 0x5E, "Outdoor second object not copied");
+    TEST_ASSERT(gb_read(&gb, wC19C) == 3, "wC19C counter not updated to 3");
+    TEST_ASSERT(gb_read(&gb, wWarpPositions + 2) == 0x05, "wWarpPositions[2] incorrect");
+    TEST_ASSERT(gb.rom_bank == 0x24, "CopyOutdoorsMacroObjectsToRoom bank not 0x24");
+
+    /* 8. LoadWorldMapBGMap_trampoline */
+    gb_init(&gb);
+    mock_load_world_map_calls = 0;
+    LoadWorldMapBGMap_trampoline(&gb, mock_load_world_map_cb);
+    TEST_ASSERT(mock_load_world_map_calls == 1, "LoadWorldMapBGMap callback not called");
+    TEST_ASSERT(gb.rom_bank == BANK_LoadWorldMapBGMap, "LoadWorldMapBGMap bank not 0x20");
+}
 void run_room_tests(void) {
+    printf("[*] Running Room objects and macros tests...\n");
+    test_room_objects_and_macros();
+
     printf("[*] Running MarkTriggerAsResolved tests...\n");
     test_mark_trigger_as_resolved();
 
