@@ -324,6 +324,111 @@ void LoadWorldMapBGMap_trampoline(GBState *gb, void (*load_world_map_bg_map)(GBS
     }
 }
 
+
+static uint8_t ReadMacroROMByte(GBState *gb, uint16_t addr) {
+    if (addr >= 0x4000) {
+        return gb_read(gb, addr);
+    }
+    if (gb && gb->rom && gb->rom[addr] != 0) {
+        return gb->rom[addr];
+    }
+    switch (addr) {
+        /* HorizontalObjectOffsets ($37E1) */
+        case HorizontalObjectOffsets_Addr: return 0x00;
+        case HorizontalObjectOffsets_Addr + 1: return 0x01;
+        case HorizontalObjectOffsets_Addr + 2: return 0xFF;
+
+        /* VerticalObjectOffsets ($37E4) */
+        case VerticalObjectOffsets_Addr: return 0x00;
+        case VerticalObjectOffsets_Addr + 1: return 0x10;
+        case VerticalObjectOffsets_Addr + 2: return 0xFF;
+
+        /* KeyDoorTopObjectIds ($35F8) */
+        case KeyDoorTopObjectIds_Addr: return 0x2D;
+        case KeyDoorTopObjectIds_Addr + 1: return 0x2E;
+
+        /* KeyDoorBottomObjectIds ($3613) */
+        case KeyDoorBottomObjectIds_Addr: return 0x2F;
+        case KeyDoorBottomObjectIds_Addr + 1: return 0x30;
+
+        /* KeyDoorLeftObjectIds ($362E) */
+        case KeyDoorLeftObjectIds_Addr: return 0x31;
+        case KeyDoorLeftObjectIds_Addr + 1: return 0x32;
+
+        /* KeyDoorRightObjectIds ($3649) */
+        case KeyDoorRightObjectIds_Addr: return 0x33;
+        case KeyDoorRightObjectIds_Addr + 1: return 0x34;
+
+        /* OpenDoorTopObjectIds ($36B0) */
+        case OpenDoorTopObjectIds_Addr: return 0x43;
+        case OpenDoorTopObjectIds_Addr + 1: return 0x44;
+
+        /* OpenDoorBottomObjectIds ($36E8) */
+        case OpenDoorBottomObjectIds_Addr: return 0x8C;
+        case OpenDoorBottomObjectIds_Addr + 1: return 0x08;
+
+        /* OpenDoorLeftObjectIds ($36FC) */
+        case OpenDoorLeftObjectIds_Addr: return 0x09;
+        case OpenDoorLeftObjectIds_Addr + 1: return 0x0A;
+
+        /* OpenDoorRightObjectIds ($3710) */
+        case OpenDoorRightObjectIds_Addr: return 0x0B;
+        case OpenDoorRightObjectIds_Addr + 1: return 0x0C;
+
+        /* BossDoorObjectIds ($3724) */
+        case BossDoorObjectIds_Addr: return 0xA4;
+        case BossDoorObjectIds_Addr + 1: return 0xA5;
+
+        /* StairsDoorObjectIds ($375C) */
+        case StairsDoorObjectIds_Addr: return 0xAF;
+        case StairsDoorObjectIds_Addr + 1: return 0xB0;
+
+        /* RevolvingDoorObjectIds ($376B) */
+        case RevolvingDoorObjectIds_Addr: return 0xB1;
+        case RevolvingDoorObjectIds_Addr + 1: return 0xB2;
+
+        /* OneWayArrowObjectIds ($377A) */
+        case OneWayArrowObjectIds_Addr: return 0x45;
+        case OneWayArrowObjectIds_Addr + 1: return 0x46;
+
+        /* DungeonEntranceObjectOffsets ($3789) */
+        case DungeonEntranceObjectOffsets_Addr: return 0x00;
+        case DungeonEntranceObjectOffsets_Addr + 1: return 0x01;
+        case DungeonEntranceObjectOffsets_Addr + 2: return 0x02;
+        case DungeonEntranceObjectOffsets_Addr + 3: return 0x03;
+        case DungeonEntranceObjectOffsets_Addr + 4: return 0x10;
+        case DungeonEntranceObjectOffsets_Addr + 5: return 0x11;
+        case DungeonEntranceObjectOffsets_Addr + 6: return 0x12;
+        case DungeonEntranceObjectOffsets_Addr + 7: return 0x13;
+        case DungeonEntranceObjectOffsets_Addr + 8: return 0x20;
+        case DungeonEntranceObjectOffsets_Addr + 9: return 0x21;
+        case DungeonEntranceObjectOffsets_Addr + 10: return 0x22;
+        case DungeonEntranceObjectOffsets_Addr + 11: return 0x23;
+        case DungeonEntranceObjectOffsets_Addr + 12: return 0xFF;
+
+        /* DungeonEntranceObjectIds ($3796) */
+        case DungeonEntranceObjectIds_Addr: return 0xB3;
+        case DungeonEntranceObjectIds_Addr + 1: return 0xB4;
+        case DungeonEntranceObjectIds_Addr + 2: return 0xB4;
+        case DungeonEntranceObjectIds_Addr + 3: return 0xB5;
+        case DungeonEntranceObjectIds_Addr + 4: return 0xB6;
+        case DungeonEntranceObjectIds_Addr + 5: return 0xB7;
+        case DungeonEntranceObjectIds_Addr + 6: return 0xB8;
+        case DungeonEntranceObjectIds_Addr + 7: return 0xB9;
+        case DungeonEntranceObjectIds_Addr + 8: return 0xBA;
+        case DungeonEntranceObjectIds_Addr + 9: return 0xBB;
+        case DungeonEntranceObjectIds_Addr + 10: return 0xBC;
+        case DungeonEntranceObjectIds_Addr + 11: return 0xBD;
+
+        /* EntranceObjectIds ($37B4) */
+        case EntranceObjectIds_Addr: return 0xC1;
+        case EntranceObjectIds_Addr + 1: return 0xC2;
+
+        default:
+            return gb_read(gb, addr);
+    }
+}
+
 uint16_t ObjectPositionToRoomObjectAddress(uint8_t pos) {
     return wRoomObjects + pos;
 }
@@ -332,13 +437,13 @@ void CopyIndoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint16
     if (!gb) return;
 
     while (1) {
-        uint8_t offset = gb_read(gb, bc);
+        uint8_t offset = ReadMacroROMByte(gb, bc);
         if (offset == 0xFF) {
             break;
         }
 
         uint16_t target_hl = hl + offset;
-        uint8_t obj_id = gb_read(gb, de);
+        uint8_t obj_id = ReadMacroROMByte(gb, de);
 
         if (obj_id == OBJECT_ROCKY_CAVE_DOOR || obj_id == 0xE2 || obj_id == OBJECT_CAVE_DOOR) {
             uint8_t pos = (uint8_t)((target_hl & 0xFF) - 0x11);
@@ -359,13 +464,13 @@ void CopyOutdoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint1
     if (!gb) return;
 
     while (1) {
-        uint8_t offset = gb_read(gb, bc);
+        uint8_t offset = ReadMacroROMByte(gb, bc);
         if (offset == 0xFF) {
             break;
         }
 
         uint16_t target_hl = hl + offset;
-        uint8_t obj_id = gb_read(gb, de);
+        uint8_t obj_id = ReadMacroROMByte(gb, de);
 
         if (obj_id == OBJECT_ROCKY_CAVE_DOOR || obj_id == 0xE2 || obj_id == OBJECT_CAVE_DOOR) {
             uint8_t pos = (uint8_t)((target_hl & 0xFF) - 0x11);
@@ -380,4 +485,533 @@ void CopyOutdoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint1
         de++;
         bc++;
     }
+}
+
+void MakeListOfDoorPositions(GBState *gb, uint8_t door_type, uint8_t pos) {
+    if (!gb) return;
+
+    gb_write(gb, wDoorPositions + door_type, pos);
+    gb_write(gb, wDoorYPositions + door_type, pos & 0xF0);
+    uint8_t x = ((pos << 4) | (pos >> 4)) & 0xF0;
+    gb_write(gb, wDoorXPositions + door_type, x);
+}
+
+void UpdateIndoorRoomStatus(GBState *gb, uint8_t new_status) {
+    if (!gb) return;
+
+    uint16_t hl;
+    uint8_t room = gb_read(gb, hMapRoom);
+    uint8_t map_id = gb_read(gb, hMapId);
+
+    if (map_id == MAP_COLOR_DUNGEON) {
+        hl = wColorDungeonRoomStatus + room;
+    } else {
+        uint16_t offset = room;
+        if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+            offset += 0x100;
+        }
+        hl = wIndoorARoomStatus + offset;
+    }
+
+    uint8_t status = gb_read(gb, hl) | new_status;
+    gb_write(gb, hl, status);
+    gb_write(gb, hRoomStatus, status);
+}
+
+void LoadObject_OpenDoorTop(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    UpdateIndoorRoomStatus(gb, ROOM_STATUS_DOOR_OPEN_UP);
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, OpenDoorTopObjectIds_Addr);
+}
+
+void LoadObject_OpenDoorBottom(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    UpdateIndoorRoomStatus(gb, ROOM_STATUS_DOOR_OPEN_DOWN);
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, OpenDoorBottomObjectIds_Addr);
+}
+
+void LoadObject_OpenDoorLeft(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    UpdateIndoorRoomStatus(gb, ROOM_STATUS_DOOR_OPEN_LEFT);
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, VerticalObjectOffsets_Addr, OpenDoorLeftObjectIds_Addr);
+}
+
+void LoadObject_OpenDoorRight(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    UpdateIndoorRoomStatus(gb, ROOM_STATUS_DOOR_OPEN_RIGHT);
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, VerticalObjectOffsets_Addr, OpenDoorRightObjectIds_Addr);
+}
+
+void LoadObject_KeyDoorTop(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_KEY_TOP, pos);
+    if (gb_read(gb, hRoomStatus) & ROOM_STATUS_DOOR_OPEN_UP) {
+        LoadObject_OpenDoorTop(gb, pos);
+        return;
+    }
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, KeyDoorTopObjectIds_Addr);
+}
+
+void LoadObject_KeyDoorBottom(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_KEY_BOTTOM, pos);
+    if (gb_read(gb, hRoomStatus) & ROOM_STATUS_DOOR_OPEN_DOWN) {
+        LoadObject_OpenDoorBottom(gb, pos);
+        return;
+    }
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, KeyDoorBottomObjectIds_Addr);
+}
+
+void LoadObject_KeyDoorLeft(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_KEY_LEFT, pos);
+    if (gb_read(gb, hRoomStatus) & ROOM_STATUS_DOOR_OPEN_LEFT) {
+        LoadObject_OpenDoorLeft(gb, pos);
+        return;
+    }
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, VerticalObjectOffsets_Addr, KeyDoorLeftObjectIds_Addr);
+}
+
+void LoadObject_KeyDoorRight(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_KEY_RIGHT, pos);
+    if (gb_read(gb, hRoomStatus) & ROOM_STATUS_DOOR_OPEN_RIGHT) {
+        LoadObject_OpenDoorRight(gb, pos);
+        return;
+    }
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, VerticalObjectOffsets_Addr, KeyDoorRightObjectIds_Addr);
+}
+
+void LoadObject_ShutterDoorTop(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_SHUTTER_TOP, pos);
+    uint8_t mask = gb_read(gb, wShutterDoorsMask) | DOOR_TYPE_SHUTTER_TOP_BIT;
+    gb_write(gb, wShutterDoorsMask, mask);
+    gb_write(gb, wShutterDoorsMask2, mask);
+    LoadObject_OpenDoorTop(gb, pos);
+}
+
+void LoadObject_ShutterDoorBottom(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_SHUTTER_BOTTOM, pos);
+    uint8_t mask = gb_read(gb, wShutterDoorsMask) | DOOR_TYPE_SHUTTER_BOTTOM_BIT;
+    gb_write(gb, wShutterDoorsMask, mask);
+    gb_write(gb, wShutterDoorsMask2, mask);
+    LoadObject_OpenDoorBottom(gb, pos);
+}
+
+void LoadObject_ShutterDoorLeft(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_SHUTTER_LEFT, pos);
+    uint8_t mask = gb_read(gb, wShutterDoorsMask) | DOOR_TYPE_SHUTTER_LEFT_BIT;
+    gb_write(gb, wShutterDoorsMask, mask);
+    gb_write(gb, wShutterDoorsMask2, mask);
+    LoadObject_OpenDoorLeft(gb, pos);
+}
+
+void LoadObject_ShutterDoorRight(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_SHUTTER_RIGHT, pos);
+    uint8_t mask = gb_read(gb, wShutterDoorsMask) | DOOR_TYPE_SHUTTER_RIGHT_BIT;
+    gb_write(gb, wShutterDoorsMask, mask);
+    gb_write(gb, wShutterDoorsMask2, mask);
+    LoadObject_OpenDoorRight(gb, pos);
+}
+
+void LoadObject_BossDoor(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    MakeListOfDoorPositions(gb, DOOR_TYPE_BOSS_TOP, pos);
+    if (gb_read(gb, hRoomStatus) & ROOM_STATUS_DOOR_OPEN_UP) {
+        LoadObject_OpenDoorTop(gb, pos);
+        return;
+    }
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, BossDoorObjectIds_Addr);
+}
+
+void LoadObject_StairsDoor(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, VerticalObjectOffsets_Addr, StairsDoorObjectIds_Addr);
+}
+
+void LoadObject_RevolvingDoor(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, RevolvingDoorObjectIds_Addr);
+}
+
+void LoadObject_OneWayArrow(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, OneWayArrowObjectIds_Addr);
+}
+
+void LoadObject_DungeonEntrance(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    UpdateIndoorRoomStatus(gb, ROOM_STATUS_DOOR_OPEN_DOWN);
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, DungeonEntranceObjectOffsets_Addr, DungeonEntranceObjectIds_Addr);
+}
+
+void LoadObject_IndoorEntrance(GBState *gb, uint8_t pos) {
+    if (!gb) return;
+
+    uint8_t map_id = gb_read(gb, hMapId);
+    if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+        if (gb_read(gb, hMapRoom) == ROOM_INDOOR_B_KANALET_MAIN_ENTRANCE) {
+            if (gb_read(gb, wHasStolenFromShop) != 0) {
+                LoadObject_ShutterDoorBottom(gb, pos);
+                return;
+            }
+        }
+    }
+
+    UpdateIndoorRoomStatus(gb, 0x01); /* ROOM_STATUS_DOOR_OPEN_RIGHT */
+    uint16_t hl = ObjectPositionToRoomObjectAddress(pos);
+    CopyIndoorsMacroObjectsToRoom(gb, hl, HorizontalObjectOffsets_Addr, EntranceObjectIds_Addr);
+}
+
+bool DispatchIndoorDoorObject(GBState *gb, uint8_t obj_type, uint8_t pos) {
+    if (!gb) return false;
+
+    switch (obj_type) {
+        case OBJECT_DOOR_TYPE_KEY_TOP:
+            LoadObject_KeyDoorTop(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_KEY_BOTTOM:
+            LoadObject_KeyDoorBottom(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_KEY_LEFT:
+            LoadObject_KeyDoorLeft(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_KEY_RIGHT:
+            LoadObject_KeyDoorRight(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_SHUTTER_TOP:
+            LoadObject_ShutterDoorTop(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_SHUTTER_BOTTOM:
+            LoadObject_ShutterDoorBottom(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_SHUTTER_LEFT:
+            LoadObject_ShutterDoorLeft(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_SHUTTER_RIGHT:
+            LoadObject_ShutterDoorRight(gb, pos);
+            return true;
+        case OBJECT_OPEN_DOOR_TOP:
+            LoadObject_OpenDoorTop(gb, pos);
+            return true;
+        case OBJECT_OPEN_DOOR_BOTTOM:
+            LoadObject_OpenDoorBottom(gb, pos);
+            return true;
+        case OBJECT_OPEN_DOOR_LEFT:
+            LoadObject_OpenDoorLeft(gb, pos);
+            return true;
+        case OBJECT_OPEN_DOOR_RIGHT:
+            LoadObject_OpenDoorRight(gb, pos);
+            return true;
+        case OBJECT_DOOR_TYPE_BOSS_TOP:
+            LoadObject_BossDoor(gb, pos);
+            return true;
+        case OBJECT_STAIRS_DOOR:
+            LoadObject_StairsDoor(gb, pos);
+            return true;
+        case OBJECT_FLIP_WALL:
+            LoadObject_RevolvingDoor(gb, pos);
+            return true;
+        case OBJECT_ONE_WAY_ARROW:
+            LoadObject_OneWayArrow(gb, pos);
+            return true;
+        case OBJECT_DUNGEON_ENTRANCE:
+            LoadObject_DungeonEntrance(gb, pos);
+            return true;
+        case OBJECT_INDOOR_ENTRANCE:
+            LoadObject_IndoorEntrance(gb, pos);
+            return true;
+        default:
+            return false;
+    }
+}
+
+
+void ExpandOverworldObjectMacro(GBState *gb, uint8_t obj_type, uint8_t pos) {
+    if (!gb) return;
+    /* Hook / trampoline for Bank $24:7578 */
+}
+
+size_t LoadRoomObject(GBState *gb, uint16_t stream_addr) {
+    if (!gb) return 0;
+
+    gb_write(gb, hMultiPurpose0, 0);
+
+    uint8_t byte0 = gb_read(gb, stream_addr);
+    uint8_t pos;
+    uint8_t obj_type;
+    size_t bytes_consumed;
+
+    if ((byte0 & 0x80) != 0 && (byte0 & 0x10) == 0) {
+        /* Three-bytes object: byte0 encodes direction and length */
+        gb_write(gb, hMultiPurpose0, byte0);
+        pos = gb_read(gb, stream_addr + 1);
+        obj_type = gb_read(gb, stream_addr + 2);
+        bytes_consumed = 3;
+    } else {
+        /* Two-bytes object: byte0 is position (YX) */
+        pos = byte0;
+        obj_type = gb_read(gb, stream_addr + 1);
+        bytes_consumed = 2;
+    }
+
+    uint8_t room_status = gb_read(gb, hRoomStatus);
+    uint8_t is_indoor = gb_read(gb, wIsIndoor);
+
+    if (!is_indoor) {
+        /* Overworld */
+        if (obj_type >= OBJECT_MACROS_SECTION) {
+            ExpandOverworldObjectMacro(gb, obj_type, pos);
+            SetBankForRoom(gb);
+            return bytes_consumed;
+        }
+
+        /* Non-macro Overworld object */
+        if (obj_type == OBJECT_WATERFALL) {
+            gb_write(gb, wC50E, OBJECT_WATERFALL);
+        }
+
+        /* Weather vane */
+        if (obj_type == OBJECT_WEATHER_VANE_BASE) {
+            if ((pos & 0x20) != 0) {
+                obj_type = OBJECT_GROUND_STAIRS;
+            }
+        } else if (obj_type == OBJECT_WEATHER_VANE_TOP) {
+            if ((pos & 0x20) != 0) {
+                obj_type = OBJECT_WEATHER_VANE_BASE;
+            }
+        } else if (obj_type == OBJECT_WEATHER_VANE_ABOVE) {
+            if ((pos & 0x20) != 0) {
+                obj_type = OBJECT_WEATHER_VANE_TOP;
+            }
+        }
+
+        /* Monkey bridge */
+        if (obj_type == OBJECT_MONKEY_BRIDGE_TOP ||
+            obj_type == OBJECT_MONKEY_BRIDGE_MIDDLE ||
+            obj_type == OBJECT_MONKEY_BRIDGE_BOTTOM) {
+            if ((room_status & 0x10) != 0) {
+                obj_type = OBJECT_MONKEY_BRIDGE_BUILT;
+            }
+        }
+
+        /* Closed gate */
+        if (obj_type == OBJECT_CLOSED_GATE) {
+            if ((room_status & 0x10) != 0) {
+                obj_type = OBJECT_CAVE_DOOR;
+            }
+        }
+
+        /* Bombable cave door */
+        if (obj_type == OBJECT_BOMBABLE_CAVE_DOOR) {
+            if ((room_status & 0x04) != 0) {
+                obj_type = OBJECT_ROCKY_CAVE_DOOR;
+            }
+        }
+
+        /* Bush masking cave entrance */
+        if (obj_type == OBJECT_BUSH_GROUND_STAIRS) {
+            if ((room_status & 0x10) != 0) {
+                uint8_t map_room = gb_read(gb, hMapRoom);
+                if (map_room == UNKNOWN_ROOM_75 ||
+                    map_room == ROOM_OW_RIGHT_OF_EGG ||
+                    map_room == UNKNOWN_ROOM_AA ||
+                    map_room == UNKNOWN_ROOM_4A) {
+                    obj_type = OBJECT_GROUND_STAIRS;
+                }
+            }
+        }
+
+        gb_write(gb, hMultiPurpose9, obj_type);
+
+        /* Door warp data configuration */
+        if (obj_type == OBJECT_CLOSED_GATE ||
+            obj_type == OBJECT_ROCKY_CAVE_DOOR ||
+            obj_type == 0xCB ||
+            obj_type == OBJECT_BOMBABLE_CAVE_DOOR ||
+            obj_type == 0x61 ||
+            obj_type == OBJECT_GROUND_STAIRS ||
+            obj_type == 0xC5 ||
+            obj_type == 0xE2 ||
+            obj_type == OBJECT_CAVE_DOOR) {
+            uint8_t c19c = gb_read(gb, wC19C);
+            gb_write(gb, wC19C, (c19c + 1) & 0x03);
+            gb_write(gb, wWarpPositions + c19c, pos);
+        }
+
+        /* Configure stairs if 0xC5 or OBJECT_GROUND_STAIRS */
+        if (obj_type == 0xC5 || obj_type == OBJECT_GROUND_STAIRS) {
+            gb_write(gb, hStaircase, STAIRCASE_INACTIVE);
+            gb_write(gb, hStaircasePosY, (pos & 0xF0) + 0x10);
+            gb_write(gb, hStaircasePosX, ((pos & 0x0F) << 4) + 0x08);
+        }
+    } else {
+        /* Indoor */
+        if (obj_type >= OBJECT_DOOR_TYPE_KEY_TOP) {
+            DispatchIndoorDoorObject(gb, obj_type, pos);
+            return bytes_consumed;
+        }
+
+        gb_write(gb, hMultiPurpose9, obj_type);
+
+        /* Conveyor belt */
+        if (obj_type >= OBJECT_CONVEYOR_BOTTOM && obj_type < OBJECT_TRENDY_GAME_BORDER) {
+            uint8_t count = gb_read(gb, wConveyorBeltsCount);
+            gb_write(gb, wConveyorBeltsCount, count + 1);
+        }
+
+        /* Unlit torch */
+        if (obj_type == OBJECT_TORCH_UNLIT) {
+            gb_write(gb, wObjectAffectingBGPalette, 0);
+            if (gb_read(gb, hMapRoom) == UNKNOWN_ROOM_C4 && obj_type != 0) {
+                uint8_t torches = gb_read(gb, wTorchesCount);
+                gb_write(gb, wTorchesCount, torches + 1);
+                gb_write(gb, wObjectAffectingBGPalette, obj_type);
+                uint8_t c3cd = gb_read(gb, wC3CD);
+                gb_write(gb, wC3CD, c3cd + 4);
+                if (gb_read(gb, hIsGBC) == 0) {
+                    gb_write(gb, wTransitionSequenceCounter, 4);
+                }
+            }
+        }
+
+        /* Switches and movable blocks */
+        if (obj_type == OBJECT_POT_WITH_SWITCH || obj_type == OBJECT_SWITCH_BUTTON) {
+            gb_write(gb, wRoomSwitchableObject, ROOM_SWITCHABLE_OBJECT_SWITCH_BUTTON);
+        } else if (obj_type == OBJECT_RAISED_BLOCK || obj_type == OBJECT_LOWERED_BLOCK) {
+            gb_write(gb, wRoomSwitchableObject, ROOM_SWITCHABLE_OBJECT_MOBILE_BLOCK);
+        }
+
+        /* Bombable wall top */
+        if (obj_type == OBJECT_BOMBABLE_WALL_TOP || obj_type == OBJECT_HIDDEN_BOMBABLE_WALL_TOP) {
+            if ((room_status & 0x04) != 0) {
+                obj_type = OBJECT_BOMBED_PASSAGE_VERTICAL;
+            }
+        }
+
+        /* Bombable wall bottom */
+        if (obj_type == OBJECT_BOMBABLE_WALL_BOTTOM || obj_type == OBJECT_HIDDEN_BOMBABLE_WALL_BOTTOM) {
+            if ((room_status & 0x08) != 0) {
+                obj_type = OBJECT_BOMBED_PASSAGE_VERTICAL;
+            }
+        }
+
+        /* Bombable wall left */
+        if (obj_type == OBJECT_BOMBABLE_WALL_LEFT || obj_type == OBJECT_HIDDEN_BOMBABLE_WALL_LEFT) {
+            if ((room_status & 0x02) != 0) {
+                obj_type = OBJECT_BOMBED_PASSAGE_HORIZONTAL;
+            }
+        }
+
+        /* Bombable wall right */
+        if (obj_type == OBJECT_BOMBABLE_WALL_RIGHT || obj_type == OBJECT_HIDDEN_BOMBABLE_WALL_RIGHT) {
+            if ((room_status & 0x01) != 0) {
+                obj_type = OBJECT_BOMBED_PASSAGE_HORIZONTAL;
+            }
+        }
+
+        /* Chest (open object) */
+        if (obj_type == OBJECT_CHEST_OPEN) {
+            if ((room_status & 0x10) == 0) {
+                obj_type = gb_read(gb, hMultiPurposeH);
+            }
+        }
+
+        /* Hidden stairs */
+        if (obj_type == OBJECT_HIDDEN_STAIRS_DOWN) {
+            if ((room_status & 0x10) == 0) {
+                return bytes_consumed; /* Return without loading this object */
+            }
+        }
+
+        /* Stairs */
+        if (obj_type == OBJECT_STAIRS_DOWN || obj_type == OBJECT_HIDDEN_STAIRS_DOWN || obj_type == OBJECT_STAIRS_UP) {
+            gb_write(gb, hStaircase, STAIRCASE_INACTIVE);
+            gb_write(gb, hStaircasePosY, (pos & 0xF0) + 0x10);
+            gb_write(gb, hStaircasePosX, ((pos & 0x0F) << 4) + 0x08);
+        }
+
+        /* Raised fences */
+        if (obj_type == OBJECT_RAISED_FENCE_BOTTOM || obj_type == OBJECT_RAISED_FENCE_TOP) {
+            if ((room_status & 0x10) == 0) {
+                obj_type = OBJECT_WALL_TOP;
+            }
+        } else if (obj_type == OBJECT_RAISED_FENCE_LEFT || obj_type == OBJECT_RAISED_FENCE_RIGHT) {
+            if ((room_status & 0x10) == 0) {
+                obj_type = OBJECT_WALL_BOTTOM;
+            }
+        }
+
+        /* Breakable objects */
+        if (gb_read(gb, hMapId) >= MAP_CAVE_B) {
+            if (obj_type == OBJECT_BOMBABLE_BLOCK) {
+                if ((room_status & 0x40) != 0) {
+                    obj_type = OBJECT_FLOOR_0D;
+                }
+            }
+        }
+        if (obj_type == OBJECT_KEYHOLE_BLOCK) {
+            if ((room_status & 0x40) != 0) {
+                obj_type = OBJECT_FLOOR_0D;
+            }
+        }
+    }
+
+    /* Shared post-processing (breakableObjectEnd -> closedChestEnd) */
+    if (obj_type == OBJECT_CHEST_CLOSED) {
+        if ((room_status & 0x10) != 0) {
+            obj_type = OBJECT_CHEST_OPEN;
+        }
+    }
+
+    /* Final copy */
+    uint8_t multi0 = gb_read(gb, hMultiPurpose0);
+    if (multi0 == 0) {
+        CopyObjectToActiveRoomMap(gb, pos, obj_type);
+    } else {
+        uint8_t count = multi0 & 0x0F;
+        uint16_t hl = wRoomObjects + pos;
+        FillRoomWithConsecutiveObjects(gb, hl, obj_type, count);
+    }
+
+    return bytes_consumed;
 }

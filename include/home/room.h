@@ -225,6 +225,81 @@ void CopyIndoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint16
  */
 void CopyOutdoorsMacroObjectsToRoom(GBState *gb, uint16_t hl, uint16_t bc, uint16_t de);
 
+/**
+ * MakeListOfDoorPositions (00:373F)
+ * Stores the position, Y position (pos & 0xF0), and X position ((pos & 0x0F) << 4)
+ * of a door in wDoorPositions, wDoorYPositions, and wDoorXPositions indexed by door_type.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param door_type Door type index (DOOR_TYPE_*)
+ * @param pos Door position byte
+ */
+void MakeListOfDoorPositions(GBState *gb, uint8_t door_type, uint8_t pos);
+
+/**
+ * UpdateIndoorRoomStatus (00:36C4)
+ * Updates room status bitmask for the current room in wIndoorARoomStatus (or
+ * wIndoorBRoomStatus for MAP_INDOORS_B, or wColorDungeonRoomStatus for MAP_COLOR_DUNGEON),
+ * and updates hRoomStatus.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param new_status Status bits to OR with current room status
+ */
+void UpdateIndoorRoomStatus(GBState *gb, uint8_t new_status);
+
+void LoadObject_KeyDoorTop(GBState *gb, uint8_t pos);
+void LoadObject_KeyDoorBottom(GBState *gb, uint8_t pos);
+void LoadObject_KeyDoorLeft(GBState *gb, uint8_t pos);
+void LoadObject_KeyDoorRight(GBState *gb, uint8_t pos);
+void LoadObject_ShutterDoorTop(GBState *gb, uint8_t pos);
+void LoadObject_ShutterDoorBottom(GBState *gb, uint8_t pos);
+void LoadObject_ShutterDoorLeft(GBState *gb, uint8_t pos);
+void LoadObject_ShutterDoorRight(GBState *gb, uint8_t pos);
+void LoadObject_OpenDoorTop(GBState *gb, uint8_t pos);
+void LoadObject_OpenDoorBottom(GBState *gb, uint8_t pos);
+void LoadObject_OpenDoorLeft(GBState *gb, uint8_t pos);
+void LoadObject_OpenDoorRight(GBState *gb, uint8_t pos);
+void LoadObject_BossDoor(GBState *gb, uint8_t pos);
+void LoadObject_StairsDoor(GBState *gb, uint8_t pos);
+void LoadObject_RevolvingDoor(GBState *gb, uint8_t pos);
+void LoadObject_OneWayArrow(GBState *gb, uint8_t pos);
+void LoadObject_DungeonEntrance(GBState *gb, uint8_t pos);
+void LoadObject_IndoorEntrance(GBState *gb, uint8_t pos);
+
+/**
+ * DispatchIndoorDoorObject (00:32DF)
+ * Dispatches an indoor door object ($EC-$FD) to its corresponding handler.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param obj_type Object type
+ * @param pos Position offset
+ * @return true if handled as a door object, false otherwise
+ */
+bool DispatchIndoorDoorObject(GBState *gb, uint8_t obj_type, uint8_t pos);
+
+/**
+ * ExpandOverworldObjectMacro (24:7578)
+ * Dispatches and unpacks overworld macro object into individual room objects.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param obj_type Macro object type ($F5-$FD)
+ * @param pos Position (YX)
+ */
+void ExpandOverworldObjectMacro(GBState *gb, uint8_t obj_type, uint8_t pos);
+
+/**
+ * LoadRoomObject (00:32A9)
+ * Reads an individual room object from the room stream and writes it to wRoomObjects.
+ * Handles 2-byte and 3-byte objects, overworld state overrides (bridges, vane, gates),
+ * indoor interactive objects (switches, conveyors, chests, bombable walls, stairs),
+ * and dispatches to door handlers and macro expanders.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param stream_addr ROM or WRAM address pointing to start of the object definition
+ * @return Number of bytes consumed from stream (2 or 3)
+ */
+size_t LoadRoomObject(GBState *gb, uint16_t stream_addr);
+
 #ifdef __cplusplus
 }
 #endif

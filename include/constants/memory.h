@@ -28,6 +28,13 @@
 #define wTransitionSequenceCounter 0xC16B
 #define wC167                   0xC167
 #define wC16C                   0xC16C
+#define wConveyorBeltsCount          0xC1A5
+#define wObjectAffectingBGPalette    0xC3CB
+#define wC3CD                        0xC3CD
+#define wC50E                        0xC50E
+#define wRoomSwitchableObject        0xD6FA
+#define wShutterDoorsMask            0xC18A
+#define wShutterDoorsMask2           0xC18B
 #define wRoomEventEffectExecuted 0xC18F
 #define wLoadedEntitySpritesheets 0xC193
 #define wEntityTilesSpriteslotIndexA 0xC197
@@ -35,6 +42,9 @@
 #define wC19D                   0xC19D
 #define wDialogState            0xC19F
 #define wC1CF                   0xC1CF
+#define wDoorXPositions              0xC1D0
+#define wDoorYPositions              0xC1E0
+#define wDoorPositions               0xC1F0
 #define wMusicTrackToPlay       0xD368
 #define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
@@ -44,6 +54,11 @@
 #define wD478                   0xD478
 #define wDrawCommand            0xD601
 #define wOverworldRoomStatus    0xD800
+#define wIndoorARoomStatus           0xD900
+#define wIndoorBRoomStatus           0xDA00
+#define wHasStolenFromShop           0xDB46
+#define wTorchesCount                0xDBC9
+#define wColorDungeonRoomStatus      0xDDE0
 #define wGameplayType           0xDB95
 #define wGameplaySubtype        0xDB96
 #define wIsIndoor               0xDBA5
@@ -122,6 +137,9 @@
 #define hMultiPurpose9               0xFFE0
 #define hMultiPurposeA               0xFFE1
 #define hMultiPurposeF               0xFFE6
+#define hStaircase                   0xFFAC
+#define hStaircasePosX               0xFFAD
+#define hStaircasePosY               0xFFAE
 #define hFrameCounter                0xFFE7
 #define hMultiPurposeG               0xFFE8
 #define hRoomBank                    0xFFE8
@@ -131,6 +149,7 @@
 #define hNoiseSfx                    0xFFF4
 #define hMapRoom                     0xFFF6
 #define hMapId                       0xFFF7
+#define hRoomStatus                  0xFFF8
 #define hIsSideScrolling             0xFFF9
 #define hIsComputingFrame            0xFFFD
 #define hIsGBC                       0xFFFE

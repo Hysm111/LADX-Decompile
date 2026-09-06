@@ -119,6 +119,29 @@
 | `FillRoomMapWithObject` | VERIFIED | PASS | PASS | Fills active 10x8 room map in wRoomObjects with object type, skipping row padding/borders (`00:37E7`) |
 | `LoadRoomTemplate_trampoline` | VERIFIED | PASS | PASS | Switches to bank $14, invokes LoadRoomTemplate, and restores bank from hRoomBank (`00:38EA`) |
 | `LoadWorldMapBGMap_trampoline` | VERIFIED | PASS | PASS | Switches to bank $20 and invokes LoadWorldMapBGMap (`00:38FC`) |
+| `MakeListOfDoorPositions` | VERIFIED | PASS | PASS | Records door position and extracted Y/X coordinates in wDoorPositions/Y/X (`00:373F`) |
+| `UpdateIndoorRoomStatus` | VERIFIED | PASS | PASS | ORs status flags with wIndoorARoomStatus/wIndoorBRoomStatus/wColorDungeonRoomStatus and hRoomStatus (`00:36C4`) |
+| `LoadObject_KeyDoorTop` | VERIFIED | PASS | PASS | Loads top key door tiles ($2D,$2E) or opens if already unlocked (`00:35FA`) |
+| `LoadObject_KeyDoorBottom` | VERIFIED | PASS | PASS | Loads bottom key door tiles ($2F,$30) or opens if already unlocked (`00:3615`) |
+| `LoadObject_KeyDoorLeft` | VERIFIED | PASS | PASS | Loads left key door tiles ($31,$32) or opens if already unlocked (`00:3630`) |
+| `LoadObject_KeyDoorRight` | VERIFIED | PASS | PASS | Loads right key door tiles ($33,$34) or opens if already unlocked (`00:364B`) |
+| `LoadObject_ShutterDoorTop` | VERIFIED | PASS | PASS | Sets shutter top bit in wShutterDoorsMask/2 and opens door (`00:3664`) |
+| `LoadObject_ShutterDoorBottom` | VERIFIED | PASS | PASS | Sets shutter bottom bit in wShutterDoorsMask/2 and opens door (`00:3677`) |
+| `LoadObject_ShutterDoorLeft` | VERIFIED | PASS | PASS | Sets shutter left bit in wShutterDoorsMask/2 and opens door (`00:368A`) |
+| `LoadObject_ShutterDoorRight` | VERIFIED | PASS | PASS | Sets shutter right bit in wShutterDoorsMask/2 and opens door (`00:369D`) |
+| `LoadObject_OpenDoorTop` | VERIFIED | PASS | PASS | Updates room status with open up and copies horizontal open door tiles ($43,$44) (`00:36B2`) |
+| `LoadObject_OpenDoorBottom` | VERIFIED | PASS | PASS | Updates room status with open down and copies horizontal open door tiles ($8C,$08) (`00:36EA`) |
+| `LoadObject_OpenDoorLeft` | VERIFIED | PASS | PASS | Updates room status with open left and copies vertical open door tiles ($09,$0A) (`00:36FE`) |
+| `LoadObject_OpenDoorRight` | VERIFIED | PASS | PASS | Updates room status with open right and copies vertical open door tiles ($0B,$0C) (`00:3712`) |
+| `LoadObject_BossDoor` | VERIFIED | PASS | PASS | Loads boss door tiles ($A4,$A5) or opens if room status visited/open (`00:3726`) |
+| `LoadObject_StairsDoor` | VERIFIED | PASS | PASS | Copies vertical stairs door tiles ($AF,$B0) into wRoomObjects (`00:375E`) |
+| `LoadObject_RevolvingDoor` | VERIFIED | PASS | PASS | Copies horizontal revolving wall tiles ($B1,$B2) into wRoomObjects (`00:376D`) |
+| `LoadObject_OneWayArrow` | VERIFIED | PASS | PASS | Copies horizontal one-way arrow tiles ($45,$46) into wRoomObjects (`00:377C`) |
+| `LoadObject_DungeonEntrance` | VERIFIED | PASS | PASS | Updates room status down and unpacks 4x3 entrance macro tiles ($B3-$BD) (`00:37A2`) |
+| `LoadObject_IndoorEntrance` | VERIFIED | PASS | PASS | Loads indoor entrance ($C1,$C2) or shutter bottom if thief in Kanalet Castle ($D3) (`00:37B6`) |
+| `DispatchIndoorDoorObject` | VERIFIED | PASS | PASS | Jump table dispatch for door objects $EC-$FD to respective handlers (`00:32DF`) |
+| `ExpandOverworldObjectMacro` | VERIFIED | PASS | PASS | Bank $24 trampoline for expanding overworld macro objects ($F5-$FD) (`24:7578`) |
+| `LoadRoomObject` | VERIFIED | PASS | PASS | Parses 2/3-byte room objects, applies overworld/indoor logic, registers stairs/warps, and writes to map (`00:32A9`) |
 
 ---
 
@@ -162,3 +185,16 @@
    - `LoadEaglesTowerTopTiles` adjusts bank `$13` for GBC and loads collapse graphics into `vTiles1 + $400` and `vTiles2`.
    - `LoadMarinBeachTiles` loads large font glyphs into `vTiles0 + $400` and beach artwork into `vTiles2`.
    - `LoadSaveMenuTiles` uses direct bank switch (`SwitchBank`) to bank `$0F` for save screen tiles.
+
+2. **Door Objects & Parsing Subroutines (`00:35FA`-`00:37E0`, `00:32DF`-`00:3303`, `00:32A9`-`00:34EE`)**:
+   - `MakeListOfDoorPositions`: writes `pos` to `wDoorPositions[door_type]`, `pos & 0xF0` to `wDoorYPositions`, and `((pos & 0x0F) << 4)` to `wDoorXPositions`.
+   - `UpdateIndoorRoomStatus`: resolves status RAM location for Map Indoors A (`$D900 + room`), Map Indoors B (`$DA00 + room`), or Color Dungeon (`$DDE0 + room`), ORs `new_status`, and writes back to both RAM and `hRoomStatus`.
+   - `LoadObject_OpenDoor*`: marks room status bit (`ROOM_STATUS_DOOR_OPEN_*`) and copies corresponding open door tiles (top: `$43,$44`; bottom: `$8C,$08`; left: `$09,$0A`; right: `$0B,$0C`).
+   - `LoadObject_KeyDoor*`: records door position; if already unlocked in `hRoomStatus`, delegates to `LoadObject_OpenDoor*`, otherwise copies closed key door tiles (`$2D-$34`).
+   - `LoadObject_ShutterDoor*`: records door position, sets corresponding shutter bit in `wShutterDoorsMask` and `wShutterDoorsMask2`, and opens door.
+   - `LoadObject_BossDoor`: records door position, delegates to open door if visited, otherwise loads boss door tiles (`$A4,$A5`).
+   - `LoadObject_StairsDoor` / `LoadObject_RevolvingDoor` / `LoadObject_OneWayArrow`: copies 2-tile macro structures into `wRoomObjects`.
+   - `LoadObject_DungeonEntrance`: sets open down status and copies 12-tile macro entrance block (`$B3-$BD`).
+   - `LoadObject_IndoorEntrance`: checks for Kanalet Castle main entrance (`$D3`) with shoplifting flag set; if true, converts entrance to `LoadObject_ShutterDoorBottom`. Otherwise marks open status and copies entrance tiles (`$C1,$C2`).
+   - `DispatchIndoorDoorObject`: parses object type range `$EC`-`$FD` and dispatches to door routines via jump table.
+   - `LoadRoomObject`: parses 2-byte (single block) or 3-byte (horizontal/vertical span with length in nybble) objects. Evaluates dynamic overworld state (waterfall, weather vane, monkey bridge, gates, bombable cave doors, cut bushes over stairs) or indoor interactive objects (conveyors, unlit torches, switches, movable blocks, bombable walls, chests, hidden stairs) before placing tiles into `wRoomObjects`.
