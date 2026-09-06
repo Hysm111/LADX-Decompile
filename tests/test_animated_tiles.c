@@ -2,6 +2,8 @@
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/gameplay.h"
+#include "constants/link.h"
+#include "constants/gfx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -269,8 +271,206 @@ static void test_animate_marin_beach_tiles(void) {
     TEST_ASSERT(gb.rom_bank == 0x10, "ROM bank not set to 0x10");
 }
 
+
+static void test_draw_link_sprite(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* 1. Animation state 0xFF: early return */
+    gb_write(&gb, hLinkAnimationState, 0xFF);
+    gb_write(&gb, (uint16_t)(wLinkOAMBuffer + 8), 0xAA);
+    DrawLinkSprite(&gb);
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 8)) == 0xAA, "DrawLinkSprite did not return on 0xFF state");
+
+    /* 2. Standard DMG Link sprite */
+    gb_write(&gb, hLinkAnimationState, 0x01);
+    gb_write(&gb, hIsGBC, 0x00);
+    gb_write(&gb, wInvincibilityCounter, 0x04);
+    gb_write(&gb, wC13B, 0x20);
+    gb_write(&gb, wC145, 0x10); /* Y = 0x30 */
+    gb_write(&gb, hLinkPositionX, 0x40);
+    gb_write(&gb, wC13C, 0x02); /* X1 = 0x42, X2 = 0x4A */
+    gb_write(&gb, wC11D, 0x00);
+    gb_write(&gb, wC11E, 0x20);
+
+    DrawLinkSprite(&gb);
+
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 8)) == 0x30, "Sprite 0 Y mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 9)) == 0x42, "Sprite 0 X mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 10)) == 0x00, "Sprite 0 Tile mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 11)) == 0x10, "Sprite 0 Flags mismatch");
+
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 12)) == 0x30, "Sprite 1 Y mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 13)) == 0x4A, "Sprite 1 X mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 14)) == 0x02, "Sprite 1 Tile mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 15)) == 0x30, "Sprite 1 Flags mismatch");
+
+    /* 3. GBC Tunic and Swimming modifier */
+    gb_write(&gb, hIsGBC, 0x01);
+    gb_write(&gb, wInvincibilityCounter, 0x00);
+    gb_write(&gb, wTunicType, 0x01); /* Blue tunic -> tunic + 1 = 2 */
+    DrawLinkSprite(&gb);
+    TEST_ASSERT((gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 11)) & 0x03) == 0x02, "Tunic palette mismatch");
+
+    /* Swimming */
+    gb_write(&gb, hLinkAnimationState, LINK_ANIMATION_STATE_HOLD_SWIMMING_2);
+    DrawLinkSprite(&gb);
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 11)) == 0x03, "Swimming sprite 0 flags mismatch");
+    TEST_ASSERT(gb_read(&gb, (uint16_t)(wLinkOAMBuffer + 15)) == 0x23, "Swimming sprite 1 flags mismatch");
+}
+
+static void test_replace_marin_tiles(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* Sitting = false -> from 0x4F00 to 0x8400 */
+    size_t rom_offset = (size_t)0x0E * 0x4000 + (0x4F00 - 0x4000);
+    test_rom[rom_offset] = 0x99;
+    ReplaceMarinTiles(&gb, false);
+    TEST_ASSERT(gb_read(&gb, 0x8400) == 0x99, "Marin standing tile mismatch");
+    TEST_ASSERT(gb_read(&gb, hReplaceTiles) == 0, "hReplaceTiles not cleared");
+
+    /* Sitting = true -> from 0x6080 to 0x8400 */
+    rom_offset = (size_t)0x12 * 0x4000 + (0x6080 - 0x4000);
+    test_rom[rom_offset] = 0x88;
+    ReplaceMarinTiles(&gb, true);
+    TEST_ASSERT(gb_read(&gb, 0x8400) == 0x88, "Marin sitting tile mismatch");
+}
+
+static void test_replace_trading_item_tiles(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* Item < 2 -> early exit */
+    gb_write(&gb, wTradeSequenceItem, 0x01);
+    ReplaceTradingItemTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, hReplaceTiles) == 0, "hReplaceTiles not cleared");
+
+    /* Item = 3 -> de = 1 * 0x40 = 0x40 -> src = 0x4440 */
+    gb_write(&gb, wTradeSequenceItem, 0x03);
+    size_t rom_offset = (size_t)0x0C * 0x4000 + (0x4440 - 0x4000);
+    test_rom[rom_offset] = 0x77;
+    ReplaceTradingItemTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x89A0) == 0x77, "Trading item tile mismatch");
+}
+
+static void test_replace_tile_pairs_and_buttons(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* ReplaceTilesButtonPressed -> 0x7F00 to 0x9140 */
+    size_t rom_offset = (size_t)0x12 * 0x4000 + (0x7F00 - 0x4000);
+    test_rom[rom_offset] = 0x55;
+    ReplaceTilesButtonPressed(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x9140) == 0x55, "Button pressed tile mismatch");
+
+    /* ReplaceTiles_04 -> 0x4CC0 to 0x9140 */
+    rom_offset = (size_t)0x0D * 0x4000 + (0x4CC0 - 0x4000);
+    test_rom[rom_offset] = 0x66;
+    ReplaceTiles_04(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x9140) == 0x66, "ReplaceTiles_04 mismatch");
+
+    /* Magic powder by toadstool */
+    rom_offset = (size_t)0x0C * 0x4000 + (0x68C0 - 0x4000);
+    test_rom[rom_offset] = 0x33;
+    ReplaceMagicPowderTilesByToadstool(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x88E0) == 0x33, "Magic powder by toadstool mismatch");
+
+    /* Slime key by golden leaf */
+    rom_offset = (size_t)0x0C * 0x4000 + (0x68E0 - 0x4000);
+    test_rom[rom_offset] = 0x44;
+    ReplaceSlimeKeyTilesByGoldenLeaf(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x8CA0) == 0x44, "Slime key by golden leaf mismatch");
+
+    /* Toadstool by magic powder */
+    rom_offset = (size_t)0x0C * 0x4000 + (0x48E0 - 0x4000);
+    test_rom[rom_offset] = 0x22;
+    ReplaceToadstoolTilesByMagicPowder(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x88E0) == 0x22, "Toadstool by magic powder mismatch");
+}
+
+static void test_replace_credits_and_instruments(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* ReplaceDialogTilesByInstruments */
+    gb_write(&gb, wCreditsScratch0, 0x01); /* offset = 0x40 */
+    size_t rom_offset = (size_t)0x11 * 0x4000 + (0x5040 - 0x4000);
+    test_rom[rom_offset] = 0x12;
+    ReplaceDialogTilesByInstruments(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x8D40) == 0x12, "Dialog instrument tile mismatch");
+
+    /* ReplaceTiles_08 */
+    gb_write(&gb, wCreditsScratch0, 0x02); /* offset = 0x80 */
+    rom_offset = (size_t)0x13 * 0x4000 + (0x4D80 - 0x4000);
+    test_rom[rom_offset] = 0x34;
+    ReplaceTiles_08(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x8D80) == 0x34, "ReplaceTiles_08 mismatch");
+}
+
+static void test_update_switch_block_tiles(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* Stage 2 -> stage 3: toggles wSwitchBlocksState */
+    gb_write(&gb, wSwitchBlocksState, 0);
+    UpdateSwitchBlockTiles(&gb, 2);
+    TEST_ASSERT(gb_read(&gb, wSwitchBlocksState) == 2, "wSwitchBlocksState not toggled at stage 3");
+    TEST_ASSERT(gb_read(&gb, wSwitchableObjectAnimationStage) == 3, "Animation stage mismatch");
+    TEST_ASSERT(gb_read(&gb, hLinkInteractiveMotionBlocked) == 1, "hLinkInteractiveMotionBlocked not set");
+
+    /* Stage 9 -> stage 10: clears stage */
+    UpdateSwitchBlockTiles(&gb, 9);
+    TEST_ASSERT(gb_read(&gb, wSwitchableObjectAnimationStage) == 0, "Stage not cleared at stage 10");
+}
+
+static void test_animate_tiles_dispatcher(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* 1. WindowY != 0x80 -> ignored */
+    gb_write(&gb, wGameplayType, GAMEPLAY_WORLD);
+    gb_write(&gb, wWindowY, 0x00);
+    gb_write(&gb, hAnimatedTilesFrameCount, 0x05);
+    AnimateTiles(&gb, NULL, NULL, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hAnimatedTilesFrameCount) == 0x05, "AnimateTiles ran despite window active");
+
+    /* 2. WindowY == 0x80 -> advances frame count */
+    gb_write(&gb, wWindowY, 0x80);
+    gb_write(&gb, wInventoryAppearing, 0);
+    gb_write(&gb, wRoomTransitionState, 0);
+    gb_write(&gb, wDrawCommand, 0);
+    gb_write(&gb, wSwitchableObjectAnimationStage, 0);
+    gb_write(&gb, hReplaceTiles, 0);
+    gb_write(&gb, hAnimatedTilesGroup, ANIMATED_TILES_TIDE);
+    AnimateTiles(&gb, NULL, mock_skip_func, NULL, NULL);
+    TEST_ASSERT(gb_read(&gb, hAnimatedTilesFrameCount) == 0x06, "hAnimatedTilesFrameCount not incremented");
+}
+
 void run_animated_tiles_tests(void) {
     failures = 0;
+
+    printf("[*] Running DrawLinkSprite tests...\n");
+    test_draw_link_sprite();
+
+    printf("[*] Running ReplaceMarinTiles tests...\n");
+    test_replace_marin_tiles();
+
+    printf("[*] Running ReplaceTradingItemTiles tests...\n");
+    test_replace_trading_item_tiles();
+
+    printf("[*] Running ReplaceTilePairsAndButtons tests...\n");
+    test_replace_tile_pairs_and_buttons();
+
+    printf("[*] Running ReplaceCreditsAndInstruments tests...\n");
+    test_replace_credits_and_instruments();
+
+    printf("[*] Running UpdateSwitchBlockTiles tests...\n");
+    test_update_switch_block_tiles();
+
+    printf("[*] Running AnimateTiles dispatcher tests...\n");
+    test_animate_tiles_dispatcher();
+
 
     printf("[*] Running IncrementAnimatedTilesDataOffset tests...\n");
     test_increment_animated_tiles_data_offset();

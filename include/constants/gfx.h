@@ -219,3 +219,5 @@
 #define TitleDXOAMTiles              0x6500
 
 #endif /* LADX_CONSTANTS_GFX_H */
+#define vTilesSwitchBlockA              0x9040
+#define vTilesSwitchBlockB              0x9080

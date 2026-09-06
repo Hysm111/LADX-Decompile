@@ -313,3 +313,16 @@
 #define wPhotos1                        0xDC0C
 #define wBGPaletteTransitionEffect      0xDDD6
 #define wDDD7                           0xDDD7
+#define wLinkOAMBuffer                  0xC000
+#define wC11D                           0xC11D
+#define wC11E                           0xC11E
+#define wC135                           0xC135
+#define wC13C                           0xC13C
+#define wCreditsScratch0                0xD000
+#define wD006                           0xD006
+#define wD007                           0xD007
+#define wD008                           0xD008
+#define wD009                           0xD009
+#define wWindowY                        0xDB9A
+#define wInvincibilityCounter           0xDBC7
+#define wTunicType                      0xDC0F

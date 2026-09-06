@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 30.33%
-* **Number of Verified Functions**: 364
-* **Number of Decompiled Functions**: 364
-* **Number Remaining**: ~836 functions
-* **Current Subsystem**: Bank 0 - Animated Background Tiles (`code/home/animated_tiles.asm`, `00:1ACC`-`00:1D2D`)
-* **Current Task**: Bank 0 Animated Background Tiles Subsystem completed
-* **Last Completed Task**: Decompiled and verified 27 Bank 0 animated background tile routines and cadence handlers (`AnimateMarinBeachTiles`, `AnimateCounterTilesGroup`, `LoadAnimatedTilesFrameAtOffset`, `AnimateTideTilesGroup`, `AnimateVillageTilesGroup`, `AnimateWaterDungeonTilesGroup`, `AnimateSlowWaterfallTilesGroup`, `AnimateTilesSlowSpeed`, `AnimateDungeon1TilesGroup`, `LoadAnimatedTilesFrame`, `AnimateUndergroundTilesGroup`, `AnimateLavaTilesGroup`, `AnimateDungeon2TilesGroup`, `label_1CB8`, `AnimateWarpTilesGroup`, `AnimateTilesMediumSpeed`, `AnimateWaterCurrentsTilesGroup`, `AnimateTilesFastSpeed`, `AnimateWaterfallTilesGroup`, `IncrementAnimatedTilesDataOffset`, `AnimateLightBeamTilesGroup`, `AnimateBubblesTilesGroup`, `AnimateWeatherVaneTilesGroup`, `AnimateCrystalBlockTilesGroup`, `AnimatePhotoTilesGroup`, `CopyLinkTilesPair`, `SkipTilesGroupAnimation`) (`00:1ACC` - `00:1D2D`)
-* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Link V-Blank sprite rendering & dynamic tile replacements `00:1D2E` - `00:1F48`)
-* **Last Update Timestamp**: 2026-09-06T23:35:00+03:00
+* **Current Overall Progress**: 31.67%
+* **Number of Verified Functions**: 380
+* **Number of Decompiled Functions**: 380
+* **Number Remaining**: ~820 functions
+* **Current Subsystem**: Bank 0 - Link Sprite Rendering & Dynamic Tile Replacement (`code/home/animated_tiles.asm` & `code/bank0.asm`, `00:1B0D`, `00:1D2E`-`00:1F48`)
+* **Current Task**: Bank 0 Link Sprite Rendering & Dynamic Tile Replacement completed
+* **Last Completed Task**: Decompiled and verified 16 Bank 0 V-Blank rendering routines (`DrawLinkSprite`, `CopyDataAndDrawLinkSprite`, `Copy4TilesAndDrawLinkSprite`, `ReplaceTilesPairAndDrawLinkSprite`, `ReplaceMarinTiles`, `ReplaceTradingItemTiles`, `ReplaceMagicPowderTilesByToadstool`, `ReplaceSlimeKeyTilesByGoldenLeaf`, `ReplaceToadstoolTilesByMagicPowder`, `ReplaceTilesButtonPressed`, `ReplaceTiles_04`, `ReplaceEndCreditsTiles`, `ReplaceDialogTilesByInstruments`, `ReplaceTiles_08`, `UpdateSwitchBlockTiles`, `AnimateTiles`) (`00:1B0D`, `00:1D2E` - `00:1F48`)
+* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Link lifting, grabbing, and throwing mechanics `00:1F49`+)
+* **Last Update Timestamp**: 2026-09-07T00:05:00+03:00
 
 ---
 
@@ -312,10 +312,39 @@
 | `AnimatePhotoTilesGroup` | VERIFIED | PASS | PASS | Dispatches photo album animated graphics handler in bank $38 (`00:1D07`) |
 | `CopyLinkTilesPair` | VERIFIED | PASS | PASS | Copies D bytes of Link sprite graphics from BC to HL in bank $0C, then switches to bank $20 (`00:1D0A`) |
 | `SkipTilesGroupAnimation` | VERIFIED | PASS | PASS | Bypasses tile group update, calling bank $20 helper $54F5 and setting ROM bank $0C (`00:1D1E`) |
+| `DrawLinkSprite` | VERIFIED | PASS | PASS | Generates Link dual-sprite OAM entries during V-Blank with GBC tunic palette and swimming modifiers (`00:1D2E`) |
+| `CopyDataAndDrawLinkSprite` | VERIFIED | PASS | PASS | Copies data, resets hReplaceTiles, switches to ROM bank $0C, and draws Link sprite (`00:1F3B`) |
+| `Copy4TilesAndDrawLinkSprite` | VERIFIED | PASS | PASS | Copies 64 bytes (4 tiles) to VRAM and invokes Link sprite drawing (`00:1F38`) |
+| `ReplaceTilesPairAndDrawLinkSprite` | VERIFIED | PASS | PASS | Copies 32 bytes (2 tiles) in bank $0C to VRAM and draws Link sprite (`00:1EA7`) |
+| `ReplaceMarinTiles` | VERIFIED | PASS | PASS | Swaps Marin character tiles between standing (bank $0E) and sitting (bank $12) (`00:1DF4`) |
+| `ReplaceTradingItemTiles` | VERIFIED | PASS | PASS | Swaps trading sequence item tile in VRAM (vTiles1+$1A0) for ribbon through magnifier items (`00:1E0C`) |
+| `ReplaceMagicPowderTilesByToadstool` | VERIFIED | PASS | PASS | Replaces magic powder tile pair by toadstool in VRAM (`00:1E2B`) |
+| `ReplaceSlimeKeyTilesByGoldenLeaf` | VERIFIED | PASS | PASS | Replaces slime key tile pair by golden leaf in VRAM (`00:1EA1`) |
+| `ReplaceToadstoolTilesByMagicPowder` | VERIFIED | PASS | PASS | Replaces toadstool tile pair by magic powder in VRAM (`00:1E8D`) |
+| `ReplaceTilesButtonPressed` | VERIFIED | PASS | PASS | Updates dungeon button-pressed tiles in VRAM (`00:1EB5`) |
+| `ReplaceTiles_04` | VERIFIED | PASS | PASS | Replaces 4 dungeon tiles in vTiles2+$140 from bank $0D (`00:1EBC`) |
+| `ReplaceEndCreditsTiles` | VERIFIED | PASS | PASS | Copies 64 bytes of credits graphic tiles to VRAM and restores bank $0C (`00:1E55`) |
+| `ReplaceDialogTilesByInstruments` | VERIFIED | PASS | PASS | Copies Siren instrument dialog tiles from bank $11 according to wCreditsScratch0 (`00:1E33`) |
+| `ReplaceTiles_08` | VERIFIED | PASS | PASS | Copies ending sequence graphics tiles from bank $13 according to wCreditsScratch0 (`00:1E69`) |
+| `UpdateSwitchBlockTiles` | VERIFIED | PASS | PASS | Multi-stage switch block raise/lower tile animator updating blocks A and B in VRAM (`00:1ED7`) |
+| `AnimateTiles` | VERIFIED | PASS | PASS | Core V-Blank graphics dispatcher routing gameplay modes, replacement requests, and animated tile tables (`00:1B0D`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **V-Blank Link Sprite Rendering & Dynamic Tile Replacement (`00:1B0D`, `00:1D2E`-`00:1F48`)**:
+   - `DrawLinkSprite` formats two 8x16 sprite records at `wLinkOAMBuffer+8`:
+     - Evaluates invincibility flicker (bit 2 on GBC, shifted on DMG).
+     - Clamps vertical boundary at $88 (`cp $88; ret nc`).
+     - Horizontal offset adds 8 for sprite 1.
+     - Sets GBC palette bits based on equipped tunic (`wTunicType`: 0=green, 1=blue, 2=red) or pit-falling state ($50..$55), and forces flags $03 / $23 for swimming animation states $4E / $4F.
+   - `UpdateSwitchBlockTiles` is a state-machine driven animator:
+     - Stage 3: toggles `wSwitchBlocksState ^= 0x02`.
+     - Stage 4: copies half-raised transition tiles to Switch Block A ($9040).
+     - Stage 6: copies half-raised transition tiles to Switch Block B ($9080).
+     - Stage 8: copies final state tiles to Switch Block A.
+     - Stage 10: resets animation stage to 0 and copies final state tiles to Switch Block B.
 
 1. **Animated Background Tiles Subsystem (`00:1ACC`-`00:1D2D`)**:
    - Animated tiles run on varying cadences checked during V-Blank:

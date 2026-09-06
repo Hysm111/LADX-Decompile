@@ -140,6 +140,56 @@ void CopyLinkTilesPair(GBState *gb, uint16_t src_bc, uint16_t dest_hl, uint8_t l
  */
 void SkipTilesGroupAnimation(GBState *gb, void (*func_020_54f5)(GBState *));
 
+
+/**
+ * Draws Link's 2-part sprite into wLinkOAMBuffer during V-Blank (00:1D2E).
+ */
+void DrawLinkSprite(GBState *gb);
+void DrawLinkSpriteAndReturn(GBState *gb);
+
+/**
+ * Replaces Marin sprite tiles between standing and sitting (00:1DF4).
+ */
+void ReplaceMarinTiles(GBState *gb, bool is_sitting);
+
+/**
+ * Updates tile graphics for the current trading sequence item (00:1E0C).
+ */
+void ReplaceTradingItemTiles(GBState *gb);
+
+/**
+ * Tile replacement routines triggered by hReplaceTiles (00:1E2B - 00:1EBC).
+ */
+void ReplaceMagicPowderTilesByToadstool(GBState *gb);
+void ReplaceDialogTilesByInstruments(GBState *gb);
+void ReplaceEndCreditsTiles(GBState *gb, uint16_t src_hl, uint16_t dest_de);
+void ReplaceTiles_08(GBState *gb);
+void ReplaceToadstoolTilesByMagicPowder(GBState *gb);
+void ReplaceSlimeKeyTilesByGoldenLeaf(GBState *gb);
+void ReplaceTilesPairAndDrawLinkSprite(GBState *gb, uint16_t src_hl, uint16_t dest_de);
+void ReplaceTilesButtonPressed(GBState *gb);
+void ReplaceTiles_04(GBState *gb);
+
+/**
+ * Updates switch block tiles during V-Blank based on animation stage (00:1ED7).
+ */
+void UpdateSwitchBlockTiles(GBState *gb, uint8_t stage);
+
+/**
+ * Copies tile data to VRAM and draws Link sprite (00:1F38, 00:1F3B).
+ */
+void Copy4TilesAndDrawLinkSprite(GBState *gb, uint16_t src_hl, uint16_t dest_de);
+void CopyDataAndDrawLinkSprite(GBState *gb, uint16_t src_hl, uint16_t dest_de, uint16_t size_bc);
+
+/**
+ * Main V-Blank animated background tiles dispatcher (00:1B0D).
+ */
+void AnimateTiles(GBState *gb,
+                  void (*load_counter_tiles)(GBState *),
+                  void (*func_020_54f5)(GBState *),
+                  void (*configure_copy)(GBState *, uint8_t, uint8_t *),
+                  void (*func_038_7830)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif
