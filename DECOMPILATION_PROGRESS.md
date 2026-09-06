@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 27.25%
-* **Number of Verified Functions**: 327
-* **Number of Decompiled Functions**: 327
-* **Number Remaining**: ~873 functions
-* **Current Subsystem**: Bank 0 - Sword Collisions & Pegasus Running (`code/bank0.asm`, `00:15A7`-`00:1793`)
-* **Current Task**: Bank 0 Sword Static Collisions & Pegasus Boots Running completed
-* **Last Completed Task**: Decompiled and verified 6 Bank 0 sword collision and movement routines (`CheckStaticSwordCollision_trampoline`, `CheckStaticSwordCollision`, `CheckItemsSwordCollision`, `UsePegasusBoots`, `DisplayTransientVfxForLinkRunning`, `ClearLinkPositionIncrement`) (`00:15A7` - `00:1793`)
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Link motion & attack animation rendering `00:1794` - `00:1900`)
-* **Last Update Timestamp**: 2026-09-06T22:40:00+03:00
+* **Current Overall Progress**: 28.08%
+* **Number of Verified Functions**: 337
+* **Number of Decompiled Functions**: 337
+* **Number Remaining**: ~863 functions
+* **Current Subsystem**: Bank 0 - Link Motion & Map Transitions (`code/bank0.asm`, `00:1794`-`00:1ACB`)
+* **Current Task**: Bank 0 Link Motion & Map Transition Handlers completed
+* **Last Completed Task**: Decompiled and verified 10 Bank 0 Link motion, transition, and animation routines (`ApplyLinkMotionState`, `func_1819`, `func_1828`, `LinkMotionMapFadeOutHandler`, `SetSpawnLocation`, `label_19DA`, `LinkMotionMapFadeInHandler`, `func_1A22`, `func_1A39`, `UpdateLinkWalkingAnimation`) (`00:1794` - `00:1ACB`)
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Animated background tiles & Link sprite graphics `00:1ACC` - `00:1E2A`)
+* **Last Update Timestamp**: 2026-09-06T23:10:00+03:00
 
 ---
 
@@ -275,10 +275,27 @@
 | `UsePegasusBoots` | VERIFIED | PASS | PASS | Pegasus boots charge state machine: checks airborne/side-scrolling constraints, steps counter increment, dust VFX, and full-speed sprint initialization (`00:1705`) |
 | `DisplayTransientVfxForLinkRunning` | VERIFIED | PASS | PASS | Periodically emits ground dust or shallow water splash transient VFX while running on 8-frame cycles (`00:1756`) |
 | `ClearLinkPositionIncrement` | VERIFIED | PASS | PASS | Resets Link's horizontal and vertical speed increments to zero (`00:178E`) |
+| `ApplyLinkMotionState` | VERIFIED | PASS | PASS | Coordinates Link attack step / sword charging flash, and fires magic rod fireball projectile when cooldown matches (`00:1794`) |
+| `func_1819` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $4AB3 with direct bank select and reloads saved bank (`00:1819`) |
+| `func_1828` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $49BA with direct bank select and reloads saved bank (`00:1828`) |
+| `LinkMotionMapFadeOutHandler` | VERIFIED | PASS | PASS | Link motion handler for map fade-out: clears active entities, handles shop theft flag, matches outdoor/indoor warp targets, sets room parameters and records spawn points (`00:1837`) |
+| `SetSpawnLocation` | VERIFIED | PASS | PASS | Records 5 bytes of warp coordinate and target data plus indoor room index into wSpawnLocationData (`00:19C2`) |
+| `label_19DA` | VERIFIED | PASS | PASS | Resets Link's facing direction to DIRECTION_RIGHT (0) (`00:19DA`) |
+| `LinkMotionMapFadeInHandler` | VERIFIED | PASS | PASS | Link motion handler for map fade-in: manages Manbo warp transition, resets motion state, and triggers shopkeeper confrontation dialog if items were stolen (`00:19DE`) |
+| `func_1A22` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $6C4F and FadeOutMusic with direct bank select, restoring saved ROM bank (`00:1A22`) |
+| `func_1A39` | VERIFIED | PASS | PASS | Farcalls bank $20 helper $6C7A and helper $563B with direct bank select, restoring saved ROM bank (`00:1A39`) |
+| `UpdateLinkWalkingAnimation` | VERIFIED | PASS | PASS | Updates hLinkAnimationState from direction, step cadence, equipped shield tier, active shield use, side-scrolling, pushing, lifting, and swimming states (`00:1A50`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Link Motion Handlers & Map Transition Subsystem (`00:1794`-`00:1ACB`)**:
+   - `ApplyLinkMotionState`: ignores swimming; if sword active (`wC16A != 0`), configures OAM multipurpose positions, applies 4-frame flash during full charge (`wSwordCharge >= MAX_SWORD_CHARGE`), and dispatches to Bank $20; if magic rod attack step (`countdown & 0x80`), spawns `ENTITY_MAGIC_ROD_FIREBALL` on frame 0x0C if no dialog or transition is pending, plays `NOISE_SFX_MAGIC_ROD`, and restores countdown.
+   - `LinkMotionMapFadeOutHandler`: clears `wEntitiesStatusTable`, records shop theft (`wIsThief`, `wHasStolenFromShop`, `wPhotos1` |= 0x40, `wDidStealItem` = 1), maps player position to warp tile in `wWarpPositions` (outdoor) or reads `wWarpStructs` (indoor), applies side-scrolling physics if category 2, updates dungeon room and minimap in Bank $14, and records spawn location via `SetSpawnLocation`.
+   - `LinkMotionMapFadeInHandler`: manages Manbo warp-in sequence (`TRANSITION_GFX_MANBO_OUT`), calls Bank $20 fade-in routines, sets `wLinkMotionState` (retaining special state 1 if `wD463 == 1`), and opens shop confrontation `Dialog036` if `wDidStealItem` is set.
+   - `UpdateLinkWalkingAnimation`: selects animation table based on swimming modifier, side-scrolling, lifting (`wIsCarryingLiftedObject`), pushing (`wIsLinkPushing`), or shield status (`wHasMirrorShield` and `wIsUsingShield`), and reads animation state indexed by `((hLinkDirection << 1) | ((wConsecutiveStepsCount >> 3) & 1))`.
+   - `callsb` direct bank selection: macros `callsb` in LADX bypass `SwitchBank` by writing directly to `rSelectROMBank` without altering `wCurrentBank`, followed by restoring `rSelectROMBank` from `wCurrentBank`.
 
 1. **Sword Collisions & Pegasus Boots Subsystem (`00:15A7`-`00:1793`)**:
    - `CheckStaticSwordCollision`: computes sword hitpoint using `SwordCollisionMapX` and `SwordCollisionMapY` (directional offsets for regular swings 0..3 or spin attacks 4..11). Locates intersecting object in `wRoomObjects` at `($D700 | (y | c))`; tests object physics flags via `GetObjectPhysicsFlags_trampoline`. If object is a bush or grass (`0xD3`, `0x5C`, `0x0A` outdoor, `0xDD` indoor), reveals hidden ground tile, spawns `ENTITY_LIFTABLE_ROCK` with smashing animation, and rolls 1/8 chance to drop `ENTITY_DROPPABLE_HEART` or `ENTITY_DROPPABLE_RUPEE` with bounce physics (`wEntitiesSpeedZTable = $10`).

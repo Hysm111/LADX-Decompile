@@ -52,3 +52,9 @@
 #define LINK_MOTION_TELEPORT            0x09
 
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */
+#define TRANSITION_GFX_MANBO_OUT         0x03
+#define ATTACK_STEP_DURATION_MASK        0x7F
+#define MAX_SWORD_CHARGE                 0x28
+#define MAP_COLOR_DUNGEON                0xFF
+#define MAP_EAGLES_TOWER                 0x06
+#define MAP_CAVE_B                       0x0A

@@ -40,3 +40,4 @@
 #define NOISE_SFX_FOOTSTEP          0x07
 #define NOISE_SFX_CLINK             0x17
 #define JINGLE_WATER_SPLASH         0x0E
+#define NOISE_SFX_MAGIC_ROD          0x0D

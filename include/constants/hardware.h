@@ -122,3 +122,6 @@
 #define hLinkPositionZ              0xFFA2
 #define hLinkVelocityZ              0xFFA3
 #define hObjectUnderEntity          0xFFAF
+#define hDungeonTitleMessageCountdown   0xFFB4
+#define hMultiPurposeD                  0xFFE4
+#define hLinkAnimationState          0xFF9D

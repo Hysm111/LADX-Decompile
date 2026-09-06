@@ -125,6 +125,60 @@ void DisplayTransientVfxForLinkRunning(GBState *gb);
  */
 void ClearLinkPositionIncrement(GBState *gb);
 
+
+/**
+ * Link motion state application & sword / attack animation handler (00:1794).
+ */
+void ApplyLinkMotionState(GBState *gb,
+                          void (*func_002_753a)(GBState *),
+                          void (*label_002_5310)(GBState *),
+                          void (*label_002_538b)(GBState *));
+
+/**
+ * Bank 20 helper callers (00:1819, 00:1828).
+ */
+void func_1819(GBState *gb, void (*func_020_4ab3)(GBState *));
+void func_1828(GBState *gb, void (*func_020_49ba)(GBState *));
+
+/**
+ * Link motion handler for map fade-out transition (00:1837).
+ */
+void LinkMotionMapFadeOutHandler(GBState *gb,
+                                 void (*func_002_754f)(GBState *),
+                                 void (*func_020_6c4f)(GBState *),
+                                 void (*fade_out_music)(GBState *),
+                                 void (*label_004_7a5f)(GBState *),
+                                 void (*load_minimap)(GBState *));
+
+/**
+ * Saves spawn location and indoor room to wSpawnLocationData (00:19C2).
+ */
+void SetSpawnLocation(GBState *gb, uint16_t warp_data_addr);
+
+/**
+ * Resets Link facing direction to 0 (DIRECTION_RIGHT) (00:19DA).
+ */
+void label_19DA(GBState *gb);
+
+/**
+ * Link motion handler for map fade-in transition (00:19DE).
+ */
+void LinkMotionMapFadeInHandler(GBState *gb,
+                                void (*func_002_754f)(GBState *),
+                                void (*func_020_6c7a)(GBState *),
+                                void (*func_020_563b)(GBState *));
+
+/**
+ * Fade-out and fade-in audio/effects helpers (00:1A22, 00:1A39).
+ */
+void func_1A22(GBState *gb, void (*func_020_6c4f)(GBState *), void (*fade_out_music)(GBState *));
+void func_1A39(GBState *gb, void (*func_020_6c7a)(GBState *), void (*func_020_563b)(GBState *));
+
+/**
+ * Computes and updates Link's walking animation state from direction, steps, shield, and motion (00:1A50).
+ */
+void UpdateLinkWalkingAnimation(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif
