@@ -52,6 +52,12 @@
 #define wDialogScrollDelay            0xC172
 #define wDialogIndex                  0xC173
 #define wDialogAskSelectionIndex      0xC177
+#define wC175                         0xC175
+#define wC176                         0xC176
+#define wDialogIsWaitingForButtonPress 0xC1CC
+#define wDialogNextChar               0xC3C3
+#define wName                         0xDB4F
+#define wIsThief                      0xDB6E
 #define wDialogState                  0xC19F
 #define wDialogInteractionLocked      0xC1AB
 #define wBGPaletteEffectAddress       0xC3CC

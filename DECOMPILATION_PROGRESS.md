@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 23.25%
-* **Number of Verified Functions**: 279
-* **Number of Decompiled Functions**: 279
-* **Number Remaining**: ~921 functions
-* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm`, `00:24CD`+)
-* **Current Task**: Decompile and verify Bank 0 dialog text rendering and scrolling
-* **Last Completed Task**: Decompiled and verified 7 Bank 0 Dialog dispatcher, BG backup, scrolling, choice, and arrow routines (`ExecuteDialog`, `func_23E4`, `DialogScrollingStartHandler`, `DialogScrollingEndHandler`, `SkipDialog`, `DialogChoiceHandler`, `DrawDialogArrowTrampoline`) (`00:2321` - `00:27BB`)
-* **Next Task**: Decompile and verify remaining Bank 0 dialog text rendering and line scroll routines in `code/home/dialog.asm`
-* **Last Update Timestamp**: 2026-09-06T19:25:00+03:00
+* **Current Overall Progress**: 23.67%
+* **Number of Verified Functions**: 284
+* **Number of Decompiled Functions**: 284
+* **Number Remaining**: ~916 functions
+* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm` - 100% COMPLETE!)
+* **Current Task**: Bank 0 Dialog completed; proceed to next Bank 0 subsystem (Gameplay / Audio / Room)
+* **Last Completed Task**: Decompiled and verified final 5 Bank 0 Dialog routines (`DialogBeginScrolling`, `DialogFinishScrolling`, `DialogBreakHandler`, `DialogLetterAnimationEndHandler`, `DialogDrawNextCharacterHandler`) (`00:24CD` - `00:278A`) - **Dialog Subsystem 100% Complete**!
+* **Next Task**: Select and decompile next logical unfinished subsystem in Bank 0 (e.g. `code/home/audio.asm` or `code/home/gameplay.asm`)
+* **Last Update Timestamp**: 2026-09-06T21:15:00+03:00
 
 ---
 
@@ -227,10 +227,21 @@
 | `SkipDialog` | VERIFIED | PASS | PASS | Sets wDialogAskSelectionIndex to 2 and transitions dialog to closing state (`00:278B`) |
 | `DialogChoiceHandler` | VERIFIED | PASS | PASS | Handles choice prompt input: toggles selection on Left/Right, draws cursor marker, advances on A (`00:2793`) |
 | `DrawDialogArrowTrampoline` | VERIFIED | PASS | PASS | Switches to Bank $17 and invokes DrawDialogArrow ($7D7C) (`00:27BB`) |
+| `DialogBeginScrolling` | VERIFIED | PASS | PASS | Scrolls dialog text up 1 line, clears new line with BG tile, pauses 8 frames, advances state (`00:2719`) |
+| `DialogFinishScrolling` | VERIFIED | PASS | PASS | Finalizes dialog scrolling, clears first line, and resets state to DIALOG_LETTER_IN_1 (`00:276D`) |
+| `DialogBreakHandler` | VERIFIED | PASS | PASS | Handles pause between lines; draws prompt arrow, checks A/B skip, builds fill draw command (`00:2695`) |
+| `DialogLetterAnimationEndHandler` | VERIFIED | PASS | PASS | Prepares character tile placement draw command and dispatches to DialogDrawNextCharacterHandler (`00:24CD`) |
+| `DialogDrawNextCharacterHandler` | VERIFIED | PASS | PASS | Reads dialog character, handles @/<ask>/# player name replacement, copies font tile to draw command (`00:2529`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Dialog Text Rendering, Line Scrolling, & Break Handling (`00:24CD`-`00:278A`) - Dialog Subsystem 100% Complete**:
+   - `DialogBeginScrolling` & `DialogFinishScrolling`: shifts BG tile map rows up with 32-tile row wrapping; clears lower row with `hDialogBackgroundTile`; pauses 8 frames and transitions to `DIALOG_LETTER_IN_1`.
+   - `DialogBreakHandler`: checks character index column (`wDialogCharacterIndex & 0x1F`); if 0 and next char is `@` (0xFF) or `<ask>` (0xFE), sets `DIALOG_END` or `DIALOG_CHOICE`; sets `wDialogIsWaitingForButtonPress` and plays `JINGLE_DIALOG_BREAK`; draws arrow marker via trampoline; advances on A button or skips on B button in world map; builds fill row draw command (`DC_FILL_ROW | 0x0F`) and advances state.
+   - `DialogLetterAnimationEndHandler`: looks up screen destination high/low from Bank `$1C` tables (`Data_01C_45C1`, `Data_01C_4601`), writes tile command to `wDrawCommand`, increments state, and dispatches to `DialogDrawNextCharacterHandler`.
+   - `DialogDrawNextCharacterHandler`: looks up dialog text pointer and bank from `DialogPointerTable` ($4001) and `DialogBankTable` ($4741) in Bank `$1C`; handles `#` player name expansion (reads Link's name or `"THIEF"` if `wIsThief != 0`); looks up codepoint in `CodepointToTileMap` ($4641) in Bank `$1C`; copies 16 bytes of font tile bitmap from `FontTiles` ($5000 in saved bank); handles SFX triggering on non-space characters (`WAVE_SFX_TEXT_PRINT`, `WAVE_SFX_OWL_HOOT`); detects box full (`wDialogNextCharPosition == 0x1F`) or resets to `DIALOG_LETTER_IN_1`.
 
 1. **Dialog Dispatcher, BG Tile Backup, & Choice Selection (`00:2321`-`00:27BB`)**:
    - `ExecuteDialog`: sets `hDialogBackgroundTile` to `DIALOG_BG_TILE_LIGHT` ($7F) during `GAMEPLAY_CREDITS` and `DIALOG_BG_TILE_DARK` ($7E) otherwise; wraps `wDialogNextCharPosition` past 32 chars (`(char_lo & 0x0F) | 0x10`); dispatches according to `(wDialogState & ~0x80) - 1`.

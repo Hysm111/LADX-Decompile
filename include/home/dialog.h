@@ -160,6 +160,39 @@ void DialogChoiceHandler(GBState *gb, void (*draw_dialog_choice_marker)(GBState 
  */
 void DrawDialogArrowTrampoline(GBState *gb, void (*draw_dialog_arrow)(GBState *));
 
+/**
+ * DialogBeginScrolling (00:2719)
+ * Scrolls dialog text up by one line, clears new line with dialog background tile,
+ * sets scroll delay to 8 frames, and advances dialog state.
+ */
+void DialogBeginScrolling(GBState *gb);
+
+/**
+ * DialogFinishScrolling (00:276D)
+ * Finalizes dialog scrolling, clears first line, and resets state to DIALOG_LETTER_IN_1.
+ */
+void DialogFinishScrolling(GBState *gb);
+
+/**
+ * DialogBreakHandler (00:2695)
+ * Handles pause between dialog lines or at end of text box; displays prompt arrow,
+ * processes A/B button input, and constructs fill draw command.
+ */
+void DialogBreakHandler(GBState *gb, void (*draw_dialog_arrow)(GBState *));
+
+/**
+ * DialogLetterAnimationEndHandler (00:24CD)
+ * Prepares character tile placement draw command and dispatches to DialogDrawNextCharacterHandler.
+ */
+void DialogLetterAnimationEndHandler(GBState *gb);
+
+/**
+ * DialogDrawNextCharacterHandler (00:2529)
+ * Reads next character from dialog table, handles special control codes (@, <ask>, #),
+ * generates font tile draw command, updates character indices, and advances dialog state.
+ */
+void DialogDrawNextCharacterHandler(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

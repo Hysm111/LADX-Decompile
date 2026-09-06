@@ -2,6 +2,7 @@
 #include "constants/gameplay.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
+#include "constants/gfx.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -329,11 +330,177 @@ static void test_execute_and_choice_routines(void) {
     TEST_ASSERT(test_dialog_arrow_called == 1, "DrawDialogArrowTrampoline failed");
 }
 
+
+static int test_break_arrow_called = 0;
+static void mock_break_arrow(GBState *gb) {
+    (void)gb;
+    test_break_arrow_called++;
+}
+
+static void test_dialog_scrolling_and_character_rendering(void) {
+    GBState gb;
+
+    /* 1. DialogBeginScrolling */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_SCROLLING_1); /* 0x0A, top box */
+    gb_write(&gb, hDialogBackgroundTile, 0x7E);
+    gb_write(&gb, wBGOriginHigh, 0x00);
+    gb_write(&gb, wBGOriginLow, 0x00);
+    /* Set up row 1 (0x9862) and row 2 (0x9882) */
+    gb_write(&gb, 0x9862, 0x11);
+    gb_write(&gb, 0x9882, 0x22);
+    DialogBeginScrolling(&gb);
+    /* Row 0 (0x9842) should now have row 1 data (0x11) */
+    TEST_ASSERT(gb_read(&gb, 0x9842) == 0x11, "BeginScrolling row 0 mismatch");
+    /* Row 1 (0x9862) should now have row 2 data (0x22) */
+    TEST_ASSERT(gb_read(&gb, 0x9862) == 0x22, "BeginScrolling row 1 mismatch");
+    /* Row 2 (0x9882) should now have BG tile (0x7E) */
+    TEST_ASSERT(gb_read(&gb, 0x9882) == 0x7E, "BeginScrolling row 2 BG tile mismatch");
+    TEST_ASSERT(gb_read(&gb, wDialogScrollDelay) == 8, "BeginScrolling delay not 8");
+    TEST_ASSERT(gb_read(&gb, wDialogState) == DIALOG_SCROLLING_2, "BeginScrolling state not 0x0B");
+
+    /* 2. DialogFinishScrolling */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_SCROLLING_2);
+    gb_write(&gb, hDialogBackgroundTile, 0x7E);
+    gb_write(&gb, wBGOriginHigh, 0x00);
+    gb_write(&gb, wBGOriginLow, 0x00);
+    gb_write(&gb, 0x9842, 0x33);
+    gb_write(&gb, 0x9862, 0x44);
+    DialogFinishScrolling(&gb);
+    TEST_ASSERT(gb_read(&gb, 0x9822) == 0x33, "FinishScrolling row -1 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9842) == 0x44, "FinishScrolling row 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9862) == 0x7E, "FinishScrolling row 1 BG tile mismatch");
+    TEST_ASSERT(gb_read(&gb, wDialogState) == DIALOG_LETTER_IN_1, "FinishScrolling state not LETTER_IN_1");
+    TEST_ASSERT(gb_read(&gb, wDialogScrollDelay) == 0, "FinishScrolling delay not 0");
+
+    /* 3. DialogBreakHandler */
+    /* Case 3a: Non-zero char index -> builds fill draw command directly */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_BREAK); /* 0x09 */
+    gb_write(&gb, wDialogCharacterIndex, 0x07);
+    gb_write(&gb, hDialogBackgroundTile, 0x7F);
+    gb_write(&gb, wBGOriginHigh, 0x00);
+    gb_write(&gb, wBGOriginLow, 0x00);
+    DialogBreakHandler(&gb, mock_break_arrow);
+    TEST_ASSERT(gb_read(&gb, wDrawCommand) == 0x98, "DrawCommand dest hi not 0x98");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 1) == 0x22, "DrawCommand dest lo not 0x22");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 2) == (DC_FILL_ROW | 0x0F), "DrawCommand len mismatch");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 3) == 0x7F, "DrawCommand tile mismatch");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 4) == 0x00, "DrawCommand terminator not 0");
+    TEST_ASSERT(gb_read(&gb, wDialogState) == (DIALOG_BREAK + 1), "BreakHandler state not incremented");
+
+    /* Case 3b: Zero char index with @ terminator */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_BREAK);
+    gb_write(&gb, wDialogCharacterIndex, 0x20); /* 0x20 & 0x1F == 0 */
+    gb_write(&gb, wDialogNextChar, 0xFF); /* @ */
+    DialogBreakHandler(&gb, mock_break_arrow);
+    TEST_ASSERT(gb_read(&gb, wDrawCommand) == 0, "DrawCommand not cleared on @");
+    TEST_ASSERT((gb_read(&gb, wDialogState) & 0x0F) == DIALOG_END, "State not DIALOG_END on @");
+
+    /* Case 3c: Zero char index with <ask> choice */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_BREAK);
+    gb_write(&gb, wDialogCharacterIndex, 0x20);
+    gb_write(&gb, wDialogNextChar, 0xFE); /* <ask> */
+    DialogBreakHandler(&gb, mock_break_arrow);
+    TEST_ASSERT(gb_read(&gb, wDrawCommand) == 0, "DrawCommand not cleared on <ask>");
+    TEST_ASSERT((gb_read(&gb, wDialogState) & 0x0F) == DIALOG_CHOICE, "State not DIALOG_CHOICE on <ask>");
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_DIALOG_BREAK, "Jingle not played on <ask>");
+
+    /* Case 3d: Waiting for button press and A button */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_BREAK);
+    gb_write(&gb, wDialogCharacterIndex, 0x20);
+    gb_write(&gb, wDialogNextChar, 'X');
+    gb_write(&gb, wDialogIsWaitingForButtonPress, 0);
+    gb_write(&gb, hJoypadState, J_A);
+    test_break_arrow_called = 0;
+    DialogBreakHandler(&gb, mock_break_arrow);
+    TEST_ASSERT(test_break_arrow_called == 1, "Break arrow trampoline not called");
+    TEST_ASSERT(gb_read(&gb, wDialogIsWaitingForButtonPress) == 1, "wDialogIsWaitingForButtonPress not 1");
+    TEST_ASSERT(gb_read(&gb, hJingle) == JINGLE_DIALOG_BREAK, "Break jingle not played");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand) == 0x98, "DrawCommand not built on A press");
+    TEST_ASSERT(gb_read(&gb, wDialogState) == (DIALOG_BREAK + 1), "State not incremented on A press");
+
+    /* Case 3e: B button skip in GAMEPLAY_WORLD_MAP */
+    gb_init(&gb);
+    gb_write(&gb, wDialogState, DIALOG_BREAK);
+    gb_write(&gb, wDialogCharacterIndex, 0x20);
+    gb_write(&gb, wDialogNextChar, 'X');
+    gb_write(&gb, wDialogIsWaitingForButtonPress, 1);
+    gb_write(&gb, hJoypadState, J_B);
+    gb_write(&gb, wGameplayType, GAMEPLAY_WORLD_MAP);
+    DialogBreakHandler(&gb, mock_break_arrow);
+    TEST_ASSERT(gb_read(&gb, wDialogAskSelectionIndex) == 0x02, "SkipDialog not called on B in world map");
+    TEST_ASSERT((gb_read(&gb, wDialogState) & 0x0F) == DIALOG_CLOSING_1, "State not closing on B in world map");
+
+    /* 4. DialogLetterAnimationEndHandler & DialogDrawNextCharacterHandler */
+    gb_init(&gb);
+    uint8_t mock_rom[0x80000]; /* 512KB ROM */
+    memset(mock_rom, 0, sizeof(mock_rom));
+
+    /* Bank $1C DialogPointerTable at 0x4001: pointer to 0x4500 */
+    mock_rom[0x1C * 0x4000 + 1] = 0x00;
+    mock_rom[0x1C * 0x4000 + 2] = 0x45;
+    /* Bank $1C DialogBankTable at 0x4741: bank $1D */
+    mock_rom[0x1C * 0x4000 + (0x4741 - 0x4000)] = 0x1D;
+    /* Bank $1C CodepointToTileMap at 0x4641: map 'A' (0x41) to tile 2 */
+    mock_rom[0x1C * 0x4000 + (0x4641 - 0x4000) + 'A'] = 0x02;
+    /* Bank 1 FontTiles at 0x5000 + (2 * 16) = 0x5020: 16 bytes of font data */
+    for (int i = 0; i < 16; i++) {
+        mock_rom[0x01 * 0x4000 + (0x5020 - 0x4000) + i] = (uint8_t)(0xA0 + i);
+    }
+    /* Bank $1D dialog text at 0x4500: "A", "B", "@" */
+    mock_rom[0x1D * 0x4000 + (0x4500 - 0x4000) + 0] = 'A';
+    mock_rom[0x1D * 0x4000 + (0x4500 - 0x4000) + 1] = 'B';
+    mock_rom[0x1D * 0x4000 + (0x4500 - 0x4000) + 2] = 0xFF;
+
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb.rom_bank = 1;
+    gb_write(&gb, wCurrentBank, 1);
+    gb_write(&gb, wDialogIndex, 0);
+    gb_write(&gb, wDialogIndexHi, 0);
+    gb_write(&gb, wDialogCharacterIndex, 0);
+    gb_write(&gb, wDialogCharacterIndexHi, 0);
+    gb_write(&gb, wDialogNextCharPosition, 0);
+    gb_write(&gb, wDialogState, DIALOG_LETTER_IN_2);
+    gb_write(&gb, wDialogSFX, WAVE_SFX_TEXT_PRINT);
+    gb_write(&gb, wBGOriginHigh, 0x00);
+    gb_write(&gb, wBGOriginLow, 0x00);
+
+    DialogLetterAnimationEndHandler(&gb);
+
+    /* Verify character index advanced to 1 */
+    TEST_ASSERT(gb_read(&gb, wDialogCharacterIndex) == 1, "Character index not advanced to 1");
+    /* Verify wDialogNextChar is 'B' */
+    TEST_ASSERT(gb_read(&gb, wDialogNextChar) == 'B', "Next char not 'B'");
+    /* Verify wDrawCommand has character tile placement and font data */
+    TEST_ASSERT(gb_read(&gb, wDrawCommand) == 0x98, "Char tile dest hi not 0x98");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 1) == 0x42, "Char tile dest lo not 0x42");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 2) == 0, "Char tile length not 0");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 3) == 0xD0, "Char tile index not 0xD0");
+    /* wDrawCommand + 4..6: OAM Y=0x8D, X=0x00, len=0x0F */
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 4) == 0x8D, "Font tile OAM Y not 0x8D");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 5) == 0x00, "Font tile OAM X not 0x00");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 6) == 0x0F, "Font tile len not 0x0F");
+    /* Font data at wDrawCommand + 7..22 */
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 7) == 0xA0, "Font data byte 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 22) == 0xAF, "Font data byte 15 mismatch");
+    TEST_ASSERT(gb_read(&gb, wDrawCommand + 23) == 0x00, "Draw command terminator not 0");
+    /* Dialog state should now be LETTER_IN_1 */
+    TEST_ASSERT(gb_read(&gb, wDialogState) == DIALOG_LETTER_IN_1, "State not reset to LETTER_IN_1");
+    /* SFX triggered for text print */
+    TEST_ASSERT(gb_read(&gb, hWaveSfx) == WAVE_SFX_TEXT_PRINT, "Text print SFX not triggered");
+}
+
 void run_dialog_tests(void) {
     printf("[*] Running Dialog lookup tests...\n");
     test_dialog_lookups();
     test_dialog_state_machine();
     test_execute_and_choice_routines();
+    test_dialog_scrolling_and_character_rendering();
 
     if (failures == 0) {
         printf("  [PASS] All dialog.asm functions verified successfully!\n\n");
