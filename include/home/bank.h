@@ -1,6 +1,7 @@
 #ifndef LADX_HOME_BANK_H
 #define LADX_HOME_BANK_H
 
+#include "common.h"
 #include "gb.h"
 
 #ifdef __cplusplus
@@ -35,15 +36,14 @@ void SwitchBank(GBState *gb, uint8_t bank);
 void SwitchAdjustedBank(GBState *gb, uint8_t bank);
 
 /**
- * Reload the saved bank from wCurrentBank into rSelectROMBank.
- * Corresponds to ReloadSavedBank (00:081D) in disassembly.
+ * Reload active bank from wCurrentBank into rSelectROMBank without modifying wCurrentBank.
  *
  * @param gb Pointer to Game Boy hardware state
  */
 void ReloadSavedBank(GBState *gb);
 
 /**
- * Restore wCurrentBank into rSelectROMBank without modifying flags.
+ * Restore active bank from wCurrentBank into rSelectROMBank.
  * Corresponds to RestoreBankAndReturn (00:08DF) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
@@ -51,7 +51,7 @@ void ReloadSavedBank(GBState *gb);
 void RestoreBankAndReturn(GBState *gb);
 
 /**
- * Switch to ROM bank 1 and return.
+ * Load bank 1 into rSelectROMBank and return.
  * Corresponds to LoadBank1AndReturn (00:0917) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
@@ -59,7 +59,7 @@ void RestoreBankAndReturn(GBState *gb);
 void LoadBank1AndReturn(GBState *gb);
 
 /**
- * Restore stacked bank into rSelectROMBank and return.
+ * Restore bank saved on stack to rSelectROMBank and return.
  * Corresponds to RestoreStackedBankAndReturn (00:0973) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
@@ -123,6 +123,48 @@ void CopyObjectsAttributesToWRAM2(GBState *gb, uint16_t de, uint16_t hl, uint16_
  * @param flags_and_return_bank Bit 7: if clear, check ignore list; bits 0-6: return bank
  */
 void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank);
+
+/**
+ * Calls func_020_6A30 in bank $20 and restores wCurrentBank with RestoreBankAndReturn.
+ * Corresponds to func_020_6A30_trampoline (00:08D7) in disassembly.
+ */
+void func_020_6A30_trampoline(GBState *gb, void (*target_func)(GBState *));
+
+/**
+ * Calls func_020_6AC1 in bank $20 and restores wCurrentBank with RestoreBankAndReturn.
+ * Corresponds to func_020_6AC1_trampoline (00:08E6) in disassembly.
+ */
+void func_020_6AC1_trampoline(GBState *gb, void (*target_func)(GBState *));
+
+/**
+ * Calls UpdateIntroSeaBGPalettes in bank $20 and restores wCurrentBank with RestoreBankAndReturn.
+ * Corresponds to UpdateIntroSeaBGPalettes_trampoline (00:08F0) in disassembly.
+ */
+void UpdateIntroSeaBGPalettes_trampoline(GBState *gb, void (*target_func)(GBState *));
+
+/**
+ * Calls ClearFileMenuBG (func_020_6BDC) in bank $20 and restores stacked bank with RestoreStackedBankAndReturn.
+ * Corresponds to ClearFileMenuBG_trampoline (00:08FA) in disassembly.
+ */
+void ClearFileMenuBG_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Calls LoadFileMenuBG in bank $20 and loads bank 1 with LoadBank1AndReturn.
+ * Corresponds to LoadFileMenuBG_trampoline (00:0905) in disassembly.
+ */
+void LoadFileMenuBG_trampoline(GBState *gb, void (*target_func)(GBState *));
+
+/**
+ * Calls CopyLinkTunicPalette in bank $20 and loads bank 1 with LoadBank1AndReturn.
+ * Corresponds to CopyLinkTunicPalette_trampoline (00:090F) in disassembly.
+ */
+void CopyLinkTunicPalette_trampoline(GBState *gb, void (*target_func)(GBState *));
+
+/**
+ * Calls LoadBaseTiles and restores stacked bank with RestoreStackedBankAndReturn.
+ * Corresponds to LoadBaseTiles_trampoline (00:0BBE) in disassembly.
+ */
+void LoadBaseTiles_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
 
 #ifdef __cplusplus
 }

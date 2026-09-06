@@ -209,6 +209,76 @@ static void test_copy_objects_attributes_to_wram2(void) {
     TEST_ASSERT(gb.rom_bank == 0x20, "ROM bank not restored to 0x20");
 }
 
+static int tramp_called = 0;
+static void hook_bank20(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x20, "Target callback not executed in bank 0x20");
+}
+
+static void hook_generic(GBState *gb) {
+    tramp_called++;
+    (void)gb;
+}
+
+static void test_bank_trampolines(void) {
+    GBState gb;
+
+    /* 1. func_020_6A30_trampoline -> executes in 0x20, restores wCurrentBank */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x05);
+    gb.rom_bank = 0x05;
+    tramp_called = 0;
+    func_020_6A30_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_6A30_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x05, "func_020_6A30_trampoline did not restore wCurrentBank");
+
+    /* 2. func_020_6AC1_trampoline -> executes in 0x20, restores wCurrentBank */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    tramp_called = 0;
+    func_020_6AC1_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_6AC1_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x08, "func_020_6AC1_trampoline did not restore wCurrentBank");
+
+    /* 3. UpdateIntroSeaBGPalettes_trampoline -> executes in 0x20, restores wCurrentBank */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x0A);
+    gb.rom_bank = 0x0A;
+    tramp_called = 0;
+    UpdateIntroSeaBGPalettes_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "UpdateIntroSeaBGPalettes_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x0A, "UpdateIntroSeaBGPalettes_trampoline did not restore wCurrentBank");
+
+    /* 4. ClearFileMenuBG_trampoline -> executes in 0x20, restores stacked bank */
+    gb_init(&gb);
+    tramp_called = 0;
+    ClearFileMenuBG_trampoline(&gb, 0x14, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "ClearFileMenuBG_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x14, "ClearFileMenuBG_trampoline did not restore stacked bank (0x14)");
+
+    /* 5. LoadFileMenuBG_trampoline -> executes in 0x20, loads bank 1 */
+    gb_init(&gb);
+    tramp_called = 0;
+    LoadFileMenuBG_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "LoadFileMenuBG_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x01, "LoadFileMenuBG_trampoline did not load bank 1");
+
+    /* 6. CopyLinkTunicPalette_trampoline -> executes in 0x20, loads bank 1 */
+    gb_init(&gb);
+    tramp_called = 0;
+    CopyLinkTunicPalette_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "CopyLinkTunicPalette_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x01, "CopyLinkTunicPalette_trampoline did not load bank 1");
+
+    /* 7. LoadBaseTiles_trampoline -> executes callback, restores stacked bank */
+    gb_init(&gb);
+    tramp_called = 0;
+    LoadBaseTiles_trampoline(&gb, 0x25, hook_generic);
+    TEST_ASSERT(tramp_called == 1, "LoadBaseTiles_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x25, "LoadBaseTiles_trampoline did not restore stacked bank (0x25)");
+}
+
 int run_bank_tests(void) {
     printf("[*] Running AdjustBankNumberForGBC tests...\n");
     test_adjust_bank_number_for_gbc();
@@ -242,6 +312,9 @@ int run_bank_tests(void) {
 
     printf("[*] Running CopyObjectsAttributesToWRAM2 tests...\n");
     test_copy_objects_attributes_to_wram2();
+
+    printf("[*] Running Bank Trampolines tests...\n");
+    test_bank_trampolines();
 
     if (failures == 0) {
         printf("  [PASS] All bank.asm functions verified successfully!\n");

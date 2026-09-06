@@ -11,6 +11,7 @@
 #define wStackTop               0xDFFF
 
 /* WRAM Gameplay Variables */
+#define wMusicTrackTiming       0xC10B
 #define wLinkMotionState        0xC11C
 #define wIsUsingSpinAttack      0xC121
 #define wSwordCharge            0xC122
@@ -75,6 +76,7 @@
 #define hMultiPurpose2               0xFFD9
 #define hMultiPurpose3               0xFFDA
 #define hMultiPurposeF               0xFFE6
+#define hFrameCounter                0xFFE7
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3
 #define hNoiseSfx                    0xFFF4

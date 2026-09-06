@@ -27,21 +27,25 @@ void disableMovementInTransition(GBState *gb);
 /**
  * Apply map fade-out transition with stairs sound effect:
  * Sets hMusicFadeOutTimer to $30, plays NOISE_SFX_STAIRS, and disables Link's movement.
+ * Corresponds to ApplyMapFadeOutTransitionWithNoise (00:0C7D) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
  */
 void ApplyMapFadeOutTransitionWithNoise(GBState *gb);
 
 /**
- * Apply map fade-out transition without sound effect:
+ * Apply map fade-out transition without sound:
  * Sets hMusicFadeOutTimer to $30 and disables Link's movement.
+ * Corresponds to ApplyMapFadeOutTransition (00:0C83) in disassembly.
  *
  * @param gb Pointer to Game Boy hardware state
  */
 void ApplyMapFadeOutTransition(GBState *gb);
 
 /**
- * Apply map fade-out transition, preserving music if warping indoors with category 1,
+ * Apply map fade-out transition with sound logic:
+ * Checks wWarp0MapCategory == 1 and wIsIndoor != 0; if so, sets
+ * hContinueMusicAfterWarp to 1 and plays stairs sound effect without fading music,
  * or fading out with noise otherwise.
  *
  * @param gb Pointer to Game Boy hardware state
@@ -57,7 +61,8 @@ void ApplyMapFadeOutTransitionWithSound(GBState *gb);
 void ResetSpinAttack(GBState *gb);
 
 /**
- * Reset Pegasus boots state (wPegasusBootsChargeMeter = 0, wIsRunningWithPegasusBoots = 0).\n *
+ * Reset Pegasus boots state (wPegasusBootsChargeMeter = 0, wIsRunningWithPegasusBoots = 0).
+ *
  * @param gb Pointer to Game Boy hardware state
  */
 void ResetPegasusBoots(GBState *gb);
@@ -69,6 +74,17 @@ void ResetPegasusBoots(GBState *gb);
  * @param gb Pointer to Game Boy hardware state
  */
 void CopyLinkFinalPositionToPosition(GBState *gb);
+
+/**
+ * Trampoline to UpdateLinkWalkingAnimation:
+ * Selects BANK(LinkAnimationsLists) (bank 2), executes the animation update callback,
+ * and calls ReloadSavedBank to restore wCurrentBank into rSelectROMBank.
+ * Corresponds to UpdateLinkWalkingAnimation_trampoline (00:0BF0) in disassembly.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param update_func Target callback to execute (can be NULL)
+ */
+void UpdateLinkWalkingAnimation_trampoline(GBState *gb, void (*update_func)(GBState *));
 
 #ifdef __cplusplus
 }

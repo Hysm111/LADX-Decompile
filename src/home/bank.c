@@ -44,7 +44,7 @@ void RestoreBankAndReturn(GBState *gb) {
 void LoadBank1AndReturn(GBState *gb) {
     if (!gb) return;
 
-    gb_write(gb, rSelectROMBank, 1);
+    gb_write(gb, rSelectROMBank, 0x01);
 }
 
 void RestoreStackedBankAndReturn(GBState *gb, uint8_t stacked_bank) {
@@ -81,13 +81,13 @@ void Farcall(GBState *gb, void (*target_func)(GBState *)) {
     gb_write(gb, rSelectROMBank, return_bank);
 }
 
-static const uint8_t sOverworldObjectIgnoreList[14] = {
-    0x03, 0x04, 0x09, 0x5E, 0x91, 0xA1, 0xAA, 0xC4, 0xC6, 0xCC, 0xDB, 0xE1, 0xE3, 0xE8
-};
-
 bool CheckOverworldObjectIgnoreList(uint8_t object_id) {
-    for (size_t i = 0; i < sizeof(sOverworldObjectIgnoreList); i++) {
-        if (sOverworldObjectIgnoreList[i] == object_id) {
+    static const uint8_t ignore_list[] = {
+        0x03, 0x04, 0x09, 0x5E, 0x91, 0xA1, 0xAA,
+        0xC4, 0xC6, 0xCC, 0xDB, 0xE1, 0xE3, 0xE8
+    };
+    for (size_t i = 0; i < sizeof(ignore_list) / sizeof(ignore_list[0]); i++) {
+        if (ignore_list[i] == object_id) {
             return true;
         }
     }
@@ -137,4 +137,73 @@ void BackupObjectInRAM2(GBState *gb, uint16_t hl, uint8_t flags_and_return_bank)
     /* Restore ROM bank (bits 0-6) */
     uint8_t return_bank = flags_and_return_bank & 0x7F;
     gb_write(gb, rSelectROMBank, return_bank);
+}
+
+void func_020_6A30_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreBankAndReturn(gb);
+}
+
+void func_020_6AC1_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreBankAndReturn(gb);
+}
+
+void UpdateIntroSeaBGPalettes_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreBankAndReturn(gb);
+}
+
+void ClearFileMenuBG_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void LoadFileMenuBG_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    LoadBank1AndReturn(gb);
+}
+
+void CopyLinkTunicPalette_trampoline(GBState *gb, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    LoadBank1AndReturn(gb);
+}
+
+void LoadBaseTiles_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
 }

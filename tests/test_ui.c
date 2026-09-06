@@ -142,15 +142,102 @@ static void test_clear_piece_of_heart_meter_tiles(void) {
     TEST_ASSERT(gb.rom_bank == 0x0C, "Bank not 0x0C after Clear 2");
 }
 
+static int s8_called = 0, s9_called = 0, s10_called = 0, s11_called = 0;
+static void hook_stage8(GBState *gb) { s8_called++; (void)gb; }
+static void hook_stage9(GBState *gb) { s9_called++; (void)gb; }
+static void hook_stage10(GBState *gb) { s10_called++; (void)gb; }
+static void hook_stage11(GBState *gb) { s11_called++; (void)gb; }
+
+static void test_load_dungeon_minimap_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* Allocate simulated ROM covering up to bank $33 (0xCC000 bytes) */
+    static uint8_t test_rom[0xD0000];
+    memset(test_rom, 0, sizeof(test_rom));
+
+    /* Populate bank $12 (DMG) and bank $32 (GBC) at 0x7E00 */
+    uint32_t dmg_offset = (0x12 * 0x4000) + (DungeonMinimapTiles - 0x4000);
+    uint32_t gbc_offset = (0x32 * 0x4000) + (DungeonMinimapTiles - 0x4000);
+    for (int i = 0; i < 0x200; i++) {
+        test_rom[dmg_offset + i] = (uint8_t)(0x50 + (i & 0xFF));
+        test_rom[gbc_offset + i] = (uint8_t)(0x80 + (i & 0xFF));
+    }
+    gb_attach_rom(&gb, test_rom, sizeof(test_rom));
+
+    /* 1. Test stages 0 through 7 in DMG mode (hIsGBC = 0) */
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, hBGTilesLoadingStage, 0);
+
+    for (int stage = 0; stage < 8; stage++) {
+        TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == stage, "Pre-stage mismatch");
+        LoadDungeonMinimapTiles(&gb);
+        TEST_ASSERT(gb.rom_bank == 0x12, "DMG bank should be 0x12");
+        TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == stage + 1, "Stage not incremented");
+
+        /* Check that 0x40 bytes were copied to vTiles1 + $500 + offset (0x8D00 + offset) */
+        uint16_t vram_offset = 0xD00 + (stage * 0x40);
+        for (int i = 0; i < 0x40; i++) {
+            TEST_ASSERT(gb.vram[0][vram_offset + i] == (uint8_t)(0x50 + ((stage * 0x40 + i) & 0xFF)),
+                        "Minimap tile data mismatch in VRAM");
+        }
+    }
+
+    /* 2. Test palette stages 8, 9, 10, 11 with hooks */
+    s8_called = s9_called = s10_called = s11_called = 0;
+
+    /* Stage 8 */
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 8, "Stage should be 8");
+    LoadDungeonMinimapTilesWithHooks(&gb, hook_stage8, hook_stage9, hook_stage10, hook_stage11);
+    TEST_ASSERT(s8_called == 1, "Stage 8 hook not called");
+    TEST_ASSERT(gb.rom_bank == 0x02, "ROM bank not switched to 2 for stage 8");
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 9, "Stage should now be 9");
+
+    /* Stage 9 */
+    LoadDungeonMinimapTilesWithHooks(&gb, hook_stage8, hook_stage9, hook_stage10, hook_stage11);
+    TEST_ASSERT(s9_called == 1, "Stage 9 hook not called");
+    TEST_ASSERT(gb.rom_bank == 0x02, "ROM bank not switched to 2 for stage 9");
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 10, "Stage should now be 10");
+
+    /* Stage 10 */
+    LoadDungeonMinimapTilesWithHooks(&gb, hook_stage8, hook_stage9, hook_stage10, hook_stage11);
+    TEST_ASSERT(s10_called == 1, "Stage 10 hook not called");
+    TEST_ASSERT(gb.rom_bank == 0x02, "ROM bank not switched to 2 for stage 10");
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 11, "Stage should now be 11");
+
+    /* Stage 11 (palette stage 4 & finish) */
+    gb_write(&gb, hNeedsUpdatingBGTiles, 1);
+    LoadDungeonMinimapTilesWithHooks(&gb, hook_stage8, hook_stage9, hook_stage10, hook_stage11);
+    TEST_ASSERT(s11_called == 1, "Stage 11 hook not called");
+    TEST_ASSERT(gb.rom_bank == 0x02, "ROM bank not switched to 2 for stage 11");
+    TEST_ASSERT(gb_read(&gb, hNeedsUpdatingBGTiles) == 0, "hNeedsUpdatingBGTiles not cleared");
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 0, "hBGTilesLoadingStage not reset to 0");
+
+    /* 3. Test GBC mode tile copy (hIsGBC = 1 -> bank 0x32) */
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hBGTilesLoadingStage, 3);
+    LoadDungeonMinimapTiles(&gb);
+    TEST_ASSERT(gb.rom_bank == 0x32, "GBC bank should be adjusted to 0x32");
+    TEST_ASSERT(gb_read(&gb, hBGTilesLoadingStage) == 4, "Stage not incremented in GBC mode");
+    uint16_t vram_offset = 0xD00 + (3 * 0x40);
+    for (int i = 0; i < 0x40; i++) {
+        TEST_ASSERT(gb.vram[0][vram_offset + i] == (uint8_t)(0x80 + ((3 * 0x40 + i) & 0xFF)),
+                    "GBC minimap tile data mismatch");
+    }
+}
+
 void run_ui_tests(void) {
     printf("[*] Running Piece-of-Heart meter UI tests...\n");
     test_copy_tiles_to_piece_of_heart_meter();
     test_load_piece_of_heart_meter_tiles();
     test_clear_piece_of_heart_meter_tiles();
 
+    printf("[*] Running LoadDungeonMinimapTiles tests...\n");
+    test_load_dungeon_minimap_tiles();
+
     if (failures == 0) {
-        printf("  [PASS] All UI Piece-of-Heart meter tests passed.\n");
+        printf("  [PASS] All UI tests passed successfully.\n\n");
     } else {
-        printf("  [FAIL] %d UI test(s) failed.\n", failures);
+        printf("  [FAIL] %d UI test(s) failed.\n\n", failures);
     }
 }

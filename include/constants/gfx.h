@@ -16,4 +16,8 @@
 #define InventoryEquipmentItemsTiles 0x4800
 #define PieceOfHeartMeterTiles       0x6900
 
+/* Dungeon Minimap Graphic assets */
+#define BANK_DungeonMinimapTiles     0x12
+#define DungeonMinimapTiles          0x7E00
+
 #endif /* LADX_CONSTANTS_GFX_H */

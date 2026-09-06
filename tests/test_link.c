@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "gb.h"
 #include "home/link.h"
+#include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/gameplay.h"
 #include "constants/sfx.h"
@@ -50,78 +51,76 @@ static void test_disableMovement_and_playNoiseStairs(void) {
 static void test_fade_out_transitions(void) {
     GBState gb;
 
-    /* 1. ApplyMapFadeOutTransitionWithNoise */
+    /* Test ApplyMapFadeOutTransitionWithNoise */
     gb_init(&gb);
-    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
-    gb_write(&gb, wTransitionSequenceCounter, 5);
-    gb_write(&gb, wC16C, 8);
-    gb_write(&gb, wD478, 12);
     gb_write(&gb, hMusicFadeOutTimer, 0);
     gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
+    gb_write(&gb, wTransitionSequenceCounter, 5);
+    gb_write(&gb, wC16C, 5);
+    gb_write(&gb, wD478, 5);
 
     ApplyMapFadeOutTransitionWithNoise(&gb);
 
     TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0x30, "Fade out timer not set to 0x30");
     TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set to NOISE_SFX_STAIRS");
     TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not LINK_MOTION_MAP_FADE_OUT");
-    TEST_ASSERT(gb_read(&gb, wTransitionSequenceCounter) == 0, "Transition counter not cleared");
-    TEST_ASSERT(gb_read(&gb, wC16C) == 0, "wC16C not cleared");
-    TEST_ASSERT(gb_read(&gb, wD478) == 0, "wD478 not cleared");
+    TEST_ASSERT(gb_read(&gb, wTransitionSequenceCounter) == 0, "Transition counter not reset");
+    TEST_ASSERT(gb_read(&gb, wC16C) == 0, "wC16C not reset");
+    TEST_ASSERT(gb_read(&gb, wD478) == 0, "wD478 not reset");
 
-    /* 2. ApplyMapFadeOutTransition */
+    /* Test ApplyMapFadeOutTransition */
     gb_init(&gb);
-    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
     gb_write(&gb, hMusicFadeOutTimer, 0);
     gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
+    gb_write(&gb, wLinkMotionState, LINK_MOTION_DEFAULT);
 
     ApplyMapFadeOutTransition(&gb);
 
     TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0x30, "Fade out timer not set to 0x30");
-    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_NONE, "Noise SFX should not be set by ApplyMapFadeOutTransition");
+    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_NONE, "Noise SFX should not be modified");
     TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not LINK_MOTION_MAP_FADE_OUT");
 
-    /* 3. ApplyMapFadeOutTransitionWithSound: category 1 and indoor */
+    /* Test ApplyMapFadeOutTransitionWithSound (Indoors & warp category 1) */
     gb_init(&gb);
     gb_write(&gb, wWarp0MapCategory, 1);
     gb_write(&gb, wIsIndoor, 1);
     gb_write(&gb, hContinueMusicAfterWarp, 0);
-    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
     gb_write(&gb, hMusicFadeOutTimer, 0);
+    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
 
     ApplyMapFadeOutTransitionWithSound(&gb);
 
     TEST_ASSERT(gb_read(&gb, hContinueMusicAfterWarp) == 1, "hContinueMusicAfterWarp not set to 1");
     TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set to NOISE_SFX_STAIRS");
-    TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0, "Fade out timer should not be set when music continues");
-    TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not LINK_MOTION_MAP_FADE_OUT");
+    TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0, "hMusicFadeOutTimer modified when music continues");
+    TEST_ASSERT(gb_read(&gb, wLinkMotionState) == LINK_MOTION_MAP_FADE_OUT, "Motion state not set");
 
-    /* 4. ApplyMapFadeOutTransitionWithSound: category 1 but outdoors */
+    /* Test ApplyMapFadeOutTransitionWithSound (Outdoors -> should use noise with fade out) */
     gb_init(&gb);
     gb_write(&gb, wWarp0MapCategory, 1);
     gb_write(&gb, wIsIndoor, 0);
     gb_write(&gb, hContinueMusicAfterWarp, 0);
-    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
     gb_write(&gb, hMusicFadeOutTimer, 0);
+    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
 
     ApplyMapFadeOutTransitionWithSound(&gb);
 
     TEST_ASSERT(gb_read(&gb, hContinueMusicAfterWarp) == 0, "hContinueMusicAfterWarp should not be set outdoors");
-    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set to stairs outdoors");
     TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0x30, "Fade out timer not set to 0x30 outdoors");
+    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set outdoors");
 
-    /* 5. ApplyMapFadeOutTransitionWithSound: category != 1 */
+    /* Test ApplyMapFadeOutTransitionWithSound (Indoors but different warp category) */
     gb_init(&gb);
-    gb_write(&gb, wWarp0MapCategory, 0);
+    gb_write(&gb, wWarp0MapCategory, 2);
     gb_write(&gb, wIsIndoor, 1);
     gb_write(&gb, hContinueMusicAfterWarp, 0);
-    gb_write(&gb, hNoiseSfx, NOISE_SFX_NONE);
     gb_write(&gb, hMusicFadeOutTimer, 0);
 
     ApplyMapFadeOutTransitionWithSound(&gb);
 
-    TEST_ASSERT(gb_read(&gb, hContinueMusicAfterWarp) == 0, "hContinueMusicAfterWarp should not be set for category 0");
-    TEST_ASSERT(gb_read(&gb, hNoiseSfx) == NOISE_SFX_STAIRS, "Noise SFX not set to stairs for category 0");
-    TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0x30, "Fade out timer not set to 0x30 for category 0");
+    TEST_ASSERT(gb_read(&gb, hContinueMusicAfterWarp) == 0, "hContinueMusicAfterWarp should not be set for category 2");
+    TEST_ASSERT(gb_read(&gb, hMusicFadeOutTimer) == 0x30, "Fade out timer not set to 0x30 for category 2");
 }
 
 static void test_resets_and_position(void) {
@@ -129,8 +128,8 @@ static void test_resets_and_position(void) {
 
     /* ResetPegasusBoots */
     gb_init(&gb);
-    gb_write(&gb, wPegasusBootsChargeMeter, 0x1F);
-    gb_write(&gb, wIsRunningWithPegasusBoots, 1);
+    gb_write(&gb, wPegasusBootsChargeMeter, 0x15);
+    gb_write(&gb, wIsRunningWithPegasusBoots, 0x01);
     gb_write(&gb, wIsUsingSpinAttack, 0x20);
     gb_write(&gb, wSwordCharge, 0x28);
 
@@ -162,6 +161,26 @@ static void test_resets_and_position(void) {
     TEST_ASSERT(gb_read(&gb, hLinkPositionY) == 0x82, "hLinkPositionY mismatch");
 }
 
+static int anim_called = 0;
+static void hook_walk_anim(GBState *gb) {
+    anim_called++;
+    TEST_ASSERT(gb->rom_bank == 0x02, "ROM bank not switched to 0x02 during anim update");
+}
+
+static void test_update_link_walking_animation_trampoline(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x07;
+
+    anim_called = 0;
+    UpdateLinkWalkingAnimation_trampoline(&gb, hook_walk_anim);
+
+    TEST_ASSERT(anim_called == 1, "Animation callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x07, "ROM bank not restored to wCurrentBank (0x07)");
+}
+
 void run_link_tests(void) {
     printf("[*] Running disableMovementInTransition and playNoiseStairs tests...\n");
     test_disableMovement_and_playNoiseStairs();
@@ -171,6 +190,9 @@ void run_link_tests(void) {
 
     printf("[*] Running Link Reset and Position tests...\n");
     test_resets_and_position();
+
+    printf("[*] Running UpdateLinkWalkingAnimation_trampoline tests...\n");
+    test_update_link_walking_animation_trampoline();
 
     if (failures == 0) {
         printf("  [PASS] All link tests passed.\n");

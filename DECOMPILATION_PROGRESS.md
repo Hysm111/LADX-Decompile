@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 5.4%
-* **Number of Verified Functions**: 65
-* **Number of Decompiled Functions**: 65
-* **Number Remaining**: ~1200+ functions
-* **Current Subsystem**: Bank 0 - Piece of Heart Meter & Transition Audio Helpers
-* **Current Task**: Completed and verified Piece of Heart meter VRAM loaders, transition noise/movement helpers, and Farcall trampoline
-* **Last Completed Task**: Decompiled and verified `CopyTilesToPieceOfHeartMeter`, `LoadPieceOfHeartMeterTiles1`, `LoadPieceOfHeartMeterTiles2`, `ClearPieceOfHeartMeterTiles1`, `ClearPieceOfHeartMeterTiles2`, `playNoiseStairs`, `disableMovementInTransition`, and `Farcall_trampoline`
-* **Next Task**: Select next unfinished Bank 0 subsystem (Entity spawning trampolines or Room transition routines)
-* **Last Update Timestamp**: 2026-09-06T04:45:00+03:00
+* **Current Overall Progress**: 6.25%
+* **Number of Verified Functions**: 75
+* **Number of Decompiled Functions**: 75
+* **Number Remaining**: ~1190+ functions
+* **Current Subsystem**: Bank 0 - Minimap Loader, Audio Step & Bank Trampolines
+* **Current Task**: Completed and verified `LoadDungeonMinimapTiles`, `PlayAudioStep`, `UpdateLinkWalkingAnimation_trampoline`, and 7 Bank 0 trampolines
+* **Last Completed Task**: Decompiled and verified `LoadDungeonMinimapTiles`, `PlayAudioStep`, `UpdateLinkWalkingAnimation_trampoline`, `func_020_6A30_trampoline`, `func_020_6AC1_trampoline`, `UpdateIntroSeaBGPalettes_trampoline`, `ClearFileMenuBG_trampoline`, `LoadFileMenuBG_trampoline`, `CopyLinkTunicPalette_trampoline`, and `LoadBaseTiles_trampoline`
+* **Next Task**: Proceed to the next Bank 0 subsystem (`ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, `func_A5F`, and dialog/graphics trampolines)
+* **Last Update Timestamp**: 2026-09-06T06:12:00+03:00
 
 ---
 
@@ -84,25 +84,39 @@
 | `playNoiseStairs` | VERIFIED | PASS | PASS | Plays stairs noise SFX and disables transition motion (`00:0C9A`) |
 | `disableMovementInTransition` | VERIFIED | PASS | PASS | Sets motion state to fade out and resets transition counters (`00:0C9E`) |
 | `Farcall_trampoline` | VERIFIED | PASS | PASS | Resolves target function address from wFarcallAdressHigh/Low (`00:0BE7`) |
+| `LoadDungeonMinimapTiles` | VERIFIED | PASS | PASS | Loads minimap tiles (stages 0-7) and executes palette stages 8-11 (`00:0826`) |
+| `PlayAudioStep` | VERIFIED | PASS | PASS | Executes audio step: PlaySfx in bank 1F and music tracks in 1B/1E (`00:08A4`) |
+| `UpdateLinkWalkingAnimation_trampoline` | VERIFIED | PASS | PASS | Switches to bank 2, calls animation update, and reloads saved bank (`00:0BF0`) |
+| `func_020_6A30_trampoline` | VERIFIED | PASS | PASS | Calls target in bank $20 and restores saved bank (`00:08D7`) |
+| `func_020_6AC1_trampoline` | VERIFIED | PASS | PASS | Calls target in bank $20 and restores saved bank (`00:08E6`) |
+| `UpdateIntroSeaBGPalettes_trampoline` | VERIFIED | PASS | PASS | Calls UpdateIntroSeaBGPalettes in bank $20 and restores saved bank (`00:08F0`) |
+| `ClearFileMenuBG_trampoline` | VERIFIED | PASS | PASS | Calls ClearFileMenuBG in bank $20 and restores stacked bank (`00:08FA`) |
+| `LoadFileMenuBG_trampoline` | VERIFIED | PASS | PASS | Calls LoadFileMenuBG in bank $20 and loads bank 1 (`00:0905`) |
+| `CopyLinkTunicPalette_trampoline` | VERIFIED | PASS | PASS | Calls CopyLinkTunicPalette in bank $20 and loads bank 1 (`00:090F`) |
+| `LoadBaseTiles_trampoline` | VERIFIED | PASS | PASS | Calls LoadBaseTiles and restores stacked bank (`00:0BBE`) |
 
 ---
 
 ## Technical Discoveries
 
-- **Header / UI VRAM Loaders (`code/home/header.asm`)**:
-  - `CopyTilesToPieceOfHeartMeter` (`00:0080`): copies $30 bytes from `hl` to `de` using `CopyData`, sets `hNeedsUpdatingBGTiles = 0`, `hBGTilesLoadingStage = 0`, and selects ROM bank `$0C`.
-  - `LoadPieceOfHeartMeterTiles1` (`00:0062`): loads $30 bytes from `PieceOfHeartMeterTiles` (`0x6900`) to `vTiles1 + $1A0` (`0x89A0`).
-  - `LoadPieceOfHeartMeterTiles2` (`00:006A`): loads $30 bytes from `PieceOfHeartMeterTiles + $30` (`0x6930`) to `vTiles1 + $1D0` (`0x89D0`).
-  - `ClearPieceOfHeartMeterTiles1` (`00:0072`): restores $30 bytes from `InventoryEquipmentItemsTiles + $1D0` (`0x49D0`) to `vTiles1 + $1D0` (`0x89D0`).
-  - `ClearPieceOfHeartMeterTiles2` (`00:007A`): restores $30 bytes from `InventoryEquipmentItemsTiles + $1A0` (`0x49A0`) to `vTiles1 + $1A0` (`0x89A0`).
-- **Transition Helpers (`code/bank0.asm`)**:
-  - `playNoiseStairs` (`00:0C9A`): plays `NOISE_SFX_STAIRS` into `hNoiseSfx`, then chains into `disableMovementInTransition`.
-  - `disableMovementInTransition` (`00:0C9E`): sets `wLinkMotionState` to `LINK_MOTION_MAP_FADE_OUT` (`$03`), resets `wTransitionSequenceCounter`, `wC16C`, and `wD478` to 0.
-- **Farcall Trampoline (`code/bank0.asm`)**:
-  - `Farcall_trampoline` (`00:0BE7`): reconstructs 16-bit address from `wFarcallAdressHigh` (`$DE02`) and `wFarcallAdressLow` (`$DE03`) and executes it.
+- **Minimap Tile Loader (`code/bank0.asm:00:0826`)**:
+  - Incremental loader using `hBGTilesLoadingStage`:
+    - Stages 0 to 7: copies 64 bytes (`$40`) from `DungeonMinimapTiles` (`$7E00` in bank `$12`, adjusted for GBC) to `vTiles1 + $500` (`$8D00`) at offset `stage * 0x40`.
+    - Stage 8: calls `CopyDungeonMinimapPalette` in bank 2, increments stage.
+    - Stage 9: calls `label_002_6827` in bank 2, increments stage.
+    - Stage 10: calls `label_002_680B` in bank 2, increments stage.
+    - Stage 11+: calls `label_002_67E5` in bank 2, clears `hNeedsUpdatingBGTiles` and `hBGTilesLoadingStage`.
+- **Audio Step (`code/bank0.asm:00:08A4`)**:
+  - Always executes SFX handler via `SwitchBank(0x1F)`.
+  - If `hWaveSfx` != 0, halts step.
+  - If `wMusicTrackTiming == 0`: standard speed (calls 0x1B and 0x1E tracks once).
+  - If `wMusicTrackTiming == 2`: half speed (executes only when `hFrameCounter & 1 == 0`).
+  - Otherwise (timing != 0 && timing != 2): double speed (calls 0x1B and 0x1E tracks twice).
+- **Bank Trampolines**:
+  - Trampolines switch `rSelectROMBank` to target bank, execute the operation, and restore bank using `RestoreBankAndReturn`, `LoadBank1AndReturn`, `ReloadSavedBank`, or `RestoreStackedBankAndReturn`.
 
 ---
 
 ## Verification Log
 
-- 65 functions tested and verified with 100% pass rate.
+- 75 functions tested and verified with 100% pass rate.

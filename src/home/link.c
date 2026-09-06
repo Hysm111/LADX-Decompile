@@ -1,4 +1,6 @@
 #include "home/link.h"
+#include "home/bank.h"
+#include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/gameplay.h"
 #include "constants/sfx.h"
@@ -69,4 +71,15 @@ void CopyLinkFinalPositionToPosition(GBState *gb) {
     uint8_t y = gb_read(gb, hLinkFinalPositionY);
     gb_write(gb, hLinkPositionX, x);
     gb_write(gb, hLinkPositionY, y);
+}
+
+void UpdateLinkWalkingAnimation_trampoline(GBState *gb, void (*update_func)(GBState *)) {
+    if (!gb) return;
+
+    /* ld a, BANK(LinkAnimationsLists) -> bank 2 */
+    gb_write(gb, rSelectROMBank, 0x02);
+    if (update_func) {
+        update_func(gb);
+    }
+    ReloadSavedBank(gb);
 }
