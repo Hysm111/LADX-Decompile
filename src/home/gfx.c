@@ -256,3 +256,177 @@ void LoadSaveMenuTiles(GBState *gb) {
     SwitchBank(gb, BANK_SaveMenuTiles);
     CopyData(gb, vTiles1, SaveMenuTiles, TILE_SIZE * 0x50);
 }
+
+static const uint8_t NpcTilesBankTable[4] = {
+    0x00,
+    BANK_Npc2Tiles, /* 0x11 */
+    BANK_Npc1Tiles, /* 0x0E */
+    BANK_Npc3Tiles  /* 0x12 */
+};
+
+void LoadRoomSpecificTiles(GBState *gb, void (*load_color_dungeon_tiles)(GBState *)) {
+    if (!gb) return;
+
+    if (gb_read(gb, hMapId) == MAP_COLOR_DUNGEON) {
+        gb_write(gb, rSelectROMBank, 0x20);
+        if (load_color_dungeon_tiles) {
+            load_color_dungeon_tiles(gb);
+        }
+        goto oamTilesEnd;
+    }
+
+    for (uint8_t row = 0; row < 4; row++) {
+        gb_write(gb, hMultiPurpose0, row);
+
+        uint8_t spritesheet = gb_read(gb, wLoadedEntitySpritesheets + row);
+
+        if (row == 0) {
+            bool use_predefined = false;
+            if (gb_read(gb, wIsIndoor) != 0) {
+                if (gb_read(gb, hIsSideScrolling) != 0) {
+                    use_predefined = true;
+                } else if (gb_read(gb, hMapId) == MAP_KANALET) {
+                    use_predefined = true;
+                } else if (gb_read(gb, hMapId) < MAP_CAVE_B) {
+                    use_predefined = true;
+                } else if (gb_read(gb, hMapRoom) == ROOM_INDOOR_B_MANBO) {
+                    use_predefined = true;
+                } else if (gb_read(gb, hMapRoom) == ROOM_INDOOR_B_FISHING_MINIGAME) {
+                    use_predefined = true;
+                }
+            }
+
+            if (!use_predefined) {
+                if (gb_read(gb, wIsBowWowFollowingLink) == BOW_WOW_FOLLOWING) {
+                    spritesheet = 0xA4;
+                } else if (gb_read(gb, wIsGhostFollowingLink) != 0) {
+                    spritesheet = 0xD8;
+                } else if (gb_read(gb, wIsRoosterFollowingLink) != 0) {
+                    spritesheet = 0xDD;
+                } else if (gb_read(gb, wIsMarinFollowingLink) != 0) {
+                    spritesheet = 0x8F;
+                }
+            }
+        }
+
+        if (spritesheet == 0) {
+            continue;
+        }
+
+        uint16_t bc = (spritesheet & 0x3F) << 8;
+        uint8_t bank_index = (spritesheet >> 6) & 0x03;
+        uint8_t bank = NpcTilesBankTable[bank_index];
+        if (bank != 0) {
+            bank = AdjustBankNumberForGBC(gb, bank);
+        }
+        gb_write(gb, rSelectROMBank, bank);
+
+        uint16_t dest = (vTiles0 + 0x400) + (row << 8);
+        uint16_t src = NpcTilesDataStart + bc;
+        CopyData(gb, dest, src, TILE_SIZE * 0x10);
+    }
+
+oamTilesEnd:
+    if (gb_read(gb, wIsIndoor) == 0) {
+        uint8_t bank = AdjustBankNumberForGBC(gb, BANK_Overworld2Tiles);
+        gb_write(gb, rSelectROMBank, bank);
+
+        uint8_t world_tileset = gb_read(gb, hWorldTileset);
+        if (world_tileset == W_TILESET_KEEP) {
+            return;
+        }
+
+        uint16_t src = (0x40 + world_tileset) << 8;
+        CopyData(gb, vTiles2, src, TILE_SIZE * 0x20);
+        return;
+    }
+
+    uint8_t dungeon_bank = AdjustBankNumberForGBC(gb, BANK_DungeonsTiles);
+    gb_write(gb, rSelectROMBank, dungeon_bank);
+
+    if (gb_read(gb, hIsSideScrolling) != 0) {
+        uint16_t sideview_tiles = DungeonSideview1Tiles;
+        uint8_t map_id = gb_read(gb, hMapId);
+        if (map_id == MAP_EAGLES_TOWER) {
+            sideview_tiles = DungeonSideview1Tiles;
+        } else if (map_id >= MAP_CAVE_B) {
+            if (gb_read(gb, hMapRoom) == ROOM_INDOOR_B_SEASHELL_MANSION) {
+                sideview_tiles = DungeonSideview2Tiles;
+            }
+        } else {
+            sideview_tiles = DungeonSideview2Tiles;
+        }
+        CopyData(gb, vTiles2, sideview_tiles, TILE_SIZE * 0x80);
+        return;
+    }
+
+    uint8_t map_id = gb_read(gb, hMapId);
+    bool skip_bg_loading = false;
+    if (map_id == MAP_COLOR_DUNGEON) {
+        if (gb_read(gb, hMapRoom) != UNKNOWN_ROOM_12) {
+            skip_bg_loading = true;
+        }
+    }
+
+    if (!skip_bg_loading) {
+        uint8_t world_tileset = gb_read(gb, hWorldTileset);
+        if (world_tileset != W_TILESET_NO_UPDATE) {
+            uint16_t src = (0x50 + world_tileset) << 8;
+            CopyData(gb, vTiles2, src, TILE_SIZE * 0x10);
+        }
+    }
+
+    if (map_id == MAP_HOUSE && gb_read(gb, hMapRoom) == ROOM_INDOOR_B_CAMERA_SHOP) {
+        gb_write(gb, rSelectROMBank, BANK_CameraShopIndoorTiles);
+        CopyData(gb, vTiles1 + 0x700, CameraShopIndoorTiles, TILE_SIZE * 0x20);
+        return;
+    }
+
+    if (gb_read(gb, hIsGBC) == 0) {
+        return;
+    }
+    if (map_id != 0) {
+        return;
+    }
+
+    gb_write(gb, rSelectROMBank, BANK_PhotoAlbumTiles);
+    CopyData(gb, vTiles2 + 0x690, PhotoAlbumTiles + 0x600, TILE_SIZE);
+    CopyData(gb, vTiles2 + 0x790, PhotoAlbumTiles + 0x610, TILE_SIZE);
+}
+
+void CopyWord(GBState *gb, uint16_t de, uint16_t hl) {
+    if (!gb) return;
+    gb_write(gb, de, gb_read(gb, hl));
+    gb_write(gb, de + 1, gb_read(gb, hl + 1));
+}
+
+void WriteObjectToBG_DMG(GBState *gb, uint16_t de, uint16_t hl) {
+    if (!gb) return;
+
+    uint8_t obj_id = gb_read(gb, hl);
+    uint16_t offset = (uint16_t)obj_id * 4;
+
+    uint16_t table;
+    uint8_t map_id = gb_read(gb, hMapId);
+    if (map_id == MAP_COLOR_DUNGEON ||
+        (map_id == MAP_HOUSE && gb_read(gb, hMapRoom) == ROOM_INDOOR_B_CAMERA_SHOP)) {
+        table = ColorDungeonObjectsTilemap;
+    } else if (gb_read(gb, wIsIndoor) != 0) {
+        table = IndoorObjectsTilemapDMG;
+    } else {
+        table = OverworldObjectsTilemapDMG;
+    }
+
+    uint16_t src = table + offset;
+
+    gb_write(gb, de, gb_read(gb, src));
+    gb_write(gb, de + 1, gb_read(gb, src + 1));
+    gb_write(gb, de + 0x20, gb_read(gb, src + 2));
+    gb_write(gb, de + 0x21, gb_read(gb, src + 3));
+}
+
+void SwitchToObjectsTilemapBank(GBState *gb) {
+    if (!gb) return;
+    uint8_t bank = (gb_read(gb, wIsIndoor) != 0) ? BANK_IndoorObjectsTilemapDMG : BANK_OverworldObjectsTilemapDMG;
+    gb_write(gb, rSelectROMBank, bank);
+}

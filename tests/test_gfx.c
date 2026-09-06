@@ -76,6 +76,43 @@ static void setup_mock_data(void) {
     mock_rom[ROM_BANK_OFFSET(0x38, TitleDXTilesDMG)] = 0x82;
     mock_rom[ROM_BANK_OFFSET(0x38, TitleDXOAMTiles)] = 0x83;
     mock_rom[ROM_BANK_OFFSET(0x38, TitleDXOAMTiles + 0x100)] = 0x84;
+
+    /* Bank $0D: DungeonsTiles sideview and indoor top-view */
+    mock_rom[ROM_BANK_OFFSET(0x0D, DungeonSideview1Tiles)] = 0xD1;
+    mock_rom[ROM_BANK_OFFSET(0x0D, DungeonSideview2Tiles)] = 0xD2;
+    mock_rom[ROM_BANK_OFFSET(0x0D, 0x5200)] = 0x52;
+    mock_rom[ROM_BANK_OFFSET(0x2D, 0x5200)] = 0x52;
+
+    /* Bank $0E: Npc1Tiles (BowWow follower 0xA4 -> offset 0x6400) */
+    mock_rom[ROM_BANK_OFFSET(0x0E, 0x6400)] = 0x94;
+
+    /* Bank $11: Npc2Tiles (spritesheet 0x45 -> offset 0x4500) */
+    mock_rom[ROM_BANK_OFFSET(0x11, 0x4500)] = 0x75;
+
+    /* Bank $0F: Overworld2Tiles at 0x4300 */
+    mock_rom[ROM_BANK_OFFSET(0x0F, 0x4300)] = 0x43;
+
+    /* Bank $08: IndoorObjectsTilemapDMG */
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapDMG + 8 + 0)] = 0x21;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapDMG + 8 + 1)] = 0x22;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapDMG + 8 + 2)] = 0x23;
+    mock_rom[ROM_BANK_OFFSET(0x08, IndoorObjectsTilemapDMG + 8 + 3)] = 0x24;
+
+    /* Bank $1A: OverworldObjectsTilemapDMG */
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapDMG + 4 + 0)] = 0x11;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapDMG + 4 + 1)] = 0x12;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapDMG + 4 + 2)] = 0x13;
+    mock_rom[ROM_BANK_OFFSET(0x1A, OverworldObjectsTilemapDMG + 4 + 3)] = 0x14;
+
+    /* Bank $20: ColorDungeonObjectsTilemap */
+    mock_rom[ROM_BANK_OFFSET(0x20, ColorDungeonObjectsTilemap + 12 + 0)] = 0x31;
+    mock_rom[ROM_BANK_OFFSET(0x20, ColorDungeonObjectsTilemap + 12 + 1)] = 0x32;
+    mock_rom[ROM_BANK_OFFSET(0x20, ColorDungeonObjectsTilemap + 12 + 2)] = 0x33;
+    mock_rom[ROM_BANK_OFFSET(0x20, ColorDungeonObjectsTilemap + 12 + 3)] = 0x34;
+
+    mock_rom[ROM_BANK_OFFSET(0x35, CameraShopIndoorTiles)] = 0xC5;
+    mock_rom[ROM_BANK_OFFSET(0x35, PhotoAlbumTiles + 0x600)] = 0x6E;
+    mock_rom[ROM_BANK_OFFSET(0x35, PhotoAlbumTiles + 0x610)] = 0x6F;
 }
 
 static void test_load_credits_koholint_disappearing_tiles(void) {
@@ -350,6 +387,165 @@ static void test_load_save_menu_tiles(void) {
     TEST_ASSERT(gb.rom_bank == BANK_SaveMenuTiles, "Bank not set to BANK_SaveMenuTiles");
 }
 
+
+static void test_copy_word(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, 0xC000, 0x42);
+    gb_write(&gb, 0xC001, 0x43);
+
+    CopyWord(&gb, 0x8000, 0xC000);
+
+    TEST_ASSERT(gb_read(&gb, 0x8000) == 0x42, "CopyWord byte 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x8001) == 0x43, "CopyWord byte 2 mismatch");
+}
+
+static void test_switch_to_objects_tilemap_bank(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* Outdoors */
+    gb_write(&gb, wIsIndoor, 0);
+    SwitchToObjectsTilemapBank(&gb);
+    TEST_ASSERT(gb.rom_bank == BANK_OverworldObjectsTilemapDMG, "Outdoors tilemap bank mismatch");
+
+    /* Indoors */
+    gb_write(&gb, wIsIndoor, 1);
+    SwitchToObjectsTilemapBank(&gb);
+    TEST_ASSERT(gb.rom_bank == BANK_IndoorObjectsTilemapDMG, "Indoors tilemap bank mismatch");
+}
+
+static void test_write_object_to_bg_dmg(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+
+    /* 1. Overworld object 1 */
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapId, 0);
+    gb_write(&gb, 0xC000, 0x01); /* object id = 1 */
+    gb.rom_bank = BANK_OverworldObjectsTilemapDMG;
+    WriteObjectToBG_DMG(&gb, 0x9800, 0xC000);
+
+    TEST_ASSERT(gb_read(&gb, 0x9800) == 0x11, "Overworld object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9801) == 0x12, "Overworld object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9820) == 0x13, "Overworld object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9821) == 0x14, "Overworld object bottom-right tile mismatch");
+
+    /* 2. Indoor object 2 */
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, 0);
+    gb_write(&gb, 0xC000, 0x02); /* object id = 2 */
+    gb.rom_bank = BANK_IndoorObjectsTilemapDMG;
+    WriteObjectToBG_DMG(&gb, 0x9840, 0xC000);
+
+    TEST_ASSERT(gb_read(&gb, 0x9840) == 0x21, "Indoor object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9841) == 0x22, "Indoor object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9860) == 0x23, "Indoor object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9861) == 0x24, "Indoor object bottom-right tile mismatch");
+
+    /* 3. Color Dungeon object 3 */
+    gb_write(&gb, hMapId, MAP_COLOR_DUNGEON);
+    gb_write(&gb, 0xC000, 0x03); /* object id = 3 */
+    gb.rom_bank = 0x20;
+    WriteObjectToBG_DMG(&gb, 0x9880, 0xC000);
+
+    TEST_ASSERT(gb_read(&gb, 0x9880) == 0x31, "Color dungeon object top-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x9881) == 0x32, "Color dungeon object top-right tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x98A0) == 0x33, "Color dungeon object bottom-left tile mismatch");
+    TEST_ASSERT(gb_read(&gb, 0x98A1) == 0x34, "Color dungeon object bottom-right tile mismatch");
+}
+
+static bool dummy_color_dungeon_called = false;
+static uint8_t color_dungeon_callback_bank = 0;
+static void dummy_color_dungeon_callback(GBState *gb) {
+    dummy_color_dungeon_called = true;
+    color_dungeon_callback_bank = gb->rom_bank;
+}
+
+static void test_load_room_specific_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+
+    /* 1. Color Dungeon callback */
+    dummy_color_dungeon_called = false;
+    color_dungeon_callback_bank = 0;
+    gb_write(&gb, hMapId, MAP_COLOR_DUNGEON);
+    LoadRoomSpecificTiles(&gb, dummy_color_dungeon_callback);
+    TEST_ASSERT(dummy_color_dungeon_called, "Color dungeon callback was not invoked");
+    TEST_ASSERT(color_dungeon_callback_bank == 0x20, "Color dungeon callback bank was not 0x20");
+
+    /* 2. Overworld with BowWow follower override and entity row 1 */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, wIsBowWowFollowingLink, BOW_WOW_FOLLOWING);
+    gb_write(&gb, wLoadedEntitySpritesheets + 0, 0x10); /* overridden to 0xA4 -> bank 0x0E, 0x6400 */
+    gb_write(&gb, wLoadedEntitySpritesheets + 1, 0x45); /* bank index 1 -> bank 0x11, 0x4500 */
+    gb_write(&gb, wLoadedEntitySpritesheets + 2, 0x00);
+    gb_write(&gb, wLoadedEntitySpritesheets + 3, 0x00);
+    gb_write(&gb, hWorldTileset, 3); /* (0x40 + 3) << 8 = 0x4300 in bank 0x0F */
+
+    LoadRoomSpecificTiles(&gb, NULL);
+
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0x94, "BowWow follower tile not loaded to vTiles0+0x400");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x500) == 0x75, "Row 1 NPC tile not loaded to vTiles0+0x500");
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x43, "Overworld BG tiles not loaded to vTiles2");
+
+    /* 3. Indoors side-scrolling: Eagles Tower */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hIsSideScrolling, 1);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+
+    LoadRoomSpecificTiles(&gb, NULL);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0xD1, "Eagles Tower sideview tiles not copied to vTiles2");
+
+    /* 4. Indoors side-scrolling: Seashell Mansion */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hIsSideScrolling, 1);
+    gb_write(&gb, hMapId, MAP_CAVE_B);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_B_SEASHELL_MANSION);
+
+    LoadRoomSpecificTiles(&gb, NULL);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0xD2, "Seashell mansion sideview tiles not copied to vTiles2");
+
+    /* 5. Indoors top-view with GBC extra photo album tiles */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hIsSideScrolling, 0);
+    gb_write(&gb, hMapId, 0);
+    gb_write(&gb, hWorldTileset, 2); /* 0x50 + 2 = 0x5200 in bank 0x0D */
+
+    LoadRoomSpecificTiles(&gb, NULL);
+    TEST_ASSERT(gb_read(&gb, vTiles2) == 0x52, "Indoors top-view BG tiles mismatch");
+    TEST_ASSERT(gb_read(&gb, vTiles2 + 0x690) == 0x6E, "GBC extra photo album tile 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, vTiles2 + 0x790) == 0x6F, "GBC extra photo album tile 2 mismatch");
+
+    /* 6. Camera shop indoor special tiles */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hIsSideScrolling, 0);
+    gb_write(&gb, hMapId, MAP_HOUSE);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_B_CAMERA_SHOP);
+    gb_write(&gb, hWorldTileset, W_TILESET_NO_UPDATE);
+
+    LoadRoomSpecificTiles(&gb, NULL);
+    TEST_ASSERT(gb_read(&gb, vTiles1 + 0x700) == 0xC5, "Camera shop indoor tiles not copied to vTiles1+0x700");
+}
+
 int run_gfx_tests(void) {
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
@@ -367,6 +563,10 @@ int run_gfx_tests(void) {
     test_load_eagles_tower_top_tiles();
     test_load_marin_beach_tiles();
     test_load_save_menu_tiles();
+    test_copy_word();
+    test_switch_to_objects_tilemap_bank();
+    test_write_object_to_bg_dmg();
+    test_load_room_specific_tiles();
 
     if (gfx_failures == 0) {
         printf("  [PASS] All gfx.asm / credits tile loaders verified successfully!\n\n");

@@ -56,7 +56,15 @@
 #define wFarcallAdressLow       0xDE03
 #define wFarcallReturnBank      0xDE04
 
+/* Followers in WRAM */
+#define wIsBowWowFollowingLink  0xDB56
+#define wIsMarinFollowingLink   0xDB73
+#define wIsGhostFollowingLink   0xDB79
+#define wIsRoosterFollowingLink 0xDB7B
+#define BOW_WOW_FOLLOWING       0x01
+
 /* WRAM Entity Tables */
+#define wEntitiesPhysicsFlagsTable            0xC120
 #define wEntitiesPosXTable                    0xC200
 #define wEntitiesPosYTable                    0xC210
 #define wEntitiesTransitionCountdownTable     0xC2E0
@@ -79,6 +87,8 @@
 #define hNeedsUpdatingEntityTilesA   0xFF91
 #define hBGTilesLoadingStage         0xFF92
 #define hWorldTileset                0xFF94
+#define W_TILESET_KEEP               0x0F
+#define W_TILESET_NO_UPDATE          0xFF
 #define hBaseScrollX                 0xFF96
 #define hBaseScrollY                 0xFF97
 #define hLinkPositionX               0xFF98
@@ -111,7 +121,22 @@
 #define hNoiseSfx                    0xFFF4
 #define hMapRoom                     0xFFF6
 #define hMapId                       0xFFF7
+#define hIsSideScrolling             0xFFF9
 #define hIsComputingFrame            0xFFFD
 #define hIsGBC                       0xFFFE
+
+/* Map ID Constants */
+#define MAP_EAGLES_TOWER             0x06
+#define MAP_CAVE_B                   0x0A
+#define MAP_HOUSE                    0x10
+#define MAP_KANALET                  0x14
+#define MAP_COLOR_DUNGEON            0xFF
+
+/* Room Constants */
+#define ROOM_INDOOR_B_FISHING_MINIGAME 0xB1
+#define ROOM_INDOOR_B_CAMERA_SHOP      0xB5
+#define ROOM_INDOOR_B_SEASHELL_MANSION 0xE9
+#define ROOM_INDOOR_B_MANBO            0xFD
+#define UNKNOWN_ROOM_12                0x12
 
 #endif /* LADX_CONSTANTS_MEMORY_H */

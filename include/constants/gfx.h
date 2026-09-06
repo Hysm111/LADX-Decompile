@@ -15,6 +15,10 @@
 /* Special tile during room transitions treated as transparent */
 #define TRANSITION_TRANSPARENT_TILE 0xEE
 
+/* Graphic asset ROM addresses in Bank $08 */
+#define BANK_IndoorObjectsTilemapDMG 0x08
+#define IndoorObjectsTilemapDMG      0x4000
+
 /* Graphic asset ROM addresses in Bank $0C */
 #define BANK_LinkCharacterTiles      0x0C
 #define LinkCharacterTiles           0x4000
@@ -31,6 +35,16 @@
 
 #define BANK_Overworld1Tiles         0x0C
 #define Overworld1Tiles              0x4F00
+
+/* Dungeons Graphic assets in Bank $0D */
+#define BANK_DungeonsTiles           0x0D
+#define DungeonSideview1Tiles        0x7000
+#define DungeonSideview2Tiles        0x7800
+
+/* NPC 1 Graphic assets in Bank $0E */
+#define BANK_Npc1Tiles               0x0E
+#define NpcTilesDataStart            0x4000
+#define Npc1Tiles                    0x4000
 
 /* Menu Graphic assets in Bank $0F */
 #define BANK_MenuTiles               0x0F
@@ -54,7 +68,9 @@
 #define Intro1Tiles                  0x4000
 #define Intro3Tiles                  0x5400
 
-/* Static picture and scene graphic assets in Bank $10 */
+/* Static picture, indoor, and scene graphic assets in Bank $10 */
+#define BANK_IndoorTiles             0x10
+#define IndoorTiles                  0x5000
 #define BANK_StaticPicturesTiles     0x10
 #define ChristineTiles               0x5800
 #define MarinBeachTiles              0x6000
@@ -62,6 +78,10 @@
 #define FontLargeTiles               0x6700
 #define ReliefTiles                  0x7000
 #define PaintingTiles                0x7800
+
+/* NPC 2 Graphic assets in Bank $11 */
+#define BANK_Npc2Tiles               0x11
+#define Npc2Tiles                    0x4000
 
 /* Dungeon Minimap and NPC Graphic assets in Bank $12 */
 #define BANK_Npc3Tiles               0x12
@@ -85,7 +105,17 @@
 #define BANK_Overworld2Tiles         0x0F
 #define Overworld2Tiles              0x5A00
 
+/* Overworld objects tilemap in Bank $1A */
+#define BANK_OverworldObjectsTilemapDMG 0x1A
+#define OverworldObjectsTilemapDMG   0x6749
+
+/* Color Dungeon objects tilemap */
+#define ColorDungeonObjectsTilemap   0x4760
+
 /* GBC specific Graphic assets in Bank $35 */
+#define BANK_CameraShopIndoorTiles   0x35
+#define CameraShopIndoorTiles        0x6600
+
 #define BANK_PhotoAlbumTiles         0x35
 #define PhotoAlbumTiles              0x6800
 

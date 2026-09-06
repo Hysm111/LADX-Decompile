@@ -238,6 +238,47 @@ void LoadMarinBeachTiles(GBState *gb);
  */
 void LoadSaveMenuTiles(GBState *gb);
 
+/**
+ * LoadRoomSpecificTiles (00:2E73)
+ * For overworld or indoor rooms, loads room-specific tiles:
+ * - 4 rows of entity spritesheets to vTiles0 + $400 (NPCs tiles) with follower override
+ * - 8 rows of BG tiles to vTiles2 based on dungeon/overworld/side-scrolling context
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param load_color_dungeon_tiles Optional callback for Color Dungeon tile loading in bank $20
+ */
+void LoadRoomSpecificTiles(GBState *gb, void (*load_color_dungeon_tiles)(GBState *));
+
+/**
+ * CopyWord (00:2FC7)
+ * Copies two consecutive bytes from hl to de.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Destination memory address
+ * @param hl Source memory address
+ */
+void CopyWord(GBState *gb, uint16_t de, uint16_t hl);
+
+/**
+ * WriteObjectToBG_DMG (00:2FCD)
+ * Given an object pointer in wRoomObjects, retrieves its 2x2 tile indices from the
+ * appropriate objects tilemap and writes them to the BG map.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Target address in BG map
+ * @param hl Pointer to object byte in wRoomObjects
+ */
+void WriteObjectToBG_DMG(GBState *gb, uint16_t de, uint16_t hl);
+
+/**
+ * SwitchToObjectsTilemapBank (00:3905)
+ * Switches rSelectROMBank to BANK(IndoorObjectsTilemapDMG) ($08) if indoors,
+ * or BANK(OverworldObjectsTilemapDMG) ($1A) if outdoors.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void SwitchToObjectsTilemapBank(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif
