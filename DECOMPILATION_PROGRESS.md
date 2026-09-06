@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 25.33%
-* **Number of Verified Functions**: 304
-* **Number of Decompiled Functions**: 304
-* **Number Remaining**: ~896 functions
-* **Current Subsystem**: Bank 0 - Gameplay & Motion Dispatching (`code/bank0.asm`, `00:0E34`-`00:1176`)
-* **Current Task**: Bank 0 Gameplay dispatchers & motion handlers completed
-* **Last Completed Task**: Decompiled and verified 20 Bank 0 gameplay dispatcher and Link motion handlers (`ExecuteGameplayHandler`, `jumpToGameplayHandler`, `IntroHandler`, `EndCreditsHandler`, `FileSelectionHandler`, `FileCreationHandler`, `FileDeletionHandler`, `FileCopyHandler`, `FileSaveHandler`, `WorldMapHandler`, `PeachPictureHandler`, `MarinBeachHandler`, `FaceShrineMuralHandler`, `WorldHandler`, `InventoryHandler`, `PhotoAlbumHandler`, `PhotoPictureHandler`, `LinkMotionTeleportUpHandler`, `LinkMotionPassOutHandler`, `LinkMotionDefaultHandler`) (`00:0E34` - `00:1176`)
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Item usage & inventory checks in `code/home/check_items_to_use.asm` and `UseItem`)
-* **Last Update Timestamp**: 2026-09-06T21:40:00+03:00
+* **Current Overall Progress**: 26.08%
+* **Number of Verified Functions**: 313
+* **Number of Decompiled Functions**: 313
+* **Number Remaining**: ~887 functions
+* **Current Subsystem**: Bank 0 - Item Usage & Inventory Subsystem (`code/home/check_items_to_use.asm`, `00:1177`-`00:1381` - 100% COMPLETE!)
+* **Current Task**: Bank 0 Item Usage & Inventory checks completed
+* **Last Completed Task**: Decompiled and verified 9 Bank 0 item usage routines (`CheckItemsToUse`, `UseItem`, `UseMagicRod`, `UseShield`, `UseShovel`, `UseHookshot`, `HoldSwordIfNeeded`, `SetShieldVals`, `PlaceBomb`) (`00:1177` - `00:1381`) - **check_items_to_use.asm 100% Complete**!
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (e.g. projectile/bomb helpers, sword attacks, or audio routines)
+* **Last Update Timestamp**: 2026-09-06T22:00:00+03:00
 
 ---
 
@@ -252,10 +252,26 @@
 | `LinkMotionTeleportUpHandler` | VERIFIED | PASS | PASS | Switches to Bank $19 and dispatches to teleport up animation (`00:1155`) |
 | `LinkMotionPassOutHandler` | VERIFIED | PASS | PASS | Switches to Bank $01 and dispatches to LinkPassOut sequence (`00:115D`) |
 | `LinkMotionDefaultHandler` | VERIFIED | PASS | PASS | Checks IsInteractiveMotionAllowed in Bank $36, switches to Bank $02, and invokes LinkMotionDefault (`00:1165`) |
+| `CheckItemsToUse` | VERIFIED | PASS | PASS | Master inventory item trigger evaluator: checks blocks, boots running, shield, items A/B, sword hold, and color dungeon (`00:1177`) |
+| `UseItem` | VERIFIED | PASS | PASS | Inventory item action dispatcher for sword, shield, bombs, bracelet, bow, boomerang, hookshot, feather, ocarina, powder, shovel, magic rod (`00:129C`) |
+| `UseMagicRod` | VERIFIED | PASS | PASS | Validates attack/sword state and projectile count, starts magic rod attack animation countdown (`00:12D8`) |
+| `UseShield` | VERIFIED | PASS | PASS | Checks pushing state and plays shield draw noise SFX (`00:12EE`) |
+| `UseShovel` | VERIFIED | PASS | PASS | Checks air/shovel state, tests surface collision for sword poking or shovel dig SFX, and initiates shovel timer (`00:12F8`) |
+| `UseHookshot` | VERIFIED | PASS | PASS | Checks active hookshot state and dispatches to FireHookshot (`00:1319`) |
+| `HoldSwordIfNeeded` | VERIFIED | PASS | PASS | Sets sword holding animation state and enables sword collision when button is held outside NPC/text dialog (`00:1321`) |
+| `SetShieldVals` | VERIFIED | PASS | PASS | Sets wIsUsingShield and wHasMirrorShield, and synchronizes shield attributes via Bank $20 trampoline (`00:1340`) |
+| `PlaceBomb` | VERIFIED | PASS | PASS | Checks placed bomb count, decrements bomb BCD count, spawns bomb projectile, and checks bomb-arrow conversion (`00:135A`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Item Usage & Inventory Actions Subsystem (`00:1177`-`00:1381`) - check_items_to_use.asm 100% Complete**:
+   - `CheckItemsToUse`: verifies `wBlockItemUsage | wC167 | wIsUsingHookshot == 0`. Handles Pegasus Boots charge running sword hold / shield raise; suppresses actions when gel is clinging or carrying objects; handles Pegasus Boots A/B button charges and meter reset; processes shield A/B button holds; checks Joypad state for newly pressed A/B buttons to invoke `UseItem`; evaluates sword hold via `HoldSwordIfNeeded`; and invokes Color Dungeon callback in Bank `$20`.
+   - `UseItem`: dispatches item actions based on item ID (1..13).
+   - `PlaceBomb`: prevents duplicate bombs (`wHasPlacedBomb >= 1`); plays error buzzer if `wBombCount == 0`; performs BCD decrement (`sub 1; daa`); spawns player projectile (`ENTITY_BOMB`); and invokes `ConvertToBombArrowIfNeeded` in Bank `$20`.
+   - `UseShovel`: verifies Link is grounded and not currently shoveling; queries surface poking collision to select between `JINGLE_SWORD_POKING` ($07) or `NOISE_SFX_SHOVEL_DIG` ($0E); sets shovel active flag and timer.
+   - `HoldSwordIfNeeded`: checks NPC/text context; enters `SWORD_ANIMATION_STATE_HOLDING` ($05) and sets `wSwordCollisionEnabled`.
 
 1. **Gameplay Dispatchers & Link Motion Subsystem (`00:0E34`-`00:1176`)**:
    - `ExecuteGameplayHandler`: checks `wGameplayType >= GAMEPLAY_WORLD_MAP`; if in non-interactive or menu state, or interactive world (`wGameplaySubtype == GAMEPLAY_WORLD_INTERACTIVE`), evaluates `CheckPresentSaveScreen`. If save screen combo (A+B+Start+Select) is pressed without active transition/dialog, transitions `wGameplayType` to `GAMEPLAY_FILE_SAVE`; otherwise dispatches via `jumpToGameplayHandler`.

@@ -14,6 +14,7 @@ extern void run_link_tests(void);
 extern void run_vfx_tests(void);
 extern void run_ui_tests(void);
 extern int run_gfx_tests(void);
+extern void run_check_items_to_use_tests(void);
 
 int main(void) {
     int total_failures = 0;
@@ -35,6 +36,7 @@ int main(void) {
     run_vfx_tests();
     run_ui_tests();
     total_failures += run_gfx_tests();
+    run_check_items_to_use_tests();
 
     printf("========================================\n");
     if (total_failures == 0) {

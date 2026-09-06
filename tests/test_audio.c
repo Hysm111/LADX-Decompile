@@ -5,6 +5,7 @@
 #include "constants/audio.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
+#include "constants/sfx.h"
 
 void test_play_wrong_answer_jingle(void) {
     printf("[*] Running PlayWrongAnswerJingle tests...\n");
@@ -13,7 +14,7 @@ void test_play_wrong_answer_jingle(void) {
 
     gb_write(&gb, hJingle, 0x00);
     PlayWrongAnswerJingle(&gb);
-    assert(gb_read(&gb, hJingle) == 0x03);
+    assert(gb_read(&gb, hJingle) == JINGLE_WRONG_ANSWER);
 }
 
 void test_alert_sword_moblins(void) {
@@ -36,7 +37,7 @@ void test_play_bomb_explosion_sfx(void) {
 
     PlayBombExplosionSfx(&gb);
 
-    assert(gb_read(&gb, hNoiseSfx) == 0x04);
+    assert(gb_read(&gb, hNoiseSfx) == NOISE_SFX_EXPLOSION);
     assert(gb_read(&gb, wSwordMoblinAlertingSoundCounter) == 4);
 }
 

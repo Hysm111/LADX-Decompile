@@ -243,3 +243,28 @@
 #define UNKNOWN_ROOM_12                0x12
 
 #endif /* LADX_CONSTANTS_MEMORY_H */
+
+#define wIsGelClingingToLink            0xC117
+#define wSwordAnimationState            0xC137
+#define wC138                           0xC138
+#define wIsLinkPushing                  0xC144
+#define wIsLinkInTheAir                 0xC146
+#define wActiveProjectileCount          0xC14D
+#define wHasPlacedBomb                  0xC14E
+#define wHasMirrorShield                0xC15A
+#define wIsUsingShield                  0xC15B
+#define wIsCarryingLiftedObject         0xC15C
+#define wC160                           0xC160
+#define wC16A                           0xC16A
+#define wLinkAttackStepAnimationCountdown 0xC19B
+#define wIsUsingHookshot                0xC1A4
+#define wC1AC                           0xC1AC
+#define wLinkUsingShovel                0xC1C7
+#define wLinkUsingShovelTimer           0xC1C8
+#define wBlockItemUsage                 0xC50A
+#define wSwordCollisionEnabled          0xC5B0
+#define wInventoryItems_BButtonSlot     0xDB00
+#define wInventoryItems_AButtonSlot     0xDB01
+#define wShieldLevel                    0xDB44
+#define wBombCount                      0xDB4D
+#define hLinkInteractiveMotionBlocked   0xFFA1

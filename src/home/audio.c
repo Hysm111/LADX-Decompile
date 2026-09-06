@@ -4,8 +4,9 @@
 #include "constants/hardware.h"
 #include "constants/memory.h"
 
-#define JINGLE_WRONG_ANSWER  0x03
-#define NOISE_SFX_EXPLOSION  0x04
+#include "constants/sfx.h"
+// #define JINGLE_WRONG_ANSWER  0x03
+// #define NOISE_SFX_EXPLOSION  0x04
 
 void PlayWrongAnswerJingle(GBState *gb) {
     if (!gb) return;

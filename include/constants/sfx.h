@@ -27,3 +27,6 @@
 #define NOISE_SFX_EXPLOSION                     0x0C
 
 #endif /* LADX_CONSTANTS_SFX_H */
+
+#define NOISE_SFX_SHOVEL_DIG            0x0E
+#define NOISE_SFX_DRAW_SHIELD           0x16
