@@ -19,6 +19,11 @@
 #define TRADING_ITEM_MAGNIFYING_LENS 0x0E
 
 #define ROOM_SECTION_OW_SECOND_HALF  0x80
+#define ROOM_INDOOR_B_MANBO             0xFD
+#define ROOM_INDOOR_B_FISHING_MINIGAME  0xB1
+#define ROOM_INDOOR_B_MRS_MEOW_MEOW     0xA7
+#define ROOM_SECTION_OW_GHOST_TRIGGER   0x40
+#define UNKNOWN_ROOM_A4                 0xA4
 
 /* Overworld Room Banks */
 #define BANK_OverworldRoomsFirstHalf  0x09

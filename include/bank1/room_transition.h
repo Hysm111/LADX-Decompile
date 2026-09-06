@@ -53,6 +53,52 @@ void HideSpritesUnderDialog(GBState *gb);
  */
 void HideSprites(GBState *gb);
 
+
+/**
+ * SynchronizeDungeonsItemFlags (01:5E67)
+ * Copies 5 bytes from wCurrentDungeonItemFlags to wColorDungeonItemFlags (if color dungeon)
+ * or wDungeonItemFlags + (hMapId * 5) (if standard dungeon 0..9). Overworld is skipped.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void SynchronizeDungeonsItemFlags(GBState *gb);
+
+/**
+ * CreateFollowingNpcEntity (01:5FB3)
+ * Checks and creates following entities (Rooster, Ghost, Marin, Bow-Wow) depending on quest state.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param spawn_new_entity Callback for SpawnNewEntity (bank $03)
+ */
+void CreateFollowingNpcEntity(GBState *gb, uint16_t (*spawn_new_entity)(GBState *, uint8_t entity_type));
+
+/**
+ * func_001_6162 (01:6162)
+ * Clears audio, gameplay state, palettes, scroll registers, and switch block state.
+ * Sets hButtonsInactiveDelay to 0x18.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_01F_4003 Callback for audio func_01F_4003 in bank $1F
+ */
+void func_001_6162(GBState *gb, void (*func_01F_4003)(GBState *));
+
+/**
+ * LoadCounterAnimatedTiles (01:61AA)
+ * Loads animated counter tile graphics from bank $0F to $96D0/$96C0 based on wTextDebuggerDialogId,
+ * and sets tiles $6C and $6D at $9909 and $990A.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadCounterAnimatedTiles(GBState *gb);
+
+/**
+ * OpenDungeonNameDialog (01:61EE)
+ * Opens dialog 0x56 + hMapId if Link is in default motion state and free movement mode is disabled.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void OpenDungeonNameDialog(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

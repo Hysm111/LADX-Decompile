@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 34.17%
-* **Number of Verified Functions**: 410
-* **Number of Decompiled Functions**: 410
-* **Number Remaining**: ~790 functions
-* **Current Subsystem**: Bank 1 - Room Transition & Sprite Visibility (`code/bank1.asm`, `01:5EAB`-`01:5F68`)
-* **Current Task**: Bank 1 Room Transition & Sprite Visibility completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 room transition & sprite hiding routines (`PrepareEntityPositionForRoomTransition`, `UpdateRecentRoomsList`, `HideAllSprites`, `HideSprites`, `HideSpritesUnderDialog`) (`01:5EAB`-`01:5F68`)
-* **Next Task**: Decompile and verify Bank 1 following NPC spawner (`CreateFollowingNpcEntity`, `01:5FB3`) and room transition physics routines
+* **Current Overall Progress**: 34.58%
+* **Number of Verified Functions**: 415
+* **Number of Decompiled Functions**: 415
+* **Number Remaining**: ~785 functions
+* **Current Subsystem**: Bank 1 - Room Transition & World Initialization (`code/bank1.asm`, `01:5E67`-`01:6202`)
+* **Current Task**: Bank 1 Room Transition & World Initialization block completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 1 room transition, NPC following & initialization routines (`SynchronizeDungeonsItemFlags`, `CreateFollowingNpcEntity`, `func_001_6162`, `LoadCounterAnimatedTiles`, `OpenDungeonNameDialog`) (`01:5E67`-`01:6202`)
+* **Next Task**: Decompile and verify Bank 1 Marin Beach sequence handlers (`code/marin_beach.asm`)
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

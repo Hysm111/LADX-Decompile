@@ -20,6 +20,11 @@
 #define MAP_INDOORS_B_END    0x1A
 
 #define MAP_CAVE_WATER       0x1F
+#define MAP_CAVE_B           0x0A
+#define MAP_CAVE_C           0x11
+#define MAP_DREAM_SHRINE     0x13
+#define MAP_KANALET          0x14
+#define MAP_S_FACE_SHRINE    0x16
 
 /* Special rooms group for color dungeon */
 #define MAP_COLOR_DUNGEON    0xFF

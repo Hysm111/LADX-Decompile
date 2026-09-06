@@ -52,6 +52,8 @@
 #define LINK_MOTION_TELEPORT            0x09
 
 #define SLIME_KEY                       0x06
+#define BOW_WOW_FOLLOWING 0x01
+
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */
 #define TRANSITION_GFX_MANBO_OUT         0x03
 #define ATTACK_STEP_DURATION_MASK        0x7F

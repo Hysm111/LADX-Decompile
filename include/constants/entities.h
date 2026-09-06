@@ -45,4 +45,7 @@
 #define IndoorsAEntitiesPointersTable           0x4200
 #define IndoorsBEntitiesPointersTable           0x4400
 #define ColorDungeonEntitiesPointersTable       0x4600
-
+#define ENTITY_BOW_WOW                 0x6D
+#define ENTITY_MARIN_AT_THE_SHORE      0xC1
+#define ENTITY_GHOST                   0xD4
+#define ENTITY_ROOSTER                 0xD5
