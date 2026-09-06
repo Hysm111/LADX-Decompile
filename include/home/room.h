@@ -300,6 +300,50 @@ void ExpandOverworldObjectMacro(GBState *gb, uint8_t obj_type, uint8_t pos);
  */
 size_t LoadRoomObject(GBState *gb, uint16_t stream_addr);
 
+/**
+ * PadRoomObjectsArea (01:6CCE)
+ * Surrounds the objects area defining a room in wRoomObjectsArea ($D700) with
+ * ROOM_BORDER ($FF) values along the perimeter.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PadRoomObjectsArea(GBState *gb);
+
+/**
+ * Callbacks for LoadRoom cross-bank subroutines
+ */
+typedef struct LoadRoomCallbacks {
+    void (*reset_room_variables)(GBState *gb);
+    void (*load_room_palettes)(GBState *gb);
+    void (*load_room_objects_attributes)(GBState *gb);
+    uint8_t (*func_014_5897)(GBState *gb);
+    void (*load_room_template)(GBState *gb, uint8_t template_id);
+    void (*pad_room_objects_area)(GBState *gb);
+    void (*func_036_6D4D)(GBState *gb);
+    void (*func_021_53F3)(GBState *gb);
+} LoadRoomCallbacks;
+
+/**
+ * LoadRoom (00:30F4)
+ * Loads room objects:
+ * - Disables interrupts except VBlank (rIE = IEF_VBLANK)
+ * - Increments wD47F
+ * - Resets room variables in bank $20
+ * - On GBC, loads room palettes (bank $21) and object attributes (bank $20)
+ * - If indoor, invokes func_014_5897 and resets wKillCount / wKillOrder
+ * - Updates visited status flag in room status table and stores into hRoomStatus
+ * - Resolves room header pointer (checks alternate overworld rooms, Goriya cave, Color Dungeon)
+ * - Fills active room floor tile and loads room template (if indoor)
+ * - Loops over room objects: stores warps in wWarpStructs, unpacks objects via LoadRoomObject
+ * - Surrounds room with ROOM_BORDER values via PadRoomObjectsArea
+ * - Invokes post-load hooks in bank $36 and bank $21
+ * - Restores saved ROM bank via ReloadSavedBank
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param callbacks Optional callbacks structure (or NULL for default behavior)
+ */
+void LoadRoom(GBState *gb, const LoadRoomCallbacks *callbacks);
+
 #ifdef __cplusplus
 }
 #endif

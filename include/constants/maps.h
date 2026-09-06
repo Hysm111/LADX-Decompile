@@ -19,6 +19,8 @@
 
 #define MAP_INDOORS_B_END    0x1A
 
+#define MAP_CAVE_WATER       0x1F
+
 /* Special rooms group for color dungeon */
 #define MAP_COLOR_DUNGEON    0xFF
 

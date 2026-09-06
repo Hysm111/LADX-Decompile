@@ -2,16 +2,22 @@
 #define LADX_CONSTANTS_ROOMS_H
 
 /* Overworld and Indoor Room IDs */
+#define UNKNOWN_ROOM_06              0x06
 #define ROOM_OW_RIGHT_OF_EGG         0x07
-#define ROOM_OW_CAMERA_SHOP          0x37
-#define ROOM_OW_SIREN                0xC9
-#define ROOM_OW_WALRUS               0xFD
-#define ROOM_INDOOR_B_CAMERA_SHOP    0xB5
-
 #define ROOM_OW_EAGLES_TOWER         0x0E
 #define UNKNOWN_ROOM_0C              0x0C
 #define UNKNOWN_ROOM_1B              0x1B
+#define ROOM_OW_ANGLERS_TUNNEL_ENTRANCE 0x2B
+#define ROOM_OW_CAMERA_SHOP          0x37
+#define ROOM_OW_KANALET_GATE         0x79
+#define ROOM_OW_FACE_SHRINE_ENTRANCE 0x8C
 #define ROOM_OW_GIANT_SKULL          0x97
+#define ROOM_OW_SIREN                0xC9
+#define ROOM_OW_WALRUS               0xFD
+#define ROOM_INDOOR_B_CAMERA_SHOP    0xB5
+#define ROOM_INDOOR_A_GORIYA         0xF5
+#define TRADING_ITEM_MAGNIFYING_LENS 0x0E
+
 #define ROOM_SECTION_OW_SECOND_HALF  0x80
 
 /* Overworld Room Banks */
@@ -24,11 +30,34 @@
 #define BANK_LoadWorldMapBGMap       0x20
 #define LoadWorldMapBGMap            0x588B
 
-/* Room Status Door Open Flags */
+/* Room Pointer Tables Addresses */
+#define OverworldRoomPointers        0x4000
+#define IndoorsARoomPointers         0x4000
+#define IndoorsBRoomPointers         0x4000
+#define ColorDungeonRoomPointers     0x7B77
+
+/* Alternate Overworld / Indoor Room Data Addresses */
+#define Overworld0EAlt               0x47EC
+#define Overworld8CAlt               0x434E
+#define Overworld79Alt               0x6513
+#define Overworld06Alt               0x4496
+#define Overworld1BAlt               0x4C0F
+#define Overworld2BAlt               0x509A
+#define IndoorsAF5Alt                0x7855
+
+/* Room Header & Object Stream Control Bytes */
+#define ROOM_WARP                    0xE0
+#define ROOM_END                     0xFE
+#define ROOM_BORDER                  0xFF
+
+/* Room Status Flags */
 #define ROOM_STATUS_DOOR_OPEN_RIGHT  0x01
 #define ROOM_STATUS_DOOR_OPEN_LEFT   0x02
 #define ROOM_STATUS_DOOR_OPEN_UP     0x04
 #define ROOM_STATUS_DOOR_OPEN_DOWN   0x08
+#define OW_ROOM_STATUS_CHANGED       0x10
+#define OW_ROOM_STATUS_OWL_TALKED    0x20
+#define ROOM_STATUS_VISITED          0x80
 
 /* Door Types */
 #define DOOR_TYPE_KEY_TOP            0x00
@@ -49,7 +78,6 @@
 
 /* Additional Room Constants */
 #define ROOM_INDOOR_B_KANALET_MAIN_ENTRANCE 0xD3
-#define ROOM_OW_RIGHT_OF_EGG         0x07
 #define UNKNOWN_ROOM_4A              0x4A
 #define UNKNOWN_ROOM_75              0x75
 #define UNKNOWN_ROOM_AA              0xAA
@@ -73,9 +101,6 @@
 #define EntranceObjectIds_Addr               0x37B4
 #define HorizontalObjectOffsets_Addr         0x37E1
 #define VerticalObjectOffsets_Addr           0x37E4
-
-/* Overworld Room Status Flags */
-#define OW_ROOM_STATUS_OWL_TALKED    0x20
 
 /* Static Object Physics Flags ROM tables in Bank $08 */
 #define BANK_ObjectPhysicFlags       0x08

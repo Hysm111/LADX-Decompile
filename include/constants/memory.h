@@ -48,15 +48,20 @@
 #define wMusicTrackToPlay       0xD368
 #define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
+#define wWarpStructs            0xD401
 #define wWarpPositions          0xD416
 #define wD464                   0xD464
 #define wD474                   0xD474
 #define wD478                   0xD478
+#define wD47F                   0xD47F
 #define wDrawCommand            0xD601
 #define wOverworldRoomStatus    0xD800
 #define wIndoorARoomStatus           0xD900
 #define wIndoorBRoomStatus           0xDA00
+#define wTradeSequenceItem           0xDB0E
 #define wHasStolenFromShop           0xDB46
+#define wKillCount                   0xDBB5
+#define wKillOrder                   0xDBB6
 #define wTorchesCount                0xDBC9
 #define wColorDungeonRoomStatus      0xDDE0
 #define wGameplayType           0xDB95
@@ -118,6 +123,7 @@
 #define hLinkPhysicsModifier         0xFF9C
 #define hLinkFinalPositionX          0xFF9F
 #define hLinkFinalPositionY          0xFFA0
+#define hAnimatedTilesGroup          0xFFA4
 #define hMusicFadeOutTimer           0xFFA8
 #define hMusicFadeInTimer            0xFFAB
 #define hContinueMusicAfterWarp      0xFFBC
@@ -137,6 +143,7 @@
 #define hMultiPurpose9               0xFFE0
 #define hMultiPurposeA               0xFFE1
 #define hMultiPurposeF               0xFFE6
+#define hFreeWarpDataAddress         0xFFE6
 #define hStaircase                   0xFFAC
 #define hStaircasePosX               0xFFAD
 #define hStaircasePosY               0xFFAE

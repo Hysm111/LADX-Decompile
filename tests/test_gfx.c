@@ -717,6 +717,37 @@ static void test_load_room_tilemap(void) {
     gb_write(&gb, rVBK, 0);
 }
 
+
+static bool mock_marin_portrait_called = false;
+static void mock_load_marin_portrait_cb(GBState *gb) {
+    (void)gb;
+    mock_marin_portrait_called = true;
+}
+
+static void test_load_credits_marin_portrait_tiles_trampoline(void) {
+    GBState gb;
+    gb_init(&gb);
+    mock_marin_portrait_called = false;
+    LoadCreditsMarinPortraitTiles_trampoline(&gb, mock_load_marin_portrait_cb);
+    TEST_ASSERT(mock_marin_portrait_called, "LoadCreditsMarinPortraitTiles callback not invoked");
+    TEST_ASSERT(gb.rom_bank == 0x27, "Bank not switched to 0x27 for Marin portrait");
+}
+
+static bool mock_thanks_called = false;
+static void mock_load_thanks_cb(GBState *gb) {
+    (void)gb;
+    mock_thanks_called = true;
+}
+
+static void test_load_thanks_for_playing_tiles_trampoline(void) {
+    GBState gb;
+    gb_init(&gb);
+    mock_thanks_called = false;
+    LoadThanksForPlayingTiles_trampoline(&gb, mock_load_thanks_cb);
+    TEST_ASSERT(mock_thanks_called, "LoadThanksForPlayingTiles callback not invoked");
+    TEST_ASSERT(gb.rom_bank == 0x20, "Bank not switched to 0x20 for Thanks for playing tiles");
+}
+
 int run_gfx_tests(void) {
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
@@ -740,6 +771,8 @@ int run_gfx_tests(void) {
     test_load_room_specific_tiles();
     test_write_overworld_and_indoor_object_to_bg();
     test_load_room_tilemap();
+    test_load_credits_marin_portrait_tiles_trampoline();
+    test_load_thanks_for_playing_tiles_trampoline();
 
     if (gfx_failures == 0) {
         printf("  [PASS] All gfx.asm / credits tile loaders verified successfully!\n\n");

@@ -334,6 +334,24 @@ void LoadRoomTilemap(GBState *gb,
                      void (*get_bg_attributes)(GBState *, uint16_t, uint16_t),
                      void (*update_minimap_arrow)(GBState *));
 
+/**
+ * LoadCreditsMarinPortraitTiles_trampoline (00:3915)
+ * Switches to BANK(LoadCreditsMarinPortraitTiles) ($27) and jumps to LoadCreditsMarinPortraitTiles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param load_marin_portrait Callback to LoadCreditsMarinPortraitTiles in Bank $27
+ */
+void LoadCreditsMarinPortraitTiles_trampoline(GBState *gb, void (*load_marin_portrait)(GBState *));
+
+/**
+ * LoadThanksForPlayingTiles_trampoline (00:391D)
+ * Switches to BANK(LoadThanksForPlayingTiles) ($20) and jumps to LoadThanksForPlayingTiles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param load_thanks Callback to LoadThanksForPlayingTiles in Bank $20
+ */
+void LoadThanksForPlayingTiles_trampoline(GBState *gb, void (*load_thanks)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

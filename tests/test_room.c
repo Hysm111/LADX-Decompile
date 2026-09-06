@@ -822,7 +822,280 @@ static void test_load_room_object(void) {
     TEST_ASSERT(gb.rom_bank == BANK_OverworldRoomsFirstHalf, "Macro object should restore room bank");
     ExpandOverworldObjectMacro(&gb, 0xF5, 0x22);
 }
+
+static void test_pad_room_objects_area(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    for (uint16_t i = 0; i < 0xA0; i++) {
+        gb_write(&gb, wRoomObjectsArea + i, 0x00);
+    }
+
+    PadRoomObjectsArea(&gb); 
+
+    /* Check top row (0x00..0x0B) is all 0xFF */
+    for (uint8_t col = 0; col <= 0x0B; col++) {
+        TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + col) == ROOM_BORDER, "Top border missing");
+    }
+
+    /* Check bottom row (0x90..0x9B) is all 0xFF */
+    for (uint8_t col = 0; col <= 0x0B; col++) {
+        TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + 0x90 + col) == ROOM_BORDER, "Bottom border missing");
+    }
+
+    /* Check side borders (rows 1..8, col 0 and col 11) */
+    for (uint8_t row = 1; row <= 8; row++) {
+        TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + (row << 4) + 0x00) == ROOM_BORDER, "Left border missing");
+        TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + (row << 4) + 0x0B) == ROOM_BORDER, "Right border missing");
+    }
+
+    /* Check interior cells remain 0 */
+    TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + 0x11) == 0x00, "Interior cell 0x11 should not be overwritten");
+    TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + 0x25) == 0x00, "Interior cell 0x25 should not be overwritten");
+    TEST_ASSERT(gb_read(&gb, wRoomObjectsArea + 0x8A) == 0x00, "Interior cell 0x8A should not be overwritten");
+}
+
+static int mock_lr_reset_vars_count = 0;
+static int mock_lr_load_palettes_count = 0;
+static int mock_lr_load_attrs_count = 0;
+static int mock_lr_func_014_count = 0;
+static int mock_lr_template_count = 0;
+static uint8_t mock_lr_last_template = 0xFF;
+static int mock_lr_pad_count = 0;
+static int mock_lr_func_036_count = 0;
+static int mock_lr_func_021_count = 0;
+
+static void mock_lr_reset_vars(GBState *gb) {
+    (void)gb;
+    mock_lr_reset_vars_count++;
+}
+static void mock_lr_load_palettes(GBState *gb) {
+    (void)gb;
+    mock_lr_load_palettes_count++;
+}
+static void mock_lr_load_attrs(GBState *gb) {
+    (void)gb;
+    mock_lr_load_attrs_count++;
+}
+static uint8_t mock_lr_func_014(GBState *gb) {
+    (void)gb;
+    mock_lr_func_014_count++;
+    return 0;
+}
+static void mock_lr_load_template(GBState *gb, uint8_t template_id) {
+    (void)gb;
+    mock_lr_template_count++;
+    mock_lr_last_template = template_id;
+}
+static void mock_lr_pad_objects(GBState *gb) {
+    mock_lr_pad_count++;
+    PadRoomObjectsArea(gb);
+}
+static void mock_lr_func_036(GBState *gb) {
+    (void)gb;
+    mock_lr_func_036_count++;
+}
+static void mock_lr_func_021(GBState *gb) {
+    (void)gb;
+    mock_lr_func_021_count++;
+}
+
+static const LoadRoomCallbacks test_callbacks = {
+    .reset_room_variables = mock_lr_reset_vars,
+    .load_room_palettes = mock_lr_load_palettes,
+    .load_room_objects_attributes = mock_lr_load_attrs,
+    .func_014_5897 = mock_lr_func_014,
+    .load_room_template = mock_lr_load_template,
+    .pad_room_objects_area = mock_lr_pad_objects,
+    .func_036_6D4D = mock_lr_func_036,
+    .func_021_53F3 = mock_lr_func_021,
+};
+
+static void reset_load_room_mocks(void) {
+    mock_lr_reset_vars_count = 0;
+    mock_lr_load_palettes_count = 0;
+    mock_lr_load_attrs_count = 0;
+    mock_lr_func_014_count = 0;
+    mock_lr_template_count = 0;
+    mock_lr_last_template = 0xFF;
+    mock_lr_pad_count = 0;
+    mock_lr_func_036_count = 0;
+    mock_lr_func_021_count = 0;
+}
+
+
+#define ROM_OFFSET(bank, addr) (((size_t)(bank) * 0x4000) + ((size_t)(addr) - 0x4000))
+static uint8_t mock_rom[0x4000 * 0x40];
+static void test_load_room(void) {
+    GBState gb;
+    memset(mock_rom, 0, sizeof(mock_rom));
+
+    /* 1. Overworld standard room loading (< 0x80) */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wCurrentBank, 0x05);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, 0x07);
+    gb_write(&gb, hIsSideScrolling, 0);
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wD47F, 0x10);
+
+    /* Set pointer in OverworldRoomPointers for room 0x07 in Bank 0x09 */
+    uint16_t room_data_addr = 0x5000;
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x07 * 2)] = (uint8_t)(room_data_addr & 0xFF);
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x07 * 2 + 1)] = (uint8_t)(room_data_addr >> 8);
+
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 0)] = 0x12;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 1)] = 0x30;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 2)] = 0x24;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 3)] = 0x09;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 4)] = 0xE0;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 5)] = 0x01;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 6)] = 0x02;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 7)] = 0x03;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 8)] = 0x04;
+    mock_rom[ROM_OFFSET(0x09, room_data_addr + 9)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+
+    TEST_ASSERT(gb_read(&gb, rIE) == IEF_VBLANK, "LoadRoom did not set rIE to IEF_VBLANK");
+    TEST_ASSERT(gb_read(&gb, wD47F) == 0x11, "wD47F was not incremented");
+    TEST_ASSERT(mock_lr_reset_vars_count == 1, "reset_room_variables was not called");
+    TEST_ASSERT(mock_lr_load_palettes_count == 0, "load_room_palettes called on DMG");
+    TEST_ASSERT((gb_read(&gb, wOverworldRoomStatus + 0x07) & ROOM_STATUS_VISITED) != 0, "Room not marked visited in wOverworldRoomStatus");
+    TEST_ASSERT((gb_read(&gb, hRoomStatus) & ROOM_STATUS_VISITED) != 0, "hRoomStatus visited flag not set");
+    TEST_ASSERT(gb_read(&gb, hAnimatedTilesGroup) == 0x12, "hAnimatedTilesGroup mismatch");
+    TEST_ASSERT(gb_read(&gb, wRoomObjects + 0x24) == 0x09, "Object 0x09 not placed at wRoomObjects + 0x24");
+    TEST_ASSERT(gb_read(&gb, wWarpStructs + 0) == 0x00, "Warp byte 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, wWarpStructs + 1) == 0x01, "Warp byte 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, wWarpStructs + 2) == 0x02, "Warp byte 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, wWarpStructs + 3) == 0x03, "Warp byte 3 mismatch");
+    TEST_ASSERT(gb_read(&gb, wWarpStructs + 4) == 0x04, "Warp byte 4 mismatch");
+    TEST_ASSERT(gb_read(&gb, hFreeWarpDataAddress) == 5, "hFreeWarpDataAddress not incremented by 5");
+    TEST_ASSERT(mock_lr_pad_count == 1, "pad_room_objects_area was not called");
+    TEST_ASSERT(mock_lr_func_036_count == 1, "func_036_6D4D was not called");
+    TEST_ASSERT(mock_lr_func_021_count == 1, "func_021_53F3 was not called");
+    TEST_ASSERT(gb.rom_bank == 0x05, "ReloadSavedBank did not restore wCurrentBank (0x05)");
+
+    /* 2. Side-scrolling room should NOT set visited */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, 0x03);
+    gb_write(&gb, hIsSideScrolling, 1);
+    gb_write(&gb, wOverworldRoomStatus + 0x03, 0x00);
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x03 * 2)] = (uint8_t)(room_data_addr & 0xFF);
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x03 * 2 + 1)] = (uint8_t)(room_data_addr >> 8);
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT(gb_read(&gb, wOverworldRoomStatus + 0x03) == 0x00, "Side-scrolling room marked visited in status table");
+    TEST_ASSERT((gb_read(&gb, hRoomStatus) & ROOM_STATUS_VISITED) == 0, "Side-scrolling room set visited in hRoomStatus");
+
+    /* 3. Overworld room >= 0x80 selects bank 0x1A */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, 0x85);
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x85 * 2)] = 0x00;
+    mock_rom[ROM_OFFSET(0x09, OverworldRoomPointers + 0x85 * 2 + 1)] = 0x60;
+    mock_rom[ROM_OFFSET(0x1A, 0x6000)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT(mock_lr_pad_count == 1, "Room >= 0x80 did not parse properly");
+
+    /* 4. Alternate Overworld room: Eagle's Tower */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, ROOM_OW_EAGLES_TOWER);
+    gb_write(&gb, wOverworldRoomStatus + ROOM_OW_EAGLES_TOWER, OW_ROOM_STATUS_CHANGED);
+    mock_rom[ROM_OFFSET(0x09, Overworld0EAlt)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT(mock_lr_pad_count == 1, "Eagle's tower alt room not loaded");
+
+    /* 5. Indoor room (Indoors A) with GBC enabled */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, hMapId, 0x01);
+    gb_write(&gb, hMapRoom, 0x05);
+    gb_write(&gb, wKillCount, 0xFF);
+    for (int i = 0; i < 16; i++) {
+        gb_write(&gb, wKillOrder + i, 0xAA);
+    }
+    uint16_t indoor_data_addr = 0x5500;
+    mock_rom[ROM_OFFSET(0x0A, IndoorsARoomPointers + 0x05 * 2)] = (uint8_t)(indoor_data_addr & 0xFF);
+    mock_rom[ROM_OFFSET(0x0A, IndoorsARoomPointers + 0x05 * 2 + 1)] = (uint8_t)(indoor_data_addr >> 8);
+    mock_rom[ROM_OFFSET(0x0A, indoor_data_addr + 0)] = 0x04;
+    mock_rom[ROM_OFFSET(0x0A, indoor_data_addr + 1)] = 0x73; /* template 7, floor 3 */
+    mock_rom[ROM_OFFSET(0x0A, indoor_data_addr + 2)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT(mock_lr_load_palettes_count == 1, "GBC room palettes not loaded");
+    TEST_ASSERT(mock_lr_load_attrs_count == 1, "GBC room objects attributes not loaded");
+    TEST_ASSERT(mock_lr_func_014_count == 1, "func_014_5897 not called for indoor room");
+    TEST_ASSERT(gb_read(&gb, wKillCount) == 0, "wKillCount not cleared");
+    for (int i = 0; i < 16; i++) {
+        TEST_ASSERT(gb_read(&gb, wKillOrder + i) == 0, "wKillOrder not cleared");
+    }
+    TEST_ASSERT((gb_read(&gb, wIndoorARoomStatus + 0x05) & ROOM_STATUS_VISITED) != 0, "Indoor A room not marked visited");
+    TEST_ASSERT(mock_lr_template_count == 1, "load_room_template not called");
+    TEST_ASSERT(mock_lr_last_template == 0x07, "template_id mismatch");
+
+    /* 6. Indoor B room (0x06 <= hMapId < 0x1A) */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, 0x08);
+    gb_write(&gb, hMapRoom, 0x10);
+    mock_rom[ROM_OFFSET(0x0B, IndoorsBRoomPointers + 0x10 * 2)] = 0x00;
+    mock_rom[ROM_OFFSET(0x0B, IndoorsBRoomPointers + 0x10 * 2 + 1)] = 0x62;
+    mock_rom[ROM_OFFSET(0x0B, 0x6200)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT((gb_read(&gb, wIndoorBRoomStatus + 0x10) & ROOM_STATUS_VISITED) != 0, "Indoor B room not marked visited");
+
+    /* 7. Color Dungeon room */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_COLOR_DUNGEON);
+    gb_write(&gb, hMapRoom, 0x04);
+    mock_rom[ROM_OFFSET(0x0A, ColorDungeonRoomPointers + 0x04 * 2)] = 0x00;
+    mock_rom[ROM_OFFSET(0x0A, ColorDungeonRoomPointers + 0x04 * 2 + 1)] = 0x64;
+    mock_rom[ROM_OFFSET(0x0A, 0x6400)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT((gb_read(&gb, wColorDungeonRoomStatus + 0x04) & ROOM_STATUS_VISITED) != 0, "Color Dungeon room not marked visited");
+
+    /* 8. Goriya alternate cave */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+    reset_load_room_mocks();
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_CAVE_WATER);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_A_GORIYA);
+    gb_write(&gb, wTradeSequenceItem, TRADING_ITEM_MAGNIFYING_LENS);
+    mock_rom[ROM_OFFSET(0x0A, IndoorsAF5Alt)] = ROOM_END;
+
+    LoadRoom(&gb, &test_callbacks);
+    TEST_ASSERT(mock_lr_pad_count == 1, "Goriya cave alt room not loaded");
+}
+
 void run_room_tests(void) {
+    printf("[*] Running PadRoomObjectsArea and LoadRoom tests...\n");
+    test_pad_room_objects_area();
+    test_load_room();
+
     printf("[*] Running LoadRoomObject tests...\n");
     test_load_room_object();
 

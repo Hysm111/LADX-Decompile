@@ -562,3 +562,20 @@ void LoadRoomTilemap(GBState *gb,
         update_minimap_arrow(gb);
     }
 }
+
+
+void LoadCreditsMarinPortraitTiles_trampoline(GBState *gb, void (*load_marin_portrait)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x27);
+    if (load_marin_portrait) {
+        load_marin_portrait(gb);
+    }
+}
+
+void LoadThanksForPlayingTiles_trampoline(GBState *gb, void (*load_thanks)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (load_thanks) {
+        load_thanks(gb);
+    }
+}

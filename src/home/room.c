@@ -1015,3 +1015,242 @@ size_t LoadRoomObject(GBState *gb, uint16_t stream_addr) {
 
     return bytes_consumed;
 }
+
+
+void PadRoomObjectsArea(GBState *gb) {
+    if (!gb) return;
+
+    static const uint8_t border_coords[] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        0x10,                                                                   0x1B,
+        0x20,                                                                   0x2B,
+        0x30,                                                                   0x3B,
+        0x40,                                                                   0x4B,
+        0x50,                                                                   0x5B,
+        0x60,                                                                   0x6B,
+        0x70,                                                                   0x7B,
+        0x80,                                                                   0x8B,
+        0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B
+    };
+
+    for (size_t i = 0; i < sizeof(border_coords); i++) {
+        gb_write(gb, wRoomObjectsArea + border_coords[i], ROOM_BORDER);
+    }
+}
+
+void LoadRoom(GBState *gb, const LoadRoomCallbacks *callbacks) {
+    if (!gb) return;
+
+    /* Disable all interrupts except VBlank */
+    gb_write(gb, rIE, IEF_VBLANK);
+
+    /* Increment wD47F */
+    gb_write(gb, wD47F, gb_read(gb, wD47F) + 1);
+
+    /* ResetRoomVariables in Bank $20 */
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (callbacks && callbacks->reset_room_variables) {
+        callbacks->reset_room_variables(gb);
+    }
+
+    /* If running on GBC... */
+    if (gb_read(gb, hIsGBC) != 0) {
+        /* load palettes in Bank $21 */
+        gb_write(gb, rSelectROMBank, 0x21);
+        if (callbacks && callbacks->load_room_palettes) {
+            callbacks->load_room_palettes(gb);
+        }
+        /* load tile attributes in Bank $20 */
+        gb_write(gb, rSelectROMBank, 0x20);
+        if (callbacks && callbacks->load_room_objects_attributes) {
+            callbacks->load_room_objects_attributes(gb);
+        }
+    }
+
+    /* Load map pointers bank: ld a, BANK(OverworldRoomPointers) ($09); ld [rSelectROMBank], a */
+    gb_write(gb, rSelectROMBank, BANK_OverworldRoomsFirstHalf);
+
+    /* If loading an indoor room... */
+    if (gb_read(gb, wIsIndoor) != 0) {
+        gb_write(gb, rSelectROMBank, 0x14);
+        gb_write(gb, hRoomBank, 0x14);
+        uint8_t e = 0;
+        if (callbacks && callbacks->func_014_5897) {
+            e = callbacks->func_014_5897(gb);
+        }
+        /* Reset wKillCount and wKillOrder array */
+        uint16_t hl = wKillCount;
+        do {
+            gb_write(gb, hl++, 0);
+            e++;
+        } while (e != 0x11);
+    }
+
+    /* Load the room status */
+    uint8_t map_room = gb_read(gb, hMapRoom);
+    uint16_t hl_status = wOverworldRoomStatus;
+    if (gb_read(gb, wIsIndoor) != 0) {
+        hl_status = wIndoorARoomStatus;
+        uint8_t map_id = gb_read(gb, hMapId);
+        if (map_id == MAP_COLOR_DUNGEON) {
+            hl_status = wColorDungeonRoomStatus;
+        } else if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+            hl_status = wIndoorBRoomStatus;
+        }
+    }
+
+    hl_status += map_room;
+    uint8_t is_side_scrolling = gb_read(gb, hIsSideScrolling);
+    uint8_t status_val = gb_read(gb, hl_status);
+
+    if (is_side_scrolling == 0) {
+        status_val |= ROOM_STATUS_VISITED;
+        gb_write(gb, hl_status, status_val);
+    }
+    gb_write(gb, hRoomStatus, status_val);
+
+    /* Select the bank and address for the map pointers table */
+    uint16_t bc_offset = (uint16_t)map_room * 2;
+    uint16_t room_addr = 0;
+
+    if (gb_read(gb, wIsIndoor) != 0) {
+        /* By default use bank for IndoorsA map ($0A) */
+        gb_write(gb, rSelectROMBank, 0x0A);
+        gb_write(gb, hRoomBank, 0x0A);
+
+        uint8_t map_id = gb_read(gb, hMapId);
+        if (map_id == MAP_COLOR_DUNGEON) {
+            uint16_t entry = ColorDungeonRoomPointers + bc_offset;
+            room_addr = (uint16_t)gb_read(gb, entry) | ((uint16_t)gb_read(gb, entry + 1) << 8);
+        } else if (map_id == MAP_CAVE_WATER && map_room == ROOM_INDOOR_A_GORIYA &&
+                   gb_read(gb, wTradeSequenceItem) == TRADING_ITEM_MAGNIFYING_LENS) {
+            room_addr = IndoorsAF5Alt;
+        } else {
+            uint16_t ptr_table = IndoorsARoomPointers;
+            if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+                gb_write(gb, rSelectROMBank, 0x0B);
+                gb_write(gb, hRoomBank, 0x0B);
+                ptr_table = IndoorsBRoomPointers;
+            }
+            uint16_t entry = ptr_table + bc_offset;
+            room_addr = (uint16_t)gb_read(gb, entry) | ((uint16_t)gb_read(gb, entry + 1) << 8);
+        }
+    } else {
+        bool has_alt = false;
+        if (map_room == ROOM_OW_EAGLES_TOWER) {
+            if ((gb_read(gb, wOverworldRoomStatus + ROOM_OW_EAGLES_TOWER) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld0EAlt;
+                has_alt = true;
+            }
+        } else if (map_room == ROOM_OW_FACE_SHRINE_ENTRANCE) {
+            if ((gb_read(gb, wOverworldRoomStatus + ROOM_OW_FACE_SHRINE_ENTRANCE) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld8CAlt;
+                has_alt = true;
+            }
+        } else if (map_room == ROOM_OW_KANALET_GATE) {
+            if ((gb_read(gb, wOverworldRoomStatus + ROOM_OW_KANALET_GATE) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld79Alt;
+                has_alt = true;
+            }
+        } else if (map_room == UNKNOWN_ROOM_06) {
+            if ((gb_read(gb, wOverworldRoomStatus + UNKNOWN_ROOM_06) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld06Alt;
+                has_alt = true;
+            }
+        } else if (map_room == UNKNOWN_ROOM_1B) {
+            if ((gb_read(gb, wOverworldRoomStatus + ROOM_OW_ANGLERS_TUNNEL_ENTRANCE) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld1BAlt;
+                has_alt = true;
+            }
+        } else if (map_room == ROOM_OW_ANGLERS_TUNNEL_ENTRANCE) {
+            if ((gb_read(gb, wOverworldRoomStatus + ROOM_OW_ANGLERS_TUNNEL_ENTRANCE) & OW_ROOM_STATUS_CHANGED) != 0) {
+                room_addr = Overworld2BAlt;
+                has_alt = true;
+            }
+        }
+
+        if (!has_alt) {
+            uint16_t entry = OverworldRoomPointers + bc_offset;
+            room_addr = (uint16_t)gb_read(gb, entry) | ((uint16_t)gb_read(gb, entry + 1) << 8);
+        }
+
+        /* Load proper bank for Overworld rooms */
+        if (map_room >= ROOM_SECTION_OW_SECOND_HALF) {
+            gb_write(gb, rSelectROMBank, BANK_OverworldRoomsSecondHalf);
+        }
+    }
+
+    /* Parse room header: bc points to room header data */
+    uint16_t bc = room_addr;
+    uint8_t header0 = gb_read(gb, bc);
+    if (header0 == ROOM_END) {
+        goto end_of_room;
+    }
+    gb_write(gb, hAnimatedTilesGroup, header0);
+
+    bc++;
+    uint8_t header1 = gb_read(gb, bc);
+    if (gb_read(gb, wIsIndoor) != 0) {
+        uint8_t floor_tile = header1 & 0x0F;
+        FillRoomMapWithObject(gb, floor_tile);
+        uint8_t template_id = (header1 >> 4) & 0x0F;
+        void (*tmpl_cb)(GBState *, uint8_t) = callbacks ? callbacks->load_room_template : NULL;
+        LoadRoomTemplate_trampoline(gb, template_id, tmpl_cb);
+    } else {
+        FillRoomMapWithObject(gb, header1);
+    }
+
+    /* Parse room objects loop */
+    while (1) {
+        bc++;
+        uint8_t obj_byte = gb_read(gb, bc);
+        if ((obj_byte & 0xFC) == ROOM_WARP) {
+            uint8_t free_warp = gb_read(gb, hFreeWarpDataAddress);
+            uint16_t warp_slot = wWarpStructs + free_warp;
+            gb_write(gb, warp_slot, obj_byte & 0x03);
+            bc++;
+            gb_write(gb, warp_slot + 1, gb_read(gb, bc));
+            bc++;
+            gb_write(gb, warp_slot + 2, gb_read(gb, bc));
+            bc++;
+            gb_write(gb, warp_slot + 3, gb_read(gb, bc));
+            bc++;
+            gb_write(gb, warp_slot + 4, gb_read(gb, bc));
+            gb_write(gb, hFreeWarpDataAddress, free_warp + 5);
+            continue;
+        }
+
+        if (obj_byte == ROOM_END) {
+            break;
+        }
+
+        size_t consumed = LoadRoomObject(gb, bc);
+        if (consumed > 0) {
+            bc += (consumed - 1);
+        }
+    }
+
+end_of_room:
+    /* Surround the objects area defining a room by ROOM_BORDER values */
+    gb_write(gb, rSelectROMBank, 0x01);
+    if (callbacks && callbacks->pad_room_objects_area) {
+        callbacks->pad_room_objects_area(gb);
+    } else {
+        PadRoomObjectsArea(gb);
+    }
+
+    /* Do stuff that returns early if end-of-room (bank 0x36) */
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (callbacks && callbacks->func_036_6D4D) {
+        callbacks->func_036_6D4D(gb);
+    }
+
+    /* Load palette for room objects? (bank 0x21) */
+    gb_write(gb, rSelectROMBank, 0x21);
+    if (callbacks && callbacks->func_021_53F3) {
+        callbacks->func_021_53F3(gb);
+    }
+
+    /* Reload saved bank and return */
+    ReloadSavedBank(gb);
+}

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 16.17%
-* **Number of Verified Functions**: 194
-* **Number of Decompiled Functions**: 194
-* **Number Remaining**: ~1006 functions
-* **Current Subsystem**: Bank 0 - Room Loading (`00:30F4`+)
-* **Current Task**: Reconcile progress and prepare Bank 0 LoadRoom pipeline (`LoadRoom` at `00:30F4`)
-* **Last Completed Task**: Decompiled and verified 23 Bank 0 Door Objects & Room Object Parsing routines (`MakeListOfDoorPositions`, `UpdateIndoorRoomStatus`, `LoadObject_KeyDoor*`, `LoadObject_ShutterDoor*`, `LoadObject_OpenDoor*`, `LoadObject_BossDoor`, `LoadObject_StairsDoor`, `LoadObject_RevolvingDoor`, `LoadObject_OneWayArrow`, `LoadObject_DungeonEntrance`, `LoadObject_IndoorEntrance`, `DispatchIndoorDoorObject`, `ExpandOverworldObjectMacro`, `LoadRoomObject`) (`00:35FA` - `00:37E6`, `00:32DF`, `00:32A9`)
-* **Next Task**: Decompile and verify Bank 0 `LoadRoom` (`00:30F4`)
-* **Last Update Timestamp**: 2026-09-06T17:05:00+03:00
+* **Current Overall Progress**: 16.50%
+* **Number of Verified Functions**: 198
+* **Number of Decompiled Functions**: 198
+* **Number Remaining**: ~1002 functions
+* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3925`+)
+* **Current Task**: Begin decompilation of `code/home/entities.asm` (`CanBowWowEatEntity` at `00:3925`)
+* **Last Completed Task**: Decompiled and verified Bank 0 `LoadRoom` (`00:30F4`), `PadRoomObjectsArea` (`01:6CCE`), `LoadCreditsMarinPortraitTiles_trampoline` (`00:3915`), and `LoadThanksForPlayingTiles_trampoline` (`00:391D`)
+* **Next Task**: Decompile and verify Bank 0 `CanBowWowEatEntity` (`00:3925`) in `code/home/entities.asm`
+* **Last Update Timestamp**: 2026-09-06T17:25:00+03:00
 
 ---
 
@@ -142,10 +142,35 @@
 | `DispatchIndoorDoorObject` | VERIFIED | PASS | PASS | Jump table dispatch for door objects $EC-$FD to respective handlers (`00:32DF`) |
 | `ExpandOverworldObjectMacro` | VERIFIED | PASS | PASS | Bank $24 trampoline for expanding overworld macro objects ($F5-$FD) (`24:7578`) |
 | `LoadRoomObject` | VERIFIED | PASS | PASS | Parses 2/3-byte room objects, applies overworld/indoor logic, registers stairs/warps, and writes to map (`00:32A9`) |
+| `PadRoomObjectsArea` | VERIFIED | PASS | PASS | Surrounds room objects area ($D700) with ROOM_BORDER ($FF) along the 10x8 perimeter (`01:6CCE`) |
+| `LoadRoom` | VERIFIED | PASS | PASS | Main room loading routine: parses headers, warps, templates, and dispatches objects (`00:30F4`) |
+| `LoadCreditsMarinPortraitTiles_trampoline` | VERIFIED | PASS | PASS | Switches to bank $27 and jumps to LoadCreditsMarinPortraitTiles (`00:3915`) |
+| `LoadThanksForPlayingTiles_trampoline` | VERIFIED | PASS | PASS | Switches to bank $20 and jumps to LoadThanksForPlayingTiles (`00:391D`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Room Loading & Perimeter Subroutines (`00:30F4`-`00:32A6`, `01:6CCE`, `00:3915`-`00:391D`)**:
+   - `LoadRoom`:
+     - Disables interrupts except VBlank (`rIE = IEF_VBLANK`).
+     - Increments `wD47F` counter.
+     - Calls `ResetRoomVariables` in Bank $20.
+     - In CGB mode (`hIsGBC != 0`), invokes `LoadRoomPalettes` (Bank $21) and `LoadRoomObjectsAttributes` (Bank $20).
+     - For indoor rooms, calls `func_014_5897` (Bank $14) and resets `wKillCount` (`$DBB5`) and `wKillOrder` array (17 bytes cleared to 0).
+     - Marks room visited in `wOverworldRoomStatus`, `wIndoorARoomStatus`, `wIndoorBRoomStatus`, or `wColorDungeonRoomStatus` if top-down (`hIsSideScrolling == 0`). Preserves visited status if side-scrolling. Updates `hRoomStatus`.
+     - Selects room pointer table:
+       - Overworld alternate rooms checked if `OW_ROOM_STATUS_CHANGED` set: Eagle's Tower (`Overworld0EAlt`), Face Shrine (`Overworld8CAlt`), Kanalet Gate (`Overworld79Alt`), Unknown 06 (`Overworld06Alt`), Unknown 1B (`Overworld1BAlt`), Angler's Tunnel Entrance (`Overworld2BAlt`).
+       - Indoor alternate room: Goriya cave (`MAP_CAVE_WATER`, `$F5`) with `wTradeSequenceItem == TRADING_ITEM_MAGNIFYING_LENS` loads `IndoorsAF5Alt`.
+       - Color Dungeon uses `ColorDungeonRoomPointers` (`$7B77`).
+       - Overworld rooms >= `$80` switch to Bank $1A (`BANK_OverworldRoomsSecondHalf`).
+     - Parses header byte 0 (`hAnimatedTilesGroup`). If `ROOM_END` (`$FE`), jumps directly to `.endOfRoom`.
+     - Parses header byte 1: fills room floor tile via `FillRoomMapWithObject`, and invokes `LoadRoomTemplate` (Bank $14) if indoors.
+     - Loops parsing room objects: unpacks 5-byte warp descriptors into `wWarpStructs + hFreeWarpDataAddress`, or dispatches objects to `LoadRoomObject`.
+     - At room end, invokes `PadRoomObjectsArea` (Bank $01), post-load hooks in Bank $36 (`func_036_6D4D`) and Bank $21 (`func_021_53F3`), and restores `wCurrentBank` via `ReloadSavedBank`.
+   - `PadRoomObjectsArea`: fills 40 coordinates defining the 10x8 room border in `wRoomObjectsArea` (`$D700`) with `ROOM_BORDER` (`$FF`).
+   - `LoadCreditsMarinPortraitTiles_trampoline`: switches to Bank $27 and invokes `LoadCreditsMarinPortraitTiles`.
+   - `LoadThanksForPlayingTiles_trampoline`: switches to Bank $20 and invokes `LoadThanksForPlayingTiles`.
 
 1. **Room Objects & Macro Processing Subroutines (`00:34EF`-`00:38FC`)**:
    - `FillRoomWithConsecutiveObjects`: loops `count` times writing `obj_type` to `hl`. Advances `hl` by 1 horizontally, or by 16 (`+ 0x0F` after `ldi`) if `hMultiPurpose0` bit 6 is set (vertical span).
