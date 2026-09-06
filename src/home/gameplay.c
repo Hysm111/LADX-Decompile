@@ -164,3 +164,215 @@ void TableJump(GBState *gb, uint8_t index, const JumpTableFunc *table) {
         table[index](gb);
     }
 }
+
+
+void IntroHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+}
+
+void EndCreditsHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x17);
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void FileSelectionHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+}
+
+void FileCreationHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+}
+
+void FileDeletionHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+}
+
+void FileCopyHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+}
+
+void FileSaveHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x01);
+    if (entry_point) entry_point(gb);
+}
+
+void WorldMapHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void PeachPictureHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void MarinBeachHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void FaceShrineMuralHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void WorldHandler(GBState *gb, void (*update_palette_effect)(GBState *), void (*perform_overworld_audio)(GBState *), void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x14);
+    if (update_palette_effect) update_palette_effect(gb);
+    if (perform_overworld_audio) perform_overworld_audio(gb);
+    SwitchBank(gb, 0x01);
+    if (entry_point) entry_point(gb);
+}
+
+void InventoryHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x20);
+    if (entry_point) entry_point(gb);
+}
+
+void PhotoAlbumHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x28);
+    if (entry_point) entry_point(gb);
+    returnFromGameplayHandler(gb, execute_dialog, load_bg_palettes);
+}
+
+void PhotoPictureHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x37);
+    if (entry_point) entry_point(gb);
+}
+
+void jumpToGameplayHandler(GBState *gb, const GameplayCallbacks *callbacks) {
+    if (!gb) return;
+
+    uint8_t type = gb_read(gb, wGameplayType);
+    switch (type) {
+        case GAMEPLAY_INTRO:
+            IntroHandler(gb, callbacks ? callbacks->intro : NULL);
+            break;
+        case GAMEPLAY_CREDITS:
+            EndCreditsHandler(gb, callbacks ? callbacks->end_credits : NULL,
+                              callbacks ? callbacks->execute_dialog : NULL,
+                              callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_FILE_SELECT:
+            FileSelectionHandler(gb, callbacks ? callbacks->file_selection : NULL);
+            break;
+        case GAMEPLAY_FILE_NEW:
+            FileCreationHandler(gb, callbacks ? callbacks->file_creation : NULL);
+            break;
+        case GAMEPLAY_FILE_DELETE:
+            FileDeletionHandler(gb, callbacks ? callbacks->file_deletion : NULL);
+            break;
+        case GAMEPLAY_FILE_COPY:
+            FileCopyHandler(gb, callbacks ? callbacks->file_copy : NULL);
+            break;
+        case GAMEPLAY_FILE_SAVE:
+            FileSaveHandler(gb, callbacks ? callbacks->file_save : NULL);
+            break;
+        case GAMEPLAY_WORLD_MAP:
+            WorldMapHandler(gb, callbacks ? callbacks->world_map : NULL,
+                            callbacks ? callbacks->execute_dialog : NULL,
+                            callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_CUTSCENE:
+            PeachPictureHandler(gb, callbacks ? callbacks->peach_picture : NULL,
+                                callbacks ? callbacks->execute_dialog : NULL,
+                                callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_MARIN_BEACH:
+            MarinBeachHandler(gb, callbacks ? callbacks->marin_beach : NULL,
+                              callbacks ? callbacks->execute_dialog : NULL,
+                              callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_WF_MURAL:
+            FaceShrineMuralHandler(gb, callbacks ? callbacks->face_shrine_mural : NULL,
+                                   callbacks ? callbacks->execute_dialog : NULL,
+                                   callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_WORLD:
+            WorldHandler(gb, callbacks ? callbacks->update_palette_effect : NULL,
+                         callbacks ? callbacks->perform_overworld_audio : NULL,
+                         callbacks ? callbacks->world : NULL);
+            break;
+        case GAMEPLAY_INVENTORY:
+            InventoryHandler(gb, callbacks ? callbacks->inventory : NULL);
+            break;
+        case GAMEPLAY_PHOTO_ALBUM:
+            PhotoAlbumHandler(gb, callbacks ? callbacks->photo_album : NULL,
+                              callbacks ? callbacks->execute_dialog : NULL,
+                              callbacks ? callbacks->load_bg_palettes : NULL);
+            break;
+        case GAMEPLAY_PHOTO_DIZZY_LINK:
+        case GAMEPLAY_PHOTO_NICE_LINK:
+        case GAMEPLAY_PHOTO_MARIN_CLIFF:
+        case GAMEPLAY_PHOTO_MARIN_WELL:
+        case GAMEPLAY_PHOTO_MABE:
+        case GAMEPLAY_PHOTO_ULRIRA:
+        case GAMEPLAY_PHOTO_BOW_WOW:
+        case GAMEPLAY_PHOTO_THIEF:
+        case GAMEPLAY_PHOTO_FISHERMAN:
+        case GAMEPLAY_PHOTO_ZORA:
+        case GAMEPLAY_PHOTO_KANALET:
+        case GAMEPLAY_PHOTO_GHOST:
+        case GAMEPLAY_PHOTO_BRIDGE:
+            PhotoPictureHandler(gb, callbacks ? callbacks->photo_picture : NULL);
+            break;
+        default:
+            break;
+    }
+}
+
+void ExecuteGameplayHandler(GBState *gb, const GameplayCallbacks *callbacks) {
+    if (!gb) return;
+
+    uint8_t gameplay_type = gb_read(gb, wGameplayType);
+    if (gameplay_type >= GAMEPLAY_WORLD_MAP) {
+        if (gameplay_type != GAMEPLAY_WORLD) {
+            CheckPresentSaveScreen(gb);
+        } else {
+            if (gb_read(gb, wGameplaySubtype) == GAMEPLAY_WORLD_INTERACTIVE) {
+                CheckPresentSaveScreen(gb);
+            }
+        }
+    }
+
+    jumpToGameplayHandler(gb, callbacks);
+}
+
+void LinkMotionTeleportUpHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x19);
+    if (entry_point) entry_point(gb);
+}
+
+void LinkMotionPassOutHandler(GBState *gb, void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    SwitchBank(gb, 0x01);
+    if (entry_point) entry_point(gb);
+}
+
+void LinkMotionDefaultHandler(GBState *gb, uint8_t (*is_allowed)(GBState *), void (*entry_point)(GBState *)) {
+    if (!gb) return;
+    uint8_t allowed = 0;
+    if (is_allowed) {
+        allowed = is_allowed(gb);
+    }
+    if (allowed == 0) return;
+    SwitchBank(gb, 0x02);
+    if (entry_point) entry_point(gb);
+}

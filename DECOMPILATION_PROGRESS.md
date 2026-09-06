@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 23.67%
-* **Number of Verified Functions**: 284
-* **Number of Decompiled Functions**: 284
-* **Number Remaining**: ~916 functions
-* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm` - 100% COMPLETE!)
-* **Current Task**: Bank 0 Dialog completed; proceed to next Bank 0 subsystem (Gameplay / Audio / Room)
-* **Last Completed Task**: Decompiled and verified final 5 Bank 0 Dialog routines (`DialogBeginScrolling`, `DialogFinishScrolling`, `DialogBreakHandler`, `DialogLetterAnimationEndHandler`, `DialogDrawNextCharacterHandler`) (`00:24CD` - `00:278A`) - **Dialog Subsystem 100% Complete**!
-* **Next Task**: Select and decompile next logical unfinished subsystem in Bank 0 (e.g. `code/home/audio.asm` or `code/home/gameplay.asm`)
-* **Last Update Timestamp**: 2026-09-06T21:15:00+03:00
+* **Current Overall Progress**: 25.33%
+* **Number of Verified Functions**: 304
+* **Number of Decompiled Functions**: 304
+* **Number Remaining**: ~896 functions
+* **Current Subsystem**: Bank 0 - Gameplay & Motion Dispatching (`code/bank0.asm`, `00:0E34`-`00:1176`)
+* **Current Task**: Bank 0 Gameplay dispatchers & motion handlers completed
+* **Last Completed Task**: Decompiled and verified 20 Bank 0 gameplay dispatcher and Link motion handlers (`ExecuteGameplayHandler`, `jumpToGameplayHandler`, `IntroHandler`, `EndCreditsHandler`, `FileSelectionHandler`, `FileCreationHandler`, `FileDeletionHandler`, `FileCopyHandler`, `FileSaveHandler`, `WorldMapHandler`, `PeachPictureHandler`, `MarinBeachHandler`, `FaceShrineMuralHandler`, `WorldHandler`, `InventoryHandler`, `PhotoAlbumHandler`, `PhotoPictureHandler`, `LinkMotionTeleportUpHandler`, `LinkMotionPassOutHandler`, `LinkMotionDefaultHandler`) (`00:0E34` - `00:1176`)
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Item usage & inventory checks in `code/home/check_items_to_use.asm` and `UseItem`)
+* **Last Update Timestamp**: 2026-09-06T21:40:00+03:00
 
 ---
 
@@ -232,10 +232,36 @@
 | `DialogBreakHandler` | VERIFIED | PASS | PASS | Handles pause between lines; draws prompt arrow, checks A/B skip, builds fill draw command (`00:2695`) |
 | `DialogLetterAnimationEndHandler` | VERIFIED | PASS | PASS | Prepares character tile placement draw command and dispatches to DialogDrawNextCharacterHandler (`00:24CD`) |
 | `DialogDrawNextCharacterHandler` | VERIFIED | PASS | PASS | Reads dialog character, handles @/<ask>/# player name replacement, copies font tile to draw command (`00:2529`) |
+| `ExecuteGameplayHandler` | VERIFIED | PASS | PASS | Master gameplay handler evaluating save screen trigger and dispatching to active mode (`00:0E34`) |
+| `jumpToGameplayHandler` | VERIFIED | PASS | PASS | Jump table dispatcher for all 27 gameplay states (intro, credits, files, maps, pictures, world) (`00:0E85`) |
+| `IntroHandler` | VERIFIED | PASS | PASS | Dispatches to opening intro sequence entry point (`00:0EDF`) |
+| `EndCreditsHandler` | VERIFIED | PASS | PASS | Switches to Bank $17 and invokes EndCreditsEntryPoint with common gameplay return (`00:0EE2`) |
+| `FileSelectionHandler` | VERIFIED | PASS | PASS | Dispatches to file selection menu entry point (`00:0F0E`) |
+| `FileCreationHandler` | VERIFIED | PASS | PASS | Dispatches to file creation / player naming entry point (`00:0F11`) |
+| `FileDeletionHandler` | VERIFIED | PASS | PASS | Dispatches to file deletion menu entry point (`00:0F14`) |
+| `FileCopyHandler` | VERIFIED | PASS | PASS | Dispatches to file copy menu entry point (`00:0F17`) |
+| `FileSaveHandler` | VERIFIED | PASS | PASS | Switches to Bank $01 and dispatches to save dialog screen entry point (`00:0ED7`) |
+| `WorldMapHandler` | VERIFIED | PASS | PASS | Dispatches to full Koholint world map overview entry point with common gameplay return (`00:0ED1`) |
+| `PeachPictureHandler` | VERIFIED | PASS | PASS | Dispatches to Peach letter photo viewer entry point with common gameplay return (`00:0EC5`) |
+| `MarinBeachHandler` | VERIFIED | PASS | PASS | Dispatches to Marin beach cutscene entry point with common gameplay return (`00:0ECB`) |
+| `FaceShrineMuralHandler` | VERIFIED | PASS | PASS | Dispatches to Face Shrine mural relief entry point with common gameplay return (`00:0EBF`) |
+| `WorldHandler` | VERIFIED | PASS | PASS | Updates interactive palette effects in Bank $14, performs overworld audio, and invokes WorldHandlerEntryPoint in Bank $01 (`00:0F1A`) |
+| `InventoryHandler` | VERIFIED | PASS | PASS | Switches to Bank $20 and dispatches to subscreen inventory entry point (`00:0F2D`) |
+| `PhotoAlbumHandler` | VERIFIED | PASS | PASS | Switches to Bank $28 and dispatches to photo album entry point with common gameplay return (`00:0F35`) |
+| `PhotoPictureHandler` | VERIFIED | PASS | PASS | Switches to Bank $37 and dispatches to photo fullscreen display entry point (`00:0F40`) |
+| `LinkMotionTeleportUpHandler` | VERIFIED | PASS | PASS | Switches to Bank $19 and dispatches to teleport up animation (`00:1155`) |
+| `LinkMotionPassOutHandler` | VERIFIED | PASS | PASS | Switches to Bank $01 and dispatches to LinkPassOut sequence (`00:115D`) |
+| `LinkMotionDefaultHandler` | VERIFIED | PASS | PASS | Checks IsInteractiveMotionAllowed in Bank $36, switches to Bank $02, and invokes LinkMotionDefault (`00:1165`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Gameplay Dispatchers & Link Motion Subsystem (`00:0E34`-`00:1176`)**:
+   - `ExecuteGameplayHandler`: checks `wGameplayType >= GAMEPLAY_WORLD_MAP`; if in non-interactive or menu state, or interactive world (`wGameplaySubtype == GAMEPLAY_WORLD_INTERACTIVE`), evaluates `CheckPresentSaveScreen`. If save screen combo (A+B+Start+Select) is pressed without active transition/dialog, transitions `wGameplayType` to `GAMEPLAY_FILE_SAVE`; otherwise dispatches via `jumpToGameplayHandler`.
+   - `jumpToGameplayHandler`: jump table mapping 27 gameplay types (0x00..0x1A) to respective mode handlers (`IntroHandler`, `EndCreditsHandler`, `FileSelectionHandler`, `FileCreationHandler`, `FileDeletionHandler`, `FileCopyHandler`, `FileSaveHandler`, `WorldMapHandler`, `PeachPictureHandler`, `MarinBeachHandler`, `FaceShrineMuralHandler`, `WorldHandler`, `InventoryHandler`, `PhotoAlbumHandler`, `PhotoPictureHandler`).
+   - `WorldHandler`: performs palette updates for interactive objects in Bank `$14`, executes overworld audio tasks, switches to Bank `$01`, and transfers control to `WorldHandlerEntryPoint`.
+   - `LinkMotionTeleportUpHandler`, `LinkMotionPassOutHandler`, `LinkMotionDefaultHandler`: manage bank switches and execution dispatch for player teleportation (Bank `$19`), player death/pass-out (Bank `$01`), and default interactive motion (verifies interactive motion in Bank `$36`, then switches to Bank `$02`).
 
 1. **Dialog Text Rendering, Line Scrolling, & Break Handling (`00:24CD`-`00:278A`) - Dialog Subsystem 100% Complete**:
    - `DialogBeginScrolling` & `DialogFinishScrolling`: shifts BG tile map rows up with 32-tile row wrapping; clears lower row with `hDialogBackgroundTile`; pauses 8 frames and transitions to `DIALOG_LETTER_IN_1`.

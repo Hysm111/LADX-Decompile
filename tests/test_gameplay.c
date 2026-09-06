@@ -1,3 +1,4 @@
+#include "home/entities.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -328,7 +329,156 @@ static void test_table_jump(void) {
     TEST_ASSERT(table_call_idx == 2, "TableJump index 2 failed");
 }
 
+
+static int test_dispatch_called = -1;
+static void test_cb_intro(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_INTRO; }
+static void test_cb_credits(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_CREDITS; }
+static void test_cb_file_sel(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_FILE_SELECT; }
+static void test_cb_file_new(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_FILE_NEW; }
+static void test_cb_file_del(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_FILE_DELETE; }
+static void test_cb_file_cpy(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_FILE_COPY; }
+static void test_cb_file_sav(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_FILE_SAVE; }
+static void test_cb_world_map(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_WORLD_MAP; }
+static void test_cb_peach(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_CUTSCENE; }
+static void test_cb_marin(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_MARIN_BEACH; }
+static void test_cb_shrine(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_WF_MURAL; }
+static void test_cb_world(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_WORLD; }
+static void test_cb_inventory(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_INVENTORY; }
+static void test_cb_album(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_PHOTO_ALBUM; }
+static void test_cb_photo(GBState *gb) { (void)gb; test_dispatch_called = GAMEPLAY_PHOTO_DIZZY_LINK; }
+
+static void test_gameplay_dispatchers(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    GameplayCallbacks cbs = {
+        .intro = test_cb_intro,
+        .end_credits = test_cb_credits,
+        .file_selection = test_cb_file_sel,
+        .file_creation = test_cb_file_new,
+        .file_deletion = test_cb_file_del,
+        .file_copy = test_cb_file_cpy,
+        .file_save = test_cb_file_sav,
+        .world_map = test_cb_world_map,
+        .peach_picture = test_cb_peach,
+        .marin_beach = test_cb_marin,
+        .face_shrine_mural = test_cb_shrine,
+        .world = test_cb_world,
+        .inventory = test_cb_inventory,
+        .photo_album = test_cb_album,
+        .photo_picture = test_cb_photo,
+    };
+
+    /* Test all gameplay types */
+    uint8_t types[] = {
+        GAMEPLAY_INTRO, GAMEPLAY_CREDITS, GAMEPLAY_FILE_SELECT, GAMEPLAY_FILE_NEW,
+        GAMEPLAY_FILE_DELETE, GAMEPLAY_FILE_COPY, GAMEPLAY_FILE_SAVE, GAMEPLAY_WORLD_MAP,
+        GAMEPLAY_CUTSCENE, GAMEPLAY_MARIN_BEACH, GAMEPLAY_WF_MURAL, GAMEPLAY_WORLD,
+        GAMEPLAY_INVENTORY, GAMEPLAY_PHOTO_ALBUM, GAMEPLAY_PHOTO_DIZZY_LINK, GAMEPLAY_PHOTO_BRIDGE
+    };
+
+    for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); i++) {
+        gb_write(&gb, wGameplayType, types[i]);
+        test_dispatch_called = -1;
+        jumpToGameplayHandler(&gb, &cbs);
+        if (types[i] >= GAMEPLAY_PHOTO_DIZZY_LINK) {
+            TEST_ASSERT(test_dispatch_called == GAMEPLAY_PHOTO_DIZZY_LINK, "Photo picture dispatch failed");
+        } else {
+            TEST_ASSERT(test_dispatch_called == types[i], "jumpToGameplayHandler type dispatch failed");
+        }
+    }
+
+    /* Test ExecuteGameplayHandler triggering save screen */
+    gb_init(&gb);
+    gb_write(&gb, wTransitionSequenceCounter, 0x04);
+    gb_write(&gb, wGameplayType, GAMEPLAY_WORLD);
+    gb_write(&gb, wGameplaySubtype, GAMEPLAY_WORLD_INTERACTIVE);
+    gb_write(&gb, hPressedButtonsMask, J_A | J_B | J_START | J_SELECT);
+
+    test_dispatch_called = -1;
+    ExecuteGameplayHandler(&gb, &cbs);
+    TEST_ASSERT(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SAVE, "Save screen not presented by ExecuteGameplayHandler");
+    TEST_ASSERT(test_dispatch_called == GAMEPLAY_FILE_SAVE, "Dispatch did not route to FileSaveHandler");
+}
+
+static int mock_animate_calls = 0;
+static void mock_animate_entities(GBState *gb) {
+    (void)gb;
+    mock_animate_calls++;
+}
+
+static void test_animate_entities_and_restore_bank(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* AnimateEntitiesAndRestoreBank17: sets bank $03, calls animate, switches to bank $17 */
+    mock_animate_calls = 0;
+    AnimateEntitiesAndRestoreBank17(&gb, mock_animate_entities);
+    TEST_ASSERT(mock_animate_calls == 1, "AnimateEntities not called for bank 17");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x17, "Current bank not 0x17");
+
+    /* AnimateEntitiesAndRestoreBank01 */
+    mock_animate_calls = 0;
+    AnimateEntitiesAndRestoreBank01(&gb, mock_animate_entities);
+    TEST_ASSERT(mock_animate_calls == 1, "AnimateEntities not called for bank 01");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x01, "Current bank not 0x01");
+
+    /* AnimateEntitiesAndRestoreBank02 */
+    mock_animate_calls = 0;
+    AnimateEntitiesAndRestoreBank02(&gb, mock_animate_entities);
+    TEST_ASSERT(mock_animate_calls == 1, "AnimateEntities not called for bank 02");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x02, "Current bank not 0x02");
+}
+
+static int mock_link_entry_calls = 0;
+static void mock_link_entry(GBState *gb) {
+    (void)gb;
+    mock_link_entry_calls++;
+}
+
+static uint8_t mock_motion_allowed_yes(GBState *gb) { (void)gb; return 1; }
+static uint8_t mock_motion_allowed_no(GBState *gb) { (void)gb; return 0; }
+
+static void test_link_motion_handlers(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* LinkMotionTeleportUpHandler */
+    mock_link_entry_calls = 0;
+    LinkMotionTeleportUpHandler(&gb, mock_link_entry);
+    TEST_ASSERT(mock_link_entry_calls == 1, "LinkMotionTeleportUpHandler entry not called");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x19, "Bank not 0x19");
+
+    /* LinkMotionPassOutHandler */
+    mock_link_entry_calls = 0;
+    LinkMotionPassOutHandler(&gb, mock_link_entry);
+    TEST_ASSERT(mock_link_entry_calls == 1, "LinkMotionPassOutHandler entry not called");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x01, "Bank not 0x01");
+
+    /* LinkMotionDefaultHandler when disallowed */
+    mock_link_entry_calls = 0;
+    gb_write(&gb, wCurrentBank, 0x05);
+    LinkMotionDefaultHandler(&gb, mock_motion_allowed_no, mock_link_entry);
+    TEST_ASSERT(mock_link_entry_calls == 0, "LinkMotionDefaultHandler called when not allowed");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x05, "Bank changed when not allowed");
+
+    /* LinkMotionDefaultHandler when allowed */
+    mock_link_entry_calls = 0;
+    LinkMotionDefaultHandler(&gb, mock_motion_allowed_yes, mock_link_entry);
+    TEST_ASSERT(mock_link_entry_calls == 1, "LinkMotionDefaultHandler entry not called when allowed");
+    TEST_ASSERT(gb_read(&gb, wCurrentBank) == 0x02, "Bank not 0x02");
+}
+
 void run_gameplay_tests(void) {
+    printf("[*] Running Gameplay Dispatchers & Save Screen tests...\n");
+    test_gameplay_dispatchers();
+
+    printf("[*] Running AnimateEntities and Restore Bank tests...\n");
+    test_animate_entities_and_restore_bank();
+
+    printf("[*] Running Link Motion Handler tests...\n");
+    test_link_motion_handlers();
+
     printf("[*] Running CheckPresentSaveScreen tests...\n");
     test_check_present_save_screen();
 

@@ -76,6 +76,67 @@ uint8_t GetRandomByte(GBState *gb);
  */
 void ReadJoypadState(GBState *gb);
 
+typedef struct GameplayCallbacks {
+    void (*intro)(GBState *);
+    void (*end_credits)(GBState *);
+    void (*file_selection)(GBState *);
+    void (*file_creation)(GBState *);
+    void (*file_deletion)(GBState *);
+    void (*file_copy)(GBState *);
+    void (*file_save)(GBState *);
+    void (*world_map)(GBState *);
+    void (*peach_picture)(GBState *);
+    void (*marin_beach)(GBState *);
+    void (*face_shrine_mural)(GBState *);
+    void (*world)(GBState *);
+    void (*inventory)(GBState *);
+    void (*photo_album)(GBState *);
+    void (*photo_picture)(GBState *);
+    void (*execute_dialog)(GBState *);
+    void (*load_bg_palettes)(GBState *);
+    void (*update_palette_effect)(GBState *);
+    void (*perform_overworld_audio)(GBState *);
+} GameplayCallbacks;
+
+/**
+ * Master gameplay dispatcher (00:0E34).
+ * Checks whether save screen should be opened via CheckPresentSaveScreen,
+ * then dispatches to active handler via jumpToGameplayHandler.
+ */
+void ExecuteGameplayHandler(GBState *gb, const GameplayCallbacks *callbacks);
+
+/**
+ * Jumps to specific gameplay handler based on wGameplayType (00:0E85).
+ */
+void jumpToGameplayHandler(GBState *gb, const GameplayCallbacks *callbacks);
+
+/**
+ * Individual gameplay type handlers:
+ */
+void IntroHandler(GBState *gb, void (*entry_point)(GBState *));
+void EndCreditsHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void FileSelectionHandler(GBState *gb, void (*entry_point)(GBState *));
+void FileCreationHandler(GBState *gb, void (*entry_point)(GBState *));
+void FileDeletionHandler(GBState *gb, void (*entry_point)(GBState *));
+void FileCopyHandler(GBState *gb, void (*entry_point)(GBState *));
+void FileSaveHandler(GBState *gb, void (*entry_point)(GBState *));
+void WorldMapHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void PeachPictureHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void MarinBeachHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void FaceShrineMuralHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void WorldHandler(GBState *gb, void (*update_palette_effect)(GBState *), void (*perform_overworld_audio)(GBState *), void (*entry_point)(GBState *));
+void InventoryHandler(GBState *gb, void (*entry_point)(GBState *));
+void PhotoAlbumHandler(GBState *gb, void (*entry_point)(GBState *), void (*execute_dialog)(GBState *), void (*load_bg_palettes)(GBState *));
+void PhotoPictureHandler(GBState *gb, void (*entry_point)(GBState *));
+
+
+/**
+ * Link motion state dispatchers (00:1155 - 00:1176).
+ */
+void LinkMotionTeleportUpHandler(GBState *gb, void (*entry_point)(GBState *));
+void LinkMotionPassOutHandler(GBState *gb, void (*entry_point)(GBState *));
+void LinkMotionDefaultHandler(GBState *gb, uint8_t (*is_allowed)(GBState *), void (*entry_point)(GBState *));
+
 /**
  * GetIntersectedObjectBGAddress (label_2887 at 00:2887)
  * Calculates the VRAM BGMap0 address for the intersected object based on
