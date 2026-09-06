@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 21.67%
-* **Number of Verified Functions**: 260
-* **Number of Decompiled Functions**: 260
-* **Number Remaining**: ~940 functions
-* **Current Subsystem**: Bank 0 - Completed `code/home/entities.asm`! Next subsystem: Bank 0 `code/home/` (e.g. `code/home/dialog.asm` or `code/home/audio.asm`)
-* **Current Task**: Decompile and verify next Bank 0 subsystem
-* **Last Completed Task**: Decompiled and verified 5 Bank 0 Entity Recoil, Boss Intro, and Kill Enemy routines (`label_3E8E`, `StopEntityRecoilOnCollision`, `BossIntro`, `DidKillEnemy`, `UnloadEntity` / `UnloadEntityAndReturn`) (`00:3E8E` - `00:3F92`), completing all of `code/home/entities.asm`!
-* **Next Task**: Audit and select next logical unfinished Bank 0 subsystem in `code/home/`
-* **Last Update Timestamp**: 2026-09-06T18:55:00+03:00
+* **Current Overall Progress**: 22.67%
+* **Number of Verified Functions**: 272
+* **Number of Decompiled Functions**: 272
+* **Number Remaining**: ~928 functions
+* **Current Subsystem**: Bank 0 - Dialog Subsystem (`code/home/dialog.asm`, `00:2321`+)
+* **Current Task**: Decompile and verify Bank 0 dialog routines
+* **Last Completed Task**: Decompiled and verified 12 Bank 0 Dialog state machine, opening/closing, and input handlers (`OpenDialogInTable0`, `OpenDialogInTable1`, `OpenDialogInTable2`, `DialogOpenAnimationStartHandler`, `DialogOpenAnimationHandler`, `DialogClosingEndHandler`, `DialogOpenAnimationEndHandler`, `IncrementDialogState` / `IncrementDialogStateAndReturn`, `UpdateDialogState`, `DialogFinishedHandler`, `DialogClosingBeginHandler`, `DialogLetterAnimationStartHandler`) (`00:236B` - `00:24CA`)
+* **Next Task**: Decompile and verify next batch in `code/home/dialog.asm` (e.g. `ExecuteDialog` dispatcher, dialog character rendering and scrolling routines)
+* **Last Update Timestamp**: 2026-09-06T19:10:00+03:00
 
 ---
 
@@ -208,10 +208,30 @@
 | `BossIntro` | VERIFIED | PASS | PASS | Triggers boss/miniboss music and plays intro monologue dialog based on map ID and active entity (`00:3EE8`) |
 | `DidKillEnemy` | VERIFIED | PASS | PASS | Drops item via SpawnEnemyDrop, increments kill count, records kill order, updates room cleared flags, and unloads entity (`00:3F50`) |
 | `UnloadEntity` | VERIFIED | PASS | PASS | Disables entity by writing ENTITY_STATUS_DISABLED to wEntitiesStatusTable slot (`00:3F8D`) |
+| `OpenDialogInTable0` | VERIFIED | PASS | PASS | Resets dialog variables and configures top/bottom state based on Link position (`00:2385`) |
+| `OpenDialogInTable1` | VERIFIED | PASS | PASS | Sets up dialog in table 1 ($100-$1FF) via OpenDialogInTable0 (`00:2373`) |
+| `OpenDialogInTable2` | VERIFIED | PASS | PASS | Sets up dialog in table 2 ($200-$2FF) via OpenDialogInTable0 (`00:237C`) |
+| `DialogOpenAnimationStartHandler` | VERIFIED | PASS | PASS | Dispatches to DialogOpenAnimationStart in Bank $14 (`00:236B`) |
+| `DialogOpenAnimationHandler` | VERIFIED | PASS | PASS | Empty animation frame handler returning immediately (`00:23B0`) |
+| `DialogClosingEndHandler` | VERIFIED | PASS | PASS | Resets dialog state, applies cooldown, and updates GBC palettes if needed (`00:23B1`) |
+| `DialogOpenAnimationEndHandler` | VERIFIED | PASS | PASS | Dispatches to DialogOpenAnimationEnd in Bank $1C (`00:247D`) |
+| `IncrementDialogState` | VERIFIED | PASS | PASS | Increments wDialogState (`00:2485`) |
+| `UpdateDialogState` | VERIFIED | PASS | PASS | Sets dialog closing state (or exits dialog in photo album mode) and clears frame (`00:2496`) |
+| `DialogFinishedHandler` | VERIFIED | PASS | PASS | Advances dialog state to closing when user presses A or B (`00:248A`) |
+| `DialogClosingBeginHandler` | VERIFIED | PASS | PASS | Dispatches to AnimateDialogClosing in Bank $1C (`00:24AF`) |
+| `DialogLetterAnimationStartHandler` | VERIFIED | PASS | PASS | Decrements scroll delay or invokes ClearLetterPixels in Bank $1C and advances state (`00:24B7`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Dialog State Machine & Initialization (`00:236B`-`00:24CA`)**:
+   - `OpenDialogInTable0`: tests `hLinkPositionY < 0x48`. If true, sets `DIALOG_BOX_BOTTOM_FLAG | DIALOG_OPENING_1` (`0x81`), placing the box at bottom; otherwise `DIALOG_OPENING_1` (`0x01`). Resets ask selection, character index, name index, and sets `wDialogSFX` to `$0F`.
+   - `OpenDialogInTable1` & `OpenDialogInTable2`: delegates to `OpenDialogInTable0` and sets `wDialogIndexHi` to `1` or `2`.
+   - `DialogFinishedHandler`: checks `wDialogInteractionLocked`. If unlocked and A or B button is pressed, calls `UpdateDialogState`.
+   - `UpdateDialogState`: clears `wDialogOpenCloseAnimationFrame`. In `GAMEPLAY_PHOTO_ALBUM` mode, immediately closes dialog (`wDialogState = 0`); otherwise preserves bottom flag in high nibble and sets state to `DIALOG_CLOSING_1` (`0x0E`).
+   - `DialogClosingEndHandler`: resets `wDialogState = 0`, sets `wDialogCooldown = DIALOG_COOLDOWN` ($18). On CGB in `GAMEPLAY_WORLD` with `wBGPaletteEffectAddress >= 8`, switches to Bank `$21` to execute `func_021_53CF`.
+   - `DialogLetterAnimationStartHandler`: counts down `wDialogScrollDelay`; once zero, invokes `ClearLetterPixels` in Bank `$1C` and advances dialog state.
 
 1. **Entity Recoil, Boss Intro, and Kill Enemy Routines (`00:3E8E`-`00:3F92`)**:
    - `label_3E8E`: triggers transient smoke VFX (`TRANSCIENT_VFX_SMOKE`, 8) at entity's X and visual Y coordinates every 4 frames during power recoiling (`wEntitiesPowerRecoilingTable`).
