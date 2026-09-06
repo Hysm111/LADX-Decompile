@@ -307,6 +307,11 @@ static void hook_bank3d(GBState *gb) {
     TEST_ASSERT(gb->rom_bank == 0x3D, "Target callback not executed in bank 0x3D");
 }
 
+static void hook_bank03(GBState *gb) {
+    tramp_called++;
+    TEST_ASSERT(gb->rom_bank == 0x03, "Target callback not executed in bank 0x03");
+}
+
 static void test_bank_trampolines_batch2(void) {
     GBState gb;
 
@@ -397,6 +402,94 @@ static void test_bank_trampolines_batch2(void) {
     TEST_ASSERT(gb.rom_bank == 0x3D, "LoadPhotoBgMap_trampoline ROM bank should be 0x3D");
 }
 
+static void test_bank_trampolines_batch3(void) {
+    GBState gb;
+
+    /* 1. func_020_6D0E_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_020_6D0E_trampoline(&gb, 0x10, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_6D0E_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x10, "func_020_6D0E_trampoline did not restore stacked bank");
+
+    /* 2. CheckPushedTombStone_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    CheckPushedTombStone_trampoline(&gb, 0x11, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "CheckPushedTombStone_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x11, "CheckPushedTombStone_trampoline did not restore stacked bank");
+
+    /* 3. GetEntityInitHandler_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    GetEntityInitHandler_trampoline(&gb, 0x12, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "GetEntityInitHandler_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x12, "GetEntityInitHandler_trampoline did not restore stacked bank");
+
+    /* 4. func_020_4874_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_020_4874_trampoline(&gb, 0x13, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_4874_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x13, "func_020_4874_trampoline did not restore stacked bank");
+
+    /* 5. func_020_4954_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_020_4954_trampoline(&gb, 0x14, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_4954_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x14, "func_020_4954_trampoline did not restore stacked bank");
+
+    /* 6. ReplaceObjects56and57_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    ReplaceObjects56and57_trampoline(&gb, 0x15, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "ReplaceObjects56and57_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x15, "ReplaceObjects56and57_trampoline did not restore stacked bank");
+
+    /* 7. func_036_505F_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_036_505F_trampoline(&gb, 0x16, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "func_036_505F_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x16, "func_036_505F_trampoline did not restore stacked bank");
+
+    /* 8. func_036_4F9B_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_036_4F9B_trampoline(&gb, 0x17, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "func_036_4F9B_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x17, "func_036_4F9B_trampoline did not restore stacked bank");
+
+    /* 9. func_003_5A2E_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_003_5A2E_trampoline(&gb, 0x18, hook_bank03);
+    TEST_ASSERT(tramp_called == 1, "func_003_5A2E_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x18, "func_003_5A2E_trampoline did not restore stacked bank");
+
+    /* 10. func_036_4F68_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_036_4F68_trampoline(&gb, 0x19, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "func_036_4F68_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x19, "func_036_4F68_trampoline did not restore stacked bank");
+
+    /* 11. func_020_6D52_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_020_6D52_trampoline(&gb, 0x1A, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_6D52_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x1A, "func_020_6D52_trampoline did not restore stacked bank");
+
+    /* 12. func_036_4BE8_trampoline */
+    gb_init(&gb);
+    tramp_called = 0;
+    func_036_4BE8_trampoline(&gb, 0x1B, hook_bank36_select);
+    TEST_ASSERT(tramp_called == 1, "func_036_4BE8_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x1B, "func_036_4BE8_trampoline did not restore stacked bank");
+}
+
 int run_bank_tests(void) {
     printf("[*] Running AdjustBankNumberForGBC tests...\n");
     test_adjust_bank_number_for_gbc();
@@ -434,6 +527,7 @@ int run_bank_tests(void) {
     printf("[*] Running Bank Trampolines tests...\n");
     test_bank_trampolines();
     test_bank_trampolines_batch2();
+    test_bank_trampolines_batch3();
 
     if (failures == 0) {
         printf("  [PASS] All bank.asm functions verified successfully!\n");

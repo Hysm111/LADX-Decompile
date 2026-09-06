@@ -219,6 +219,78 @@ void SpawnPhotographer_trampoline(GBState *gb, uint8_t stacked_bank, void (*targ
  */
 void LoadPhotoBgMap_trampoline(GBState *gb, void (*target_func)(GBState *));
 
+/**
+ * Switches to bank $20, calls func_020_6D0E, and restores stacked bank.
+ * Corresponds to func_020_6D0E_trampoline (00:0978) in disassembly.
+ */
+void func_020_6D0E_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls CheckPushedTombStone, and restores stacked bank.
+ * Corresponds to CheckPushedTombStone_trampoline (00:09C8) in disassembly.
+ */
+void CheckPushedTombStone_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls GetEntityInitHandler, and restores stacked bank.
+ * Corresponds to GetEntityInitHandler_trampoline (00:09D3) in disassembly.
+ */
+void GetEntityInitHandler_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls func_020_4874, and restores stacked bank.
+ * Corresponds to func_020_4874_trampoline (00:09DE) in disassembly.
+ */
+void func_020_4874_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls func_020_4954, and restores stacked bank.
+ * Corresponds to func_020_4954_trampoline (00:09E9) in disassembly.
+ */
+void func_020_4954_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls ReplaceObjects56and57, and restores stacked bank.
+ * Corresponds to ReplaceObjects56and57_trampoline (00:09F5) in disassembly.
+ */
+void ReplaceObjects56and57_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $36, calls func_036_505F, and restores stacked bank.
+ * Corresponds to func_036_505F_trampoline (00:0A47) in disassembly.
+ */
+void func_036_505F_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $36, calls func_036_4F9B, and restores stacked bank.
+ * Corresponds to func_036_4F9B_trampoline (00:0A53) in disassembly.
+ */
+void func_036_4F9B_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $03, calls func_003_5A2E, and restores stacked bank.
+ * Corresponds to func_003_5A2E_trampoline (00:0A6B) in disassembly.
+ */
+void func_003_5A2E_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $36, calls func_036_4F68, and restores stacked bank.
+ * Corresponds to func_036_4F68_trampoline (00:0A77) in disassembly.
+ */
+void func_036_4F68_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $20, calls func_020_6D52, and restores stacked bank.
+ * Corresponds to func_020_6D52_trampoline (00:0A83) in disassembly.
+ */
+void func_020_6D52_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
+/**
+ * Switches to bank $36, calls func_036_4BE8, and restores stacked bank.
+ * Corresponds to func_036_4BE8_trampoline (00:0A8F) in disassembly.
+ */
+void func_036_4BE8_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

@@ -308,3 +308,123 @@ void LoadPhotoBgMap_trampoline(GBState *gb, void (*target_func)(GBState *)) {
         target_func(gb);
     }
 }
+
+void func_020_6D0E_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void CheckPushedTombStone_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void GetEntityInitHandler_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_020_4874_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_020_4954_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void ReplaceObjects56and57_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_505F_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_4F9B_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_003_5A2E_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_4F68_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_020_6D52_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_036_4BE8_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x36);
+    if (target_func) {
+        target_func(gb);
+    }
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 7.08%
-* **Number of Verified Functions**: 85
-* **Number of Decompiled Functions**: 85
-* **Number Remaining**: ~1180+ functions
-* **Current Subsystem**: Bank 0 - Graphics, Dialog & Rubble Dispatchers
-* **Current Task**: Completed and verified `ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, and 8 Bank 0 trampolines
-* **Last Completed Task**: Decompiled and verified `ChangeBGColumnPaletteAndExecuteDrawCommands`, `func_A9B`, `Spawn2x2RubbleEntities_trampoline`, `func_A5F`, `func_036_703E_trampoline`, `cycleInstrumentItemColor_trampoline`, `func_036_4A77_trampoline`, `GetOwlStatueDialogId_trampoline`, `SpawnPhotographer_trampoline`, and `LoadPhotoBgMap_trampoline`
-* **Next Task**: Proceed to the next Bank 0 subsystem (`func_020_6D0E_trampoline`, `func_983`, `func_999`, `GetEntityInitHandler_trampoline`, `func_020_4874_trampoline`, `func_020_4954_trampoline`, `ReplaceObjects56and57_trampoline`)
-* **Last Update Timestamp**: 2026-09-06T06:22:00+03:00
+* **Current Overall Progress**: 8.08%
+* **Number of Verified Functions**: 97
+* **Number of Decompiled Functions**: 97
+* **Number Remaining**: ~1160+ functions
+* **Current Subsystem**: Bank 0 - Bank Trampolines Batch 3
+* **Current Task**: Completed and verified 12 Bank 0 trampolines
+* **Last Completed Task**: Decompiled and verified `func_020_6D0E_trampoline`, `CheckPushedTombStone_trampoline`, `GetEntityInitHandler_trampoline`, `func_020_4874_trampoline`, `func_020_4954_trampoline`, `ReplaceObjects56and57_trampoline`, `func_036_505F_trampoline`, `func_036_4F9B_trampoline`, `func_003_5A2E_trampoline`, `func_036_4F68_trampoline`, `func_020_6D52_trampoline`, and `func_036_4BE8_trampoline`
+* **Next Task**: Proceed to the next Bank 0 subsystem (`func_91D`, `func_983`, `func_999`, and room BG attribute draw routines)
+* **Last Update Timestamp**: 2026-09-06T06:30:00+03:00
 
 ---
 
@@ -104,6 +104,18 @@
 | `GetOwlStatueDialogId_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls GetOwlStatueDialogId, restores stacked bank (`00:0AEA`) |
 | `SpawnPhotographer_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls SpawnPhotographer, restores stacked bank (`00:0AF6`) |
 | `LoadPhotoBgMap_trampoline` | VERIFIED | PASS | PASS | Selects bank $3D and calls LoadPhotoBgMap (`00:0B02`) |
+| `func_020_6D0E_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls func_020_6D0E, restores stacked bank (`00:0978`) |
+| `CheckPushedTombStone_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls CheckPushedTombStone, restores stacked bank (`00:09C8`) |
+| `GetEntityInitHandler_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls GetEntityInitHandler, restores stacked bank (`00:09D3`) |
+| `func_020_4874_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls func_020_4874, restores stacked bank (`00:09DE`) |
+| `func_020_4954_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls func_020_4954, restores stacked bank (`00:09E9`) |
+| `ReplaceObjects56and57_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls ReplaceObjects56and57, restores stacked bank (`00:09F5`) |
+| `func_036_505F_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_505F, restores stacked bank (`00:0A47`) |
+| `func_036_4F9B_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_4F9B, restores stacked bank (`00:0A53`) |
+| `func_003_5A2E_trampoline` | VERIFIED | PASS | PASS | Selects bank $03, calls func_003_5A2E, restores stacked bank (`00:0A6B`) |
+| `func_036_4F68_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_4F68, restores stacked bank (`00:0A77`) |
+| `func_020_6D52_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls func_020_6D52, restores stacked bank (`00:0A83`) |
+| `func_036_4BE8_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_4BE8, restores stacked bank (`00:0A8F`) |
 
 ---
 
@@ -116,18 +128,18 @@
     - Stage 9: calls `label_002_6827` in bank 2, increments stage.
     - Stage 10: calls `label_002_680B` in bank 2, increments stage.
     - Stage 11+: calls `label_002_67E5` in bank 2, clears `hNeedsUpdatingBGTiles` and `hBGTilesLoadingStage`.
-- **Audio Step (`code/bank0.asm:00:08A4`)**:\
+- **Audio Step (`code/bank0.asm:00:08A4`)**:
   - Always executes SFX handler via `SwitchBank(0x1F)`.
   - If `hWaveSfx` != 0, halts step.
   - If `wMusicTrackTiming == 0`: standard speed (calls 0x1B and 0x1E tracks once).
   - If `wMusicTrackTiming == 2`: half speed (executes only when `hFrameCounter & 1 == 0`).
   - Otherwise (timing != 0 && timing != 2): double speed (calls 0x1B and 0x1E tracks twice).
 - **Bank Trampolines and Graphic/Dialog Handlers**:
-  - Trampolines switch `rSelectROMBank` or execute `SwitchBank` to target banks (such as `$0F` for font dialog, `$20` for palettes/active sprite rects, `$24` for BG columns, `$36` for rubble/items/photographer, and `$3D` for photo background map).
+  - Trampolines switch `rSelectROMBank` or execute `SwitchBank` to target banks (such as `$03` for dungeon map, `$0F` for font dialog, `$20` for palettes/active sprite rects/tombstones/entity init, `$24` for BG columns, `$36` for rubble/items/photographer, and `$3D` for photo background map).
   - Stacked bank restoration is handled via `RestoreStackedBankAndReturn` (restores `rSelectROMBank` only) or `RestoreStackedBank` (updates both `rSelectROMBank` and `wCurrentBank`).
 
 ---
 
 ## Verification Log
 
-- 85 functions tested and verified with 100% pass rate.
+- 97 functions tested and verified with 100% pass rate.
