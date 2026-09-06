@@ -86,6 +86,45 @@ void CopyLinkFinalPositionToPosition(GBState *gb);
  */
 void UpdateLinkWalkingAnimation_trampoline(GBState *gb, void (*update_func)(GBState *));
 
+
+/**
+ * Check sword collision with static elements and objects, then return to bank 2 (00:15A7).
+ */
+void CheckStaticSwordCollision_trampoline(GBState *gb,
+                                          uint8_t (*get_object_physics)(GBState *, uint8_t, uint8_t),
+                                          void (*reveal_object)(GBState *),
+                                          void (*start_smashing_rock)(GBState *, uint8_t),
+                                          void (*alert_sword_moblins)(GBState *));
+
+/**
+ * Check sword collision with static elements (bushes, grasses) and floor objects (00:15AF).
+ */
+void CheckStaticSwordCollision(GBState *gb,
+                               uint8_t (*get_object_physics)(GBState *, uint8_t, uint8_t),
+                               void (*reveal_object)(GBState *),
+                               void (*start_smashing_rock)(GBState *, uint8_t),
+                               void (*alert_sword_moblins)(GBState *));
+
+/**
+ * Check sword collision with items lying on the ground (00:16C2).
+ */
+void CheckItemsSwordCollision(GBState *gb, uint8_t physics_flags, void (*alert_sword_moblins)(GBState *));
+
+/**
+ * Pegasus boots running action handler (00:1705).
+ */
+void UsePegasusBoots(GBState *gb);
+
+/**
+ * Display transient VFX (dust or water splash) when running with Pegasus boots (00:1756).
+ */
+void DisplayTransientVfxForLinkRunning(GBState *gb);
+
+/**
+ * Reset Link's speed increment (hLinkSpeedX = 0, hLinkSpeedY = 0) (00:178E).
+ */
+void ClearLinkPositionIncrement(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

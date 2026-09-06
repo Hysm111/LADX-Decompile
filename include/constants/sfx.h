@@ -37,3 +37,6 @@
 #define NOISE_SFX_SWORD_SWING_D     0x18
 #define NOISE_SFX_WHOOSH            0x0A
 #define JINGLE_FEATHER_JUMP         0x0D
+#define NOISE_SFX_FOOTSTEP          0x07
+#define NOISE_SFX_CLINK             0x17
+#define JINGLE_WATER_SPLASH         0x0E

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 26.75%
-* **Number of Verified Functions**: 321
-* **Number of Decompiled Functions**: 321
-* **Number Remaining**: ~879 functions
-* **Current Subsystem**: Bank 0 - Player Item Actions & Projectiles (`code/bank0.asm`, `00:1382`-`00:158E`)
-* **Current Task**: Bank 0 Item Actions & Projectile Spawning completed
-* **Last Completed Task**: Decompiled and verified 8 Bank 0 item actions and projectile spawning routines (`UsePowerBracelet`, `UseBoomerang`, `ShootArrow`, `SpawnPlayerProjectile`, `UseMagicPowder`, `UseRocsFeather`, `UseSword`, `UpdateLinkDirectionFromJoypad`) (`00:1382` - `00:158E`)
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Sword static collisions & room object interaction `00:15A7` - `00:1650`)
-* **Last Update Timestamp**: 2026-09-06T22:20:00+03:00
+* **Current Overall Progress**: 27.25%
+* **Number of Verified Functions**: 327
+* **Number of Decompiled Functions**: 327
+* **Number Remaining**: ~873 functions
+* **Current Subsystem**: Bank 0 - Sword Collisions & Pegasus Running (`code/bank0.asm`, `00:15A7`-`00:1793`)
+* **Current Task**: Bank 0 Sword Static Collisions & Pegasus Boots Running completed
+* **Last Completed Task**: Decompiled and verified 6 Bank 0 sword collision and movement routines (`CheckStaticSwordCollision_trampoline`, `CheckStaticSwordCollision`, `CheckItemsSwordCollision`, `UsePegasusBoots`, `DisplayTransientVfxForLinkRunning`, `ClearLinkPositionIncrement`) (`00:15A7` - `00:1793`)
+* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Link motion & attack animation rendering `00:1794` - `00:1900`)
+* **Last Update Timestamp**: 2026-09-06T22:40:00+03:00
 
 ---
 
@@ -269,10 +269,22 @@
 | `UseRocsFeather` | VERIFIED | PASS | PASS | Jump mechanics: initializes Z velocity, plays jump jingle, applies lateral boost when running with Pegasus boots, handles side-scrolling jump physics (`00:14CB`) |
 | `UseSword` | VERIFIED | PASS | PASS | Sword attack action: initializes swing animation, selects random swing SFX, clears spin attack, and spawns full-health sword beam on L2 sword (`00:1528`) |
 | `UpdateLinkDirectionFromJoypad` | VERIFIED | PASS | PASS | Converts dpad bitmask from hPressedButtonsMask into cardinal link direction via JoypadToLinkDirection table (`00:157C`) |
+| `CheckStaticSwordCollision_trampoline` | VERIFIED | PASS | PASS | Evaluates static sword collision with environment and floor items, switching to Bank $02 (`00:15A7`) |
+| `CheckStaticSwordCollision` | VERIFIED | PASS | PASS | Maps sword tip coordinates to room grid, evaluates object physics flags, cuts bushes/grass, reveals hidden objects, triggers rock smashing VFX, and spawns heart/rupee drops (`00:15AF`) |
+| `CheckItemsSwordCollision` | VERIFIED | PASS | PASS | Evaluates sword impact with solid surfaces or ground items, sets Moblin alerting counter, triggers clink or sword poke sound effects (`00:16C2`) |
+| `UsePegasusBoots` | VERIFIED | PASS | PASS | Pegasus boots charge state machine: checks airborne/side-scrolling constraints, steps counter increment, dust VFX, and full-speed sprint initialization (`00:1705`) |
+| `DisplayTransientVfxForLinkRunning` | VERIFIED | PASS | PASS | Periodically emits ground dust or shallow water splash transient VFX while running on 8-frame cycles (`00:1756`) |
+| `ClearLinkPositionIncrement` | VERIFIED | PASS | PASS | Resets Link's horizontal and vertical speed increments to zero (`00:178E`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Sword Collisions & Pegasus Boots Subsystem (`00:15A7`-`00:1793`)**:
+   - `CheckStaticSwordCollision`: computes sword hitpoint using `SwordCollisionMapX` and `SwordCollisionMapY` (directional offsets for regular swings 0..3 or spin attacks 4..11). Locates intersecting object in `wRoomObjects` at `($D700 | (y | c))`; tests object physics flags via `GetObjectPhysicsFlags_trampoline`. If object is a bush or grass (`0xD3`, `0x5C`, `0x0A` outdoor, `0xDD` indoor), reveals hidden ground tile, spawns `ENTITY_LIFTABLE_ROCK` with smashing animation, and rolls 1/8 chance to drop `ENTITY_DROPPABLE_HEART` or `ENTITY_DROPPABLE_RUPEE` with bounce physics (`wEntitiesSpeedZTable = $10`).
+   - `CheckItemsSwordCollision`: checks `wC16D != 0`, sets `hMultiPurpose0`/`hMultiPurpose1` using `LinkDirectionToSwordCollisionRangeX`/`LinkDirectionToSwordCollisionRangeY`, alerts nearby sword moblins (`wSwordMoblinAlertingSoundCounter = 4`), sets collision recoil timer `wC1C4 = $10`, and plays `NOISE_SFX_CLINK` ($17) on walls (`flags & $F0 == $90`) or `JINGLE_SWORD_POKING` ($07) on pokeable obstacles.
+   - `UsePegasusBoots`: verifies Link is grounded and not moving vertically in side-scrolling areas; advances `wConsecutiveStepsCount` (+2); displays transient VFX; charges `wPegasusBootsChargeMeter` up to `MAX_PEGASUS_BOOTS_CHARGE` ($20); when full, engages sprint (`wIsRunningWithPegasusBoots = $20`), cancels spin attack and sword charge, and sets Link velocity vectors from `XPositionIncrementPegasusRunning` / `YPositionIncrementPegasusRunning` (32 / -32 px/s).
+   - `DisplayTransientVfxForLinkRunning`: fires on 8-frame boundary (`hFrameCounter & 7 == 0`) when Link is grounded and unblocked; chooses between shallow water splash (`TRANSCIENT_VFX_PEGASUS_SPLASH` and `JINGLE_WATER_SPLASH`) or dry ground dust (`TRANSCIENT_VFX_PEGASUS_DUST` and `NOISE_SFX_FOOTSTEP`).
 
 1. **Player Item Actions & Projectile Subsystem (`00:1382`-`00:158E`)**:
    - `SpawnPlayerProjectile`: dynamically allocates projectile in active entity table `wEntitiesStatusTable` (slots 0..15), computes directional X/Y offsets, sets initial Z velocity (`hLinkPositionZ + 1`), sets speed vectors from `PlayerProjectileSpeedXPerDirection` / `PlayerProjectileSpeedYPerDirection`, synchronizes sprite variant, direction, and thrown direction, and starts attack step countdown (`$0C`).

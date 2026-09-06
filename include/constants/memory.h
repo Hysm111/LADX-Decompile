@@ -287,3 +287,8 @@
 #define wHasToadstool               0xDB4B
 #define wMagicPowderCount           0xDB4C
 #define wSwordLevel                 0xDB4E
+#define wConsecutiveStepsCount      0xC120
+#define wSwordDirection             0xC136
+#define wLinkObjectPhysics          0xC181
+#define wC1C4                       0xC1C4
+#define wEntitiesSpeedZTable        0xC320

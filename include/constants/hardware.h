@@ -121,3 +121,4 @@
 #define hLinkDirection              0xFF9E
 #define hLinkPositionZ              0xFFA2
 #define hLinkVelocityZ              0xFFA3
+#define hObjectUnderEntity          0xFFAF
