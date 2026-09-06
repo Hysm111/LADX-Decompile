@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include "gb.h"
@@ -149,11 +150,115 @@ void test_animate_entities_trampolines(void) {
     assert(gb_read(&gb, wCurrentBank) == 0x02);
 }
 
+
+static uint8_t mock_entities_rom[0x4000 * 0x20];
+#define ROM_OFFSET(bank, addr) (((size_t)(bank) * 0x4000) + ((size_t)(addr) - 0x4000))
+
+static bool mock_cb_called = false;
+static void mock_check_bank_cb(GBState *gb, uint8_t expected_bank) {
+    mock_cb_called = true;
+    assert(gb->rom_bank == expected_bank);
+}
+
+static void mock_cb_19(GBState *gb) {
+    mock_check_bank_cb(gb, 0x19);
+    assert(gb_read(gb, wCurrentBank) == 0x19);
+}
+static void mock_cb_03(GBState *gb) { mock_check_bank_cb(gb, 0x03); }
+static void mock_cb_14(GBState *gb) { mock_check_bank_cb(gb, 0x14); }
+static void mock_cb_01(GBState *gb) {
+    mock_check_bank_cb(gb, 0x01);
+    assert(gb_read(gb, wCurrentBank) == 0x01);
+}
+
+static void test_entities_batch_trampolines(void) {
+    printf("[*] Running Bank 0 entities helper & trampoline tests (00:3925-00:3988)...\n");
+
+    GBState gb;
+
+    /* 1. CanBowWowEatEntity */
+    gb_init(&gb);
+    memset(mock_entities_rom, 0, sizeof(mock_entities_rom));
+    mock_entities_rom[ROM_OFFSET(0x14, BowWowEatableEntitiesTable + 0x09)] = 0x01;
+    mock_entities_rom[ROM_OFFSET(0x14, BowWowEatableEntitiesTable + 0x0A)] = 0x00;
+    mock_entities_rom[ROM_OFFSET(0x14, BowWowEatableEntitiesTable + 0x1B)] = 0x01;
+    gb_attach_rom(&gb, mock_entities_rom, sizeof(mock_entities_rom));
+
+    assert(CanBowWowEatEntity(&gb, 0x09) == 0x01);
+    assert(gb.rom_bank == 0x05);
+
+    assert(CanBowWowEatEntity(&gb, 0x0A) == 0x00);
+    assert(gb.rom_bank == 0x05);
+
+    assert(CanBowWowEatEntity(&gb, 0x1B) == 0x01);
+    assert(gb.rom_bank == 0x05);
+
+    /* 2. label_3935 */
+    gb_init(&gb);
+    mock_cb_called = false;
+    label_3935(&gb, mock_cb_19);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x03);
+    assert(gb_read(&gb, wCurrentBank) == 0x03);
+
+    /* 3. LiftableRockStartSmashingAnimation_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x07);
+    gb.rom_bank = 0x07;
+    mock_cb_called = false;
+    LiftableRockStartSmashingAnimation_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x07);
+
+    /* 4. label_394D */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x06);
+    gb.rom_bank = 0x06;
+    mock_cb_called = false;
+    label_394D(&gb, mock_cb_14);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x06);
+
+    /* 5. CreateFollowingNpcEntity_trampoline */
+    gb_init(&gb);
+    mock_cb_called = false;
+    CreateFollowingNpcEntity_trampoline(&gb, mock_cb_01);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x02);
+    assert(gb_read(&gb, wCurrentBank) == 0x02);
+
+    /* 6. ConfigureNewEntity_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x08);
+    gb.rom_bank = 0x08;
+    mock_cb_called = false;
+    ConfigureNewEntity_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x08);
+
+    /* 7. GetEntityDirectionToLink_trampoline */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x09);
+    gb.rom_bank = 0x09;
+    mock_cb_called = false;
+    GetEntityDirectionToLink_trampoline(&gb, mock_cb_03);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x09);
+
+    /* 8. label_397B */
+    gb_init(&gb);
+    mock_cb_called = false;
+    label_397B(&gb, mock_cb_14);
+    assert(mock_cb_called);
+    assert(gb.rom_bank == 0x03);
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
     test_create_trading_item_entity();
     test_spawn_entity_trampolines();
     test_animate_entities_trampolines();
+    test_entities_batch_trampolines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

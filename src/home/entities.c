@@ -98,3 +98,82 @@ void AnimateEntitiesAndRestoreBank02(GBState *gb, void (*animate_entities)(GBSta
     gb_write(gb, rSelectROMBank, 0x03);
     AnimateEntitiesAndRestoreBank(gb, 0x02, animate_entities);
 }
+
+uint8_t CanBowWowEatEntity(GBState *gb, uint8_t entity_type) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, 0x14);
+    uint8_t val = gb_read(gb, (uint16_t)(BowWowEatableEntitiesTable + entity_type));
+    gb_write(gb, rSelectROMBank, 0x05);
+    return val;
+}
+
+void label_3935(GBState *gb, void (*func_019_7c50)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, 0x19);
+    if (func_019_7c50) {
+        func_019_7c50(gb);
+    }
+    SwitchBank(gb, 0x03);
+}
+
+void LiftableRockStartSmashingAnimation_trampoline(GBState *gb, void (*start_smashing)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (start_smashing) {
+        start_smashing(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void label_394D(GBState *gb, void (*func_014_54ac)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x14);
+    if (func_014_54ac) {
+        func_014_54ac(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void CreateFollowingNpcEntity_trampoline(GBState *gb, void (*create_following_npc)(GBState *)) {
+    if (!gb) return;
+
+    SwitchBank(gb, 0x01);
+    if (create_following_npc) {
+        create_following_npc(gb);
+    }
+    SwitchBank(gb, 0x02);
+}
+
+void ConfigureNewEntity_trampoline(GBState *gb, void (*configure_new_entity)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (configure_new_entity) {
+        configure_new_entity(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void GetEntityDirectionToLink_trampoline(GBState *gb, void (*get_direction)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    if (get_direction) {
+        get_direction(gb);
+    }
+    ReloadSavedBank(gb);
+}
+
+void label_397B(GBState *gb, void (*func_014_5347)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x14);
+    if (func_014_5347) {
+        func_014_5347(gb);
+    }
+    gb_write(gb, rSelectROMBank, 0x03);
+}

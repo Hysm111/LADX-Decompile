@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 16.50%
-* **Number of Verified Functions**: 198
-* **Number of Decompiled Functions**: 198
-* **Number Remaining**: ~1002 functions
-* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:3925`+)
-* **Current Task**: Begin decompilation of `code/home/entities.asm` (`CanBowWowEatEntity` at `00:3925`)
-* **Last Completed Task**: Decompiled and verified Bank 0 `LoadRoom` (`00:30F4`), `PadRoomObjectsArea` (`01:6CCE`), `LoadCreditsMarinPortraitTiles_trampoline` (`00:3915`), and `LoadThanksForPlayingTiles_trampoline` (`00:391D`)
-* **Next Task**: Decompile and verify Bank 0 `CanBowWowEatEntity` (`00:3925`) in `code/home/entities.asm`
-* **Last Update Timestamp**: 2026-09-06T17:25:00+03:00
+* **Current Overall Progress**: 17.17%
+* **Number of Verified Functions**: 206
+* **Number of Decompiled Functions**: 206
+* **Number Remaining**: ~994 functions
+* **Current Subsystem**: Bank 0 - Entities (`code/home/entities.asm`, `00:398D`+)
+* **Current Task**: Decompile and verify `AnimateEntities` loop and helper pipeline (`00:398D`+)
+* **Last Completed Task**: Decompiled and verified 8 Bank 0 Entities helpers & trampolines (`CanBowWowEatEntity`, `label_3935`, `LiftableRockStartSmashingAnimation_trampoline`, `label_394D`, `CreateFollowingNpcEntity_trampoline`, `ConfigureNewEntity_trampoline`, `GetEntityDirectionToLink_trampoline`, `label_397B`) (`00:3925` - `00:3988`)
+* **Next Task**: Decompile and verify Bank 0 `AnimateEntities` (`00:398D`) in `code/home/entities.asm`
+* **Last Update Timestamp**: 2026-09-06T17:40:00+03:00
 
 ---
 
@@ -146,10 +146,28 @@
 | `LoadRoom` | VERIFIED | PASS | PASS | Main room loading routine: parses headers, warps, templates, and dispatches objects (`00:30F4`) |
 | `LoadCreditsMarinPortraitTiles_trampoline` | VERIFIED | PASS | PASS | Switches to bank $27 and jumps to LoadCreditsMarinPortraitTiles (`00:3915`) |
 | `LoadThanksForPlayingTiles_trampoline` | VERIFIED | PASS | PASS | Switches to bank $20 and jumps to LoadThanksForPlayingTiles (`00:391D`) |
+| `CanBowWowEatEntity` | VERIFIED | PASS | PASS | Checks if entity can be eaten by Bow-Wow via BowWowEatableEntitiesTable in Bank $14 (`00:3925`) |
+| `label_3935` | VERIFIED | PASS | PASS | Switches to Bank $19, calls func_019_7c50, and switches to Bank $03 (`00:3935`) |
+| `LiftableRockStartSmashingAnimation_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls LiftableRockStartSmashingAnimation, and restores saved bank (`00:3942`) |
+| `label_394D` | VERIFIED | PASS | PASS | Switches to Bank $14, calls func_014_54ac, and restores saved bank (`00:394D`) |
+| `CreateFollowingNpcEntity_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $01, calls CreateFollowingNpcEntity, and switches to Bank $02 (`00:3958`) |
+| `ConfigureNewEntity_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls ConfigureNewEntity, and restores saved bank (`00:3965`) |
+| `GetEntityDirectionToLink_trampoline` | VERIFIED | PASS | PASS | Switches to Bank $03, calls GetEntityDirectionToLink_03, and restores saved bank (`00:3970`) |
+| `label_397B` | VERIFIED | PASS | PASS | Switches to Bank $14, calls func_014_5347, and sets bank to $03 (`00:397B`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Entities Trampolines & Helpers (`00:3925`-`00:3988`)**:
+   - `CanBowWowEatEntity`: selects Bank $14 in `rSelectROMBank`, reads byte at `BowWowEatableEntitiesTable` (`$5218 + entity_type`), resets `rSelectROMBank` to `$05`, and returns the byte.
+   - `label_3935`: switches to Bank $19 via `SwitchBank`, calls `func_019_7c50`, and switches to Bank $03 via `SwitchBank`.
+   - `LiftableRockStartSmashingAnimation_trampoline`: switches `rSelectROMBank` to `$03`, calls `LiftableRockStartSmashingAnimation`, and restores `wCurrentBank` via `ReloadSavedBank`.
+   - `label_394D`: switches `rSelectROMBank` to `$14`, calls `func_014_54ac`, and restores `wCurrentBank` via `ReloadSavedBank`.
+   - `CreateFollowingNpcEntity_trampoline`: switches to Bank $01 via `SwitchBank`, calls `CreateFollowingNpcEntity`, and switches to Bank $02 via `SwitchBank`.
+   - `ConfigureNewEntity_trampoline`: switches `rSelectROMBank` to `$03`, calls `ConfigureNewEntity`, and restores `wCurrentBank` via `ReloadSavedBank`.
+   - `GetEntityDirectionToLink_trampoline`: switches `rSelectROMBank` to `$03`, calls `GetEntityDirectionToLink_03`, and restores `wCurrentBank` via `ReloadSavedBank`.
+   - `label_397B`: switches `rSelectROMBank` to `$14`, calls `func_014_5347`, and sets `rSelectROMBank` to `$03`.
 
 1. **Room Loading & Perimeter Subroutines (`00:30F4`-`00:32A6`, `01:6CCE`, `00:3915`-`00:391D`)**:
    - `LoadRoom`:

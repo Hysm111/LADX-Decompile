@@ -2,5 +2,6 @@
 #define LADX_CONSTANTS_ENTITIES_H
 
 #define ENTITY_TRADING_ITEM 0xAF
+#define BowWowEatableEntitiesTable 0x5218
 
 #endif /* LADX_CONSTANTS_ENTITIES_H */

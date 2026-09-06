@@ -110,6 +110,80 @@ void AnimateEntitiesAndRestoreBank01(GBState *gb, void (*animate_entities)(GBSta
  */
 void AnimateEntitiesAndRestoreBank02(GBState *gb, void (*animate_entities)(GBState *));
 
+/**
+ * CanBowWowEatEntity (00:3925)
+ * Checks whether Bow-Wow can eat an entity of the given type.
+ * Switches to Bank $14, reads from BowWowEatableEntitiesTable, switches to Bank $05, and returns the byte.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_type Type ID of entity
+ * @return Value read from table (nonzero if eatable)
+ */
+uint8_t CanBowWowEatEntity(GBState *gb, uint8_t entity_type);
+
+/**
+ * label_3935 (00:3935)
+ * Switches to Bank $19 via SwitchBank, calls func_019_7c50, and then switches to Bank $03 via SwitchBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_019_7c50 Target callback in Bank $19
+ */
+void label_3935(GBState *gb, void (*func_019_7c50)(GBState *));
+
+/**
+ * LiftableRockStartSmashingAnimation_trampoline (00:3942)
+ * Switches to Bank $03, calls LiftableRockStartSmashingAnimation, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param start_smashing Target callback in Bank $03
+ */
+void LiftableRockStartSmashingAnimation_trampoline(GBState *gb, void (*start_smashing)(GBState *));
+
+/**
+ * label_394D (00:394D)
+ * Switches to Bank $14, calls func_014_54ac, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_014_54ac Target callback in Bank $14
+ */
+void label_394D(GBState *gb, void (*func_014_54ac)(GBState *));
+
+/**
+ * CreateFollowingNpcEntity_trampoline (00:3958)
+ * Switches to Bank $01 via SwitchBank, calls create_following_npc, and switches to Bank $02 via SwitchBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param create_following_npc Target callback in Bank $01
+ */
+void CreateFollowingNpcEntity_trampoline(GBState *gb, void (*create_following_npc)(GBState *));
+
+/**
+ * ConfigureNewEntity_trampoline (00:3965)
+ * Switches to Bank $03, calls configure_new_entity, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param configure_new_entity Target callback in Bank $03
+ */
+void ConfigureNewEntity_trampoline(GBState *gb, void (*configure_new_entity)(GBState *));
+
+/**
+ * GetEntityDirectionToLink_trampoline (00:3970)
+ * Switches to Bank $03, calls get_direction, and restores saved bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param get_direction Target callback in Bank $03
+ */
+void GetEntityDirectionToLink_trampoline(GBState *gb, void (*get_direction)(GBState *));
+
+/**
+ * label_397B (00:397B)
+ * Switches to Bank $14, calls func_014_5347, and sets rSelectROMBank to $03.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param func_014_5347 Target callback in Bank $14
+ */
+void label_397B(GBState *gb, void (*func_014_5347)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif
