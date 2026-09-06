@@ -36,3 +36,13 @@
 
 #define ENTITY_MAGIC_ROD_FIREBALL    0x04
 #endif /* LADX_CONSTANTS_ENTITIES_H */
+
+#define ENTITY_WRECKING_BALL                    0xA8
+#define ENTITIES_END                            0xFF
+
+#define BANK_OverworldEntitiesPointersTable     0x16
+#define OverworldEntitiesPointersTable          0x4000
+#define IndoorsAEntitiesPointersTable           0x4200
+#define IndoorsBEntitiesPointersTable           0x4400
+#define ColorDungeonEntitiesPointersTable       0x4600
+

@@ -395,6 +395,14 @@ void LoadBaseOverworldTiles(GBState *gb);
  */
 void LoadIndoorTiles(GBState *gb);
 
+
+/**
+ * ReloadColorDungeonNpcTiles (00:3FD1)
+ * Copies 0x40 tiles from ColorDungeonNpcTiles to vTiles0 + 0x400 from bank $34 (DMG) or $35 (CGB).
+ * Restores rSelectROMBank to BANK(InventoryEntryPoint) ($20).
+ */
+void ReloadColorDungeonNpcTiles(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

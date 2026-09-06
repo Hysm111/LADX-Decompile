@@ -636,6 +636,37 @@ void DidKillEnemy(GBState *gb, uint16_t entity_index, void (*spawn_enemy_drop)(G
 void UnloadEntity(GBState *gb, uint16_t entity_index);
 void UnloadEntityAndReturn(GBState *gb, uint16_t entity_index);
 
+
+/**
+ * LoadEntityFromDefinition (00:3883)
+ * Loads an entity for the current room from an entity definition.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param def_ptr Pointer to the entity definition address in ROM/RAM (advanced by 2 bytes)
+ * @param configure_new_entity Callback for ConfigureNewEntity_helper (bank $03, 0x6524)
+ * @param prepare_entity_position Callback for PrepareEntityPositionForRoomTransition (bank $01, 0x5EAB)
+ * @return Entity slot index loaded (0..15), or 0xFF if skipped / no slot free
+ */
+uint8_t LoadEntityFromDefinition(GBState *gb, uint16_t *def_ptr,
+                                 void (*configure_new_entity)(GBState *, uint8_t slot),
+                                 void (*prepare_entity_position)(GBState *, uint8_t slot));
+
+/**
+ * LoadRoomEntities (00:37FE)
+ * Retrieves the entities list for this room, and loads each entity from its definition.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param update_recent_rooms_list Callback for UpdateRecentRoomsList (bank $01, 0x5F02)
+ * @param spawn_new_entity Callback for SpawnNewEntity (bank $03)
+ * @param configure_new_entity Callback for ConfigureNewEntity_helper (bank $03, 0x6524)
+ * @param prepare_entity_position Callback for PrepareEntityPositionForRoomTransition (bank $01, 0x5EAB)
+ */
+void LoadRoomEntities(GBState *gb,
+                      void (*update_recent_rooms_list)(GBState *),
+                      uint16_t (*spawn_new_entity)(GBState *, uint8_t entity_type),
+                      void (*configure_new_entity)(GBState *, uint8_t slot),
+                      void (*prepare_entity_position)(GBState *, uint8_t slot));
+
 #ifdef __cplusplus
 }
 #endif

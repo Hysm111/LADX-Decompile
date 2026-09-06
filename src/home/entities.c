@@ -1034,3 +1034,118 @@ void UnloadEntity(GBState *gb, uint16_t entity_index) {
 void UnloadEntityAndReturn(GBState *gb, uint16_t entity_index) {
     UnloadEntity(gb, entity_index);
 }
+
+static void LoadEntityFromDefinition_didLoadEntity(GBState *gb, uint8_t slot,
+                                                   void (*configure_new_entity)(GBState *, uint8_t slot),
+                                                   void (*prepare_entity_position)(GBState *, uint8_t slot)) {
+    if (!gb) return;
+    if (configure_new_entity) {
+        configure_new_entity(gb, slot);
+    }
+    if (prepare_entity_position) {
+        prepare_entity_position(gb, slot);
+    }
+    gb_write(gb, rSelectROMBank, BANK_OverworldEntitiesPointersTable);
+}
+
+uint8_t LoadEntityFromDefinition(GBState *gb, uint16_t *def_ptr,
+                                 void (*configure_new_entity)(GBState *, uint8_t slot),
+                                 void (*prepare_entity_position)(GBState *, uint8_t slot)) {
+    if (!gb || !def_ptr) return 0xFF;
+
+    uint8_t order = gb_read(gb, hMultiPurposeD);
+    if (order < 8) {
+        uint8_t mask = (uint8_t)(1 << order);
+        uint8_t map_room = gb_read(gb, hMapRoom);
+        uint8_t cleared = gb_read(gb, (uint16_t)(wEntitiesClearedRooms + map_room));
+        if ((mask & cleared) != 0) {
+            /* Entity has been cleared previously: don't load it */
+            gb_write(gb, hMultiPurposeD, (uint8_t)(order + 1));
+            *def_ptr += 2;
+            return 0xFF;
+        }
+    }
+
+    /* Find first available slot (ENTITY_STATUS_DISABLED = 0) */
+    uint8_t slot = 0xFF;
+    for (uint8_t i = 0; i < 16; i++) {
+        if (gb_read(gb, (uint16_t)(wEntitiesStatusTable + i)) == ENTITY_STATUS_DISABLED) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot == 0xFF) {
+        /* No slot available */
+        gb_write(gb, hMultiPurposeD, (uint8_t)(order + 1));
+        *def_ptr += 2;
+        return 0xFF;
+    }
+
+    gb_write(gb, (uint16_t)(wEntitiesStatusTable + slot), ENTITY_STATUS_INIT);
+
+    uint8_t pos_byte = gb_read(gb, (*def_ptr)++);
+    uint8_t y = (uint8_t)((pos_byte & 0xF0) + 0x10);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + slot), y);
+
+    uint8_t x = (uint8_t)(((pos_byte & 0x0F) << 4) + 0x08);
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + slot), x);
+
+    uint8_t type_byte = gb_read(gb, (*def_ptr)++);
+    gb_write(gb, (uint16_t)(wEntitiesTypeTable + slot), type_byte);
+
+    LoadEntityFromDefinition_didLoadEntity(gb, slot, configure_new_entity, prepare_entity_position);
+    return slot;
+}
+
+void LoadRoomEntities(GBState *gb,
+                      void (*update_recent_rooms_list)(GBState *),
+                      uint16_t (*spawn_new_entity)(GBState *, uint8_t entity_type),
+                      void (*configure_new_entity)(GBState *, uint8_t slot),
+                      void (*prepare_entity_position)(GBState *, uint8_t slot)) {
+    if (!gb) return;
+
+    if (update_recent_rooms_list) {
+        update_recent_rooms_list(gb);
+    }
+
+    gb_write(gb, rSelectROMBank, BANK_OverworldEntitiesPointersTable);
+    gb_write(gb, hMultiPurposeD, 0);
+
+    uint8_t map_room = gb_read(gb, hMapRoom);
+    uint16_t room_offset = (uint16_t)(map_room * 2);
+    uint16_t table;
+
+    if (gb_read(gb, wIsIndoor) == 0) {
+        table = OverworldEntitiesPointersTable;
+    } else {
+        uint8_t map_id = gb_read(gb, hMapId);
+        if (map_id == MAP_EAGLES_TOWER && gb_read(gb, wWreckingBallRoom) == map_room) {
+            uint16_t slot = SpawnNewEntity_trampoline(gb, ENTITY_WRECKING_BALL, spawn_new_entity);
+            uint8_t wb_x = gb_read(gb, wWreckingBallPosX);
+            uint8_t wb_y = gb_read(gb, wWreckingBallPosY);
+            gb_write(gb, (uint16_t)(wEntitiesPosXTable + slot), wb_x);
+            gb_write(gb, (uint16_t)(wEntitiesPosYTable + slot), wb_y);
+            LoadEntityFromDefinition_didLoadEntity(gb, (uint8_t)slot, configure_new_entity, prepare_entity_position);
+            gb_write(gb, (uint16_t)(wEntitiesLoadOrderTable + slot), 0xFF);
+            gb_write(gb, hMultiPurposeD, 0);
+        }
+
+        if (map_id == MAP_COLOR_DUNGEON) {
+            table = ColorDungeonEntitiesPointersTable;
+        } else if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+            table = IndoorsBEntitiesPointersTable;
+        } else {
+            table = IndoorsAEntitiesPointersTable;
+        }
+    }
+
+    uint16_t list_ptr_addr = (uint16_t)(table + room_offset);
+    uint16_t list_ptr = (uint16_t)(gb_read(gb, list_ptr_addr) | (gb_read(gb, (uint16_t)(list_ptr_addr + 1)) << 8));
+
+    while (gb_read(gb, list_ptr) != ENTITIES_END) {
+        LoadEntityFromDefinition(gb, &list_ptr, configure_new_entity, prepare_entity_position);
+    }
+
+    ReloadSavedBank(gb);
+}

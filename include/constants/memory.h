@@ -338,3 +338,8 @@
 #define wBGUpdateRegionOriginLow        0xC127
 #define wBGUpdateRegionTilesCount       0xC128
 #define wGoldenLeavesCount              0xDB15
+#define wWreckingBallRoom                       0xDB6F
+#define wWreckingBallPosX                       0xDB70
+#define wWreckingBallPosY                       0xDB71
+#define wEntitiesLoadOrderTable                 0xC460
+#define wEntitiesClearedRooms                   0xCF00

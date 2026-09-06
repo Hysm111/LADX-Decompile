@@ -703,3 +703,11 @@ void LoadIndoorTiles(GBState *gb) {
     /* 6. Patch inventory tiles */
     PatchInventoryTiles(gb);
 }
+
+void ReloadColorDungeonNpcTiles(GBState *gb) {
+    if (!gb) return;
+    uint8_t bank = (gb_read(gb, hIsGBC) != 0) ? 0x35 : 0x34;
+    gb_write(gb, rSelectROMBank, bank);
+    CopyData(gb, (uint16_t)(vTiles0 + 0x400), ColorDungeonNpcTiles, 0x400);
+    gb_write(gb, rSelectROMBank, 0x20); /* BANK(InventoryEntryPoint) */
+}

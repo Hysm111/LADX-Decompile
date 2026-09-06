@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 33.33%
-* **Number of Verified Functions**: 400
-* **Number of Decompiled Functions**: 400
-* **Number Remaining**: ~800 functions
-* **Current Subsystem**: Bank 0 - Indoor & Overworld Tile Loaders and Inventory Patching (`code/bank0.asm`, `00:2C28`-`00:2D78`, `00:1BD2`)
-* **Current Task**: Bank 0 Indoor & Overworld Tile Loaders and Inventory Patching completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 0 indoor/overworld tile loaders, jump table & inventory patching routines (`LoadIndoorTiles`, `PatchInventoryTiles`, `LoadBaseOverworldTiles`, `func_2D50`, `AnimateTilesGroup`) (`00:2C28`-`00:2D78`, `00:1BD2`)
-* **Next Task**: Decompile and verify final 5 remaining Bank 0 routines (`LoadRoomEntities`, `LoadEntityFromDefinition`, `ReplaceEvilEagleRiderVisibleTiles`, `ReplaceEvilEagleRiderHiddenTiles`, `ReloadColorDungeonNpcTiles`) to achieve 100% completion of Bank 0
+* **Current Overall Progress**: 33.75%
+* **Number of Verified Functions**: 405
+* **Number of Decompiled Functions**: 405
+* **Number Remaining**: ~795 functions
+* **Current Subsystem**: Bank 0 (Home Bank) - Room Entities & Final Tile Handlers (`code/bank0.asm`, `00:37FE`-`00:3FD1`) [100% OF BANK 0 COMPLETE]
+* **Current Task**: Bank 0 Room Entities & Final Tile Handlers completed - 100% of Bank 0 verified!
+* **Last Completed Task**: Decompiled and verified final 5 Bank 0 routines (`LoadRoomEntities`, `LoadEntityFromDefinition`, `ReplaceEvilEagleRiderVisibleTiles`, `ReplaceEvilEagleRiderHiddenTiles`, `ReloadColorDungeonNpcTiles`) (`00:37FE`-`00:3FD1`)
+* **Next Task**: Begin deconstruction of Bank 1 (Room transitions, world physics, entity mechanics)
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

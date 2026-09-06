@@ -617,10 +617,10 @@ replace_tiles_label:
                 ReplaceTilesButtonPressed(gb);
                 return;
             case REPLACE_TILES_UNKNOWN_04:
-                ReplaceTiles_04(gb);
+                ReplaceEvilEagleRiderVisibleTiles(gb);
                 return;
             case REPLACE_TILES_UNKNOWN_08:
-                ReplaceTiles_08(gb);
+                ReplaceEvilEagleRiderHiddenTiles(gb);
                 return;
             case REPLACE_TILES_GOLDEN_LEAF:
                 ReplaceSlimeKeyTilesByGoldenLeaf(gb);
@@ -653,5 +653,25 @@ replace_tiles_label:
     gb_write(gb, hAnimatedTilesFrameCount, frame_count);
 
     AnimateTilesGroup(gb, load_counter_tiles, func_020_54f5, configure_copy, func_038_7830);
+    DrawLinkSpriteAndReturn(gb);
+}
+
+void ReplaceEvilEagleRiderVisibleTiles(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, BANK_EvilEagleRiderVisibleTiles);
+    CopyData(gb, (uint16_t)(vTiles0 + 0x460), EvilEagleRiderVisibleTiles, 0x10);
+    CopyData(gb, (uint16_t)(vTiles0 + 0x480), (uint16_t)(EvilEagleRiderVisibleTiles + 0x10), 0x10);
+    gb_write(gb, hReplaceTiles, 0);
+    gb_write(gb, rSelectROMBank, BANK_LinkCharacterTiles);
+    DrawLinkSpriteAndReturn(gb);
+}
+
+void ReplaceEvilEagleRiderHiddenTiles(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, BANK_EvilEagleRiderHiddenTiles);
+    CopyData(gb, (uint16_t)(vTiles0 + 0x460), EvilEagleRiderHiddenTiles, 0x10);
+    CopyData(gb, (uint16_t)(vTiles0 + 0x480), (uint16_t)(EvilEagleRiderHiddenTiles + 0x10), 0x10);
+    gb_write(gb, hReplaceTiles, 0);
+    gb_write(gb, rSelectROMBank, BANK_LinkCharacterTiles);
     DrawLinkSpriteAndReturn(gb);
 }

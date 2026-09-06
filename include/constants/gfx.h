@@ -254,3 +254,10 @@
 #endif /* LADX_CONSTANTS_GFX_H */
 #define vTilesSwitchBlockA              0x9040
 #define vTilesSwitchBlockB              0x9080
+
+#define BANK_EvilEagleRiderVisibleTiles         0x05
+#define EvilEagleRiderVisibleTiles              0x59DE
+#define BANK_EvilEagleRiderHiddenTiles          0x05
+#define EvilEagleRiderHiddenTiles               0x59FE
+#define ColorDungeonNpcTiles                    0x4000
+

@@ -201,6 +201,19 @@ void AnimateTiles(GBState *gb,
                   void (*configure_copy)(GBState *, uint8_t, uint8_t *),
                   void (*func_038_7830)(GBState *));
 
+
+/**
+ * ReplaceEvilEagleRiderVisibleTiles (00:3F93)
+ * Copies visible Evil Eagle Rider tiles to vTiles0 + 0x460 / 0x480.
+ */
+void ReplaceEvilEagleRiderVisibleTiles(GBState *gb);
+
+/**
+ * ReplaceEvilEagleRiderHiddenTiles (00:3FA9)
+ * Copies hidden Evil Eagle Rider tiles to vTiles0 + 0x460 / 0x480.
+ */
+void ReplaceEvilEagleRiderHiddenTiles(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

@@ -447,7 +447,39 @@ static void test_animate_tiles_dispatcher(void) {
     TEST_ASSERT(gb_read(&gb, hAnimatedTilesFrameCount) == 0x06, "hAnimatedTilesFrameCount not incremented");
 }
 
+
+static void test_replace_evil_eagle_rider_tiles(void) {
+    GBState gb;
+    init_test_gb(&gb);
+
+    /* Visible tiles (00:3F93) */
+    size_t rom_vis_1 = (size_t)BANK_EvilEagleRiderVisibleTiles * 0x4000 + (EvilEagleRiderVisibleTiles - 0x4000);
+    size_t rom_vis_2 = rom_vis_1 + 0x10;
+    test_rom[rom_vis_1] = 0x55;
+    test_rom[rom_vis_2] = 0x66;
+
+    gb_write(&gb, hReplaceTiles, REPLACE_TILES_UNKNOWN_04);
+    ReplaceEvilEagleRiderVisibleTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x460) == 0x55, "Evil eagle visible tile 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x480) == 0x66, "Evil eagle visible tile 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, hReplaceTiles) == 0, "hReplaceTiles not cleared");
+    TEST_ASSERT(gb.rom_bank == BANK_LinkCharacterTiles, "Bank not restored to LinkCharacterTiles");
+
+    /* Hidden tiles (00:3FA9) */
+    size_t rom_hid_1 = (size_t)BANK_EvilEagleRiderHiddenTiles * 0x4000 + (EvilEagleRiderHiddenTiles - 0x4000);
+    size_t rom_hid_2 = rom_hid_1 + 0x10;
+    test_rom[rom_hid_1] = 0x77;
+    test_rom[rom_hid_2] = 0x88;
+
+    gb_write(&gb, hReplaceTiles, REPLACE_TILES_UNKNOWN_08);
+    ReplaceEvilEagleRiderHiddenTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x460) == 0x77, "Evil eagle hidden tile 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x480) == 0x88, "Evil eagle hidden tile 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, hReplaceTiles) == 0, "hReplaceTiles not cleared");
+}
+
 void run_animated_tiles_tests(void) {
+    test_replace_evil_eagle_rider_tiles();
     failures = 0;
 
     printf("[*] Running DrawLinkSprite tests...\n");

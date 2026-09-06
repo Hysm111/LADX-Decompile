@@ -832,7 +832,29 @@ static void test_indoor_and_base_overworld_tiles(void) {
     TEST_ASSERT(gb_read(&gb, vTiles1 + 0x400) == 0x42, "Indoor items not copied to vTiles1+0x400");
 }
 
+
+static void test_reload_color_dungeon_npc_tiles(void) {
+    GBState gb;
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_rom, sizeof(mock_rom));
+
+    /* DMG (bank 0x34) */
+    mock_rom[ROM_BANK_OFFSET(0x34, ColorDungeonNpcTiles)] = 0xC4;
+    gb_write(&gb, hIsGBC, 0);
+    ReloadColorDungeonNpcTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0xC4, "DMG Color dungeon NPC tile mismatch");
+    TEST_ASSERT(gb.rom_bank == 0x20, "ROM bank not restored to 0x20");
+
+    /* CGB (bank 0x35) */
+    mock_rom[ROM_BANK_OFFSET(0x35, ColorDungeonNpcTiles)] = 0xC5;
+    gb_write(&gb, hIsGBC, 1);
+    ReloadColorDungeonNpcTiles(&gb);
+    TEST_ASSERT(gb_read(&gb, vTiles0 + 0x400) == 0xC5, "CGB Color dungeon NPC tile mismatch");
+    TEST_ASSERT(gb.rom_bank == 0x20, "ROM bank not restored to 0x20");
+}
+
 int run_gfx_tests(void) {
+    test_reload_color_dungeon_npc_tiles();
     printf("[*] Running GFX and Credits tile loading tests...\n");
     setup_mock_data();
     test_indoor_and_base_overworld_tiles();

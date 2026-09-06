@@ -1122,7 +1122,155 @@ static void test_recoil_and_kill_enemy_routines(void) {
     assert(gb_read(&gb, wEntitiesStatusTable + 6) == 0);
 }
 
+
+static bool mock_recent_rooms_called = false;
+static void mock_update_recent_rooms(GBState *gb) {
+    (void)gb;
+    mock_recent_rooms_called = true;
+}
+
+static uint8_t mock_spawn_entity_type = 0;
+static uint16_t mock_spawn_new_entity(GBState *gb, uint8_t entity_type) {
+    (void)gb;
+    mock_spawn_entity_type = entity_type;
+    return 3; /* return slot 3 */
+}
+
+static bool mock_config_entity_called = false;
+static uint8_t mock_config_slot = 0;
+static void mock_configure_new_entity(GBState *gb, uint8_t slot) {
+    (void)gb;
+    mock_config_entity_called = true;
+    mock_config_slot = slot;
+}
+
+static bool mock_prep_pos_called = false;
+static uint8_t mock_prep_slot = 0;
+static void mock_prepare_entity_pos(GBState *gb, uint8_t slot) {
+    (void)gb;
+    mock_prep_pos_called = true;
+    mock_prep_slot = slot;
+}
+
+static void test_load_entity_from_definition_and_room(void) {
+    printf("[*] Running LoadEntityFromDefinition and LoadRoomEntities tests (00:37FE, 00:3883)...\n");
+
+    GBState gb;
+
+    /* 1. LoadEntityFromDefinition - success */
+    gb_init(&gb);
+    gb_write(&gb, hMultiPurposeD, 0);
+    gb_write(&gb, hMapRoom, 0x12);
+    gb_write(&gb, wEntitiesClearedRooms + 0x12, 0);
+
+    /* Definition at 0xD000: Y=0x30, X=0x04 -> byte0=0x34; Type=0x55 */
+    gb_write(&gb, 0xD000, 0x34);
+    gb_write(&gb, 0xD001, 0x55);
+    uint16_t def_ptr = 0xD000;
+
+    mock_config_entity_called = false;
+    mock_prep_pos_called = false;
+    uint8_t slot = LoadEntityFromDefinition(&gb, &def_ptr, mock_configure_new_entity, mock_prepare_entity_pos);
+
+    assert(slot == 0);
+    assert(def_ptr == 0xD002);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0) == ENTITY_STATUS_INIT);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0) == 0x40); /* 0x30 + 0x10 */
+    assert(gb_read(&gb, wEntitiesPosXTable + 0) == 0x48); /* 0x40 + 0x08 */
+    assert(gb_read(&gb, wEntitiesTypeTable + 0) == 0x55);
+    assert(mock_config_entity_called && mock_config_slot == 0);
+    assert(mock_prep_pos_called && mock_prep_slot == 0);
+    assert(gb.rom_bank == BANK_OverworldEntitiesPointersTable);
+
+    /* 2. LoadEntityFromDefinition - skipped because cleared */
+    gb_init(&gb);
+    gb_write(&gb, hMultiPurposeD, 2); /* order 2 -> bit 1 << 2 = 0x04 */
+    gb_write(&gb, hMapRoom, 0x15);
+    gb_write(&gb, wEntitiesClearedRooms + 0x15, 0x04);
+    gb_write(&gb, 0xD000, 0x34);
+    gb_write(&gb, 0xD001, 0x55);
+    def_ptr = 0xD000;
+
+    slot = LoadEntityFromDefinition(&gb, &def_ptr, NULL, NULL);
+    assert(slot == 0xFF);
+    assert(def_ptr == 0xD002);
+    assert(gb_read(&gb, hMultiPurposeD) == 3);
+
+    /* 3. LoadEntityFromDefinition - skipped because all slots full */
+    gb_init(&gb);
+    gb_write(&gb, hMultiPurposeD, 0);
+    for (int i = 0; i < 16; i++) {
+        gb_write(&gb, wEntitiesStatusTable + i, ENTITY_STATUS_ACTIVE);
+    }
+    gb_write(&gb, 0xD000, 0x34);
+    gb_write(&gb, 0xD001, 0x55);
+    def_ptr = 0xD000;
+
+    slot = LoadEntityFromDefinition(&gb, &def_ptr, NULL, NULL);
+    assert(slot == 0xFF);
+    assert(def_ptr == 0xD002);
+    assert(gb_read(&gb, hMultiPurposeD) == 1);
+
+    /* 4. LoadRoomEntities - Overworld */
+    gb_init(&gb);
+    static uint8_t mock_ent_rom[0x4000 * 0x20];
+    memset(mock_ent_rom, 0, sizeof(mock_ent_rom));
+    gb_attach_rom(&gb, mock_ent_rom, sizeof(mock_ent_rom));
+
+    gb_write(&gb, wCurrentBank, 1);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hMapRoom, 0x04);
+
+    /* OverworldEntitiesPointersTable ($4000 in bank $16): entry for room 4 ($4008) -> points to $4100 */
+    size_t ptr_offset = (size_t)0x16 * 0x4000 + (OverworldEntitiesPointersTable + 0x08 - 0x4000);
+    mock_ent_rom[ptr_offset] = 0x00;
+    mock_ent_rom[ptr_offset + 1] = 0x41;
+
+    /* Entity list at $4100: entity 1 (pos 0x22, type 0x10), end sentinel $FF */
+    size_t list_offset = (size_t)0x16 * 0x4000 + (0x4100 - 0x4000);
+    mock_ent_rom[list_offset + 0] = 0x22;
+    mock_ent_rom[list_offset + 1] = 0x10;
+    mock_ent_rom[list_offset + 2] = ENTITIES_END;
+
+    mock_recent_rooms_called = false;
+    LoadRoomEntities(&gb, mock_update_recent_rooms, NULL, NULL, NULL);
+
+    assert(mock_recent_rooms_called);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0) == ENTITY_STATUS_INIT);
+    assert(gb_read(&gb, wEntitiesTypeTable + 0) == 0x10);
+    assert(gb.rom_bank == 1); /* restored */
+
+    /* 5. LoadRoomEntities - Eagle's Tower wrecking ball */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_ent_rom, sizeof(mock_ent_rom));
+    gb_write(&gb, wCurrentBank, 1);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    gb_write(&gb, hMapRoom, 0x06);
+    gb_write(&gb, wWreckingBallRoom, 0x06);
+    gb_write(&gb, wWreckingBallPosX, 0x50);
+    gb_write(&gb, wWreckingBallPosY, 0x60);
+
+    /* IndoorsBEntitiesPointersTable ($4400 in bank $16): entry for room 6 ($440C) -> points to $4200 */
+    ptr_offset = (size_t)0x16 * 0x4000 + (IndoorsBEntitiesPointersTable + 0x0C - 0x4000);
+    mock_ent_rom[ptr_offset] = 0x00;
+    mock_ent_rom[ptr_offset + 1] = 0x42;
+    list_offset = (size_t)0x16 * 0x4000 + (0x4200 - 0x4000);
+    mock_ent_rom[list_offset] = ENTITIES_END;
+
+    mock_spawn_entity_type = 0;
+    LoadRoomEntities(&gb, NULL, mock_spawn_new_entity, NULL, NULL);
+
+    assert(mock_spawn_entity_type == ENTITY_WRECKING_BALL);
+    /* Wrecking ball placed at slot 3 */
+    assert(gb_read(&gb, wEntitiesPosXTable + 3) == 0x50);
+    assert(gb_read(&gb, wEntitiesPosYTable + 3) == 0x60);
+    assert(gb_read(&gb, wEntitiesLoadOrderTable + 3) == 0xFF);
+    assert(gb.rom_bank == 1);
+}
+
 void run_entities_tests(void) {
+    test_load_entity_from_definition_and_room();
     test_is_zero();
     test_entity_countdowns();
     test_create_trading_item_entity();
