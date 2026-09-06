@@ -490,6 +490,105 @@ static void test_bank_trampolines_batch3(void) {
     TEST_ASSERT(gb.rom_bank == 0x1B, "func_036_4BE8_trampoline did not restore stacked bank");
 }
 
+static void mock_get_bg_attr_addr(GBState *gb) {
+    TEST_ASSERT(gb->rom_bank == 0x1A, "GetBGAttributesAddressForObject must be called in bank $1A");
+    /* Mock returning bank 0x02 and ROM address 0x5010 */
+    gb_write(gb, hMultiPurpose8, 0x02);
+    gb_write(gb, hMultiPurpose9, 0x50);
+    gb_write(gb, hMultiPurposeA, 0x10);
+}
+
+static uint8_t mock_palette_counter = 0;
+static void mock_01a_6710(GBState *gb) {
+    TEST_ASSERT(gb->rom_bank == 0x1A, "func_01A_6710 must be called in bank $1A");
+    gb_write(gb, hMultiPurpose8, 0x03);
+    gb_write(gb, hMultiPurpose9, 0x51);
+    gb_write(gb, hMultiPurposeA, (uint8_t)(0x20 + (mock_palette_counter++)));
+}
+
+static void test_bg_attributes_draw_commands(void) {
+    GBState gb;
+    static uint8_t mock_test_rom[0x10000];
+
+    /* Initialize mock ROM bytes */
+    /* Bank 2 at 0x5010 -> offset 2 * 0x4000 + 0x1010 = 0x9010 */
+    mock_test_rom[0x9010] = 0xA1; /* TL */
+    mock_test_rom[0x9011] = 0xB2; /* TR */
+    mock_test_rom[0x9012] = 0xC3; /* BL */
+    mock_test_rom[0x9013] = 0xD4; /* BR */
+
+    /* Bank 3 at 0x5120 -> offset 3 * 0x4000 + 0x1120 = 0xD120 */
+    mock_test_rom[0xD120] = 0x7E; /* for test 3 */
+    mock_test_rom[0xD121] = 0x11; /* for test 4 val0 */
+    mock_test_rom[0xD122] = 0x22; /* for test 4 val1 */
+
+    /* 1. Test func_91D */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_test_rom, sizeof(mock_test_rom));
+    gb_write(&gb, wDDD8, 0x04); /* bc = 4 << 2 = 16 */
+    gb_write(&gb, hIntersectedObjectBGAddressHigh, 0x98);
+    gb_write(&gb, hIntersectedObjectBGAddressLow, 0x24);
+    gb_write(&gb, wDrawCommandsVRAM1Size, 0x00);
+
+    func_91D(&gb, 0x07, mock_get_bg_attr_addr);
+
+    TEST_ASSERT(gb.rom_bank == 0x07, "func_91D did not restore stacked bank");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandsVRAM1Size) == 0x0A, "func_91D did not add 10 to wDrawCommandsVRAM1Size");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 0) == 0x98, "func_91D byte 0 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 1) == 0x24, "func_91D byte 1 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 2) == 0x81, "func_91D byte 2 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 3) == 0xA1, "func_91D byte 3 (TL) wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 4) == 0xC3, "func_91D byte 4 (BL) wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 5) == 0x98, "func_91D byte 5 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 6) == 0x25, "func_91D byte 6 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 7) == 0x81, "func_91D byte 7 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 8) == 0xB2, "func_91D byte 8 (TR) wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 9) == 0xD4, "func_91D byte 9 (BR) wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 10) == 0x00, "func_91D terminator wrong");
+
+    /* 2. Test func_91D_jp_92E appending to existing list */
+    gb_write(&gb, hIntersectedObjectBGAddressHigh, 0x99);
+    gb_write(&gb, hIntersectedObjectBGAddressLow, 0x30);
+    func_91D_jp_92E(&gb, 0x0020, 0x09, mock_get_bg_attr_addr);
+
+    TEST_ASSERT(gb.rom_bank == 0x09, "func_91D_jp_92E did not restore stacked bank");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandsVRAM1Size) == 0x14, "func_91D_jp_92E size not 20");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 10) == 0x99, "func_91D_jp_92E 2nd entry byte 0 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 11) == 0x30, "func_91D_jp_92E 2nd entry byte 1 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 20) == 0x00, "func_91D_jp_92E terminator wrong");
+
+    /* 3. Test func_983 */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_test_rom, sizeof(mock_test_rom));
+    mock_palette_counter = 0;
+    uint16_t de = 0x2000;
+    uint8_t val = func_983(&gb, &de, mock_01a_6710);
+    TEST_ASSERT(val == 0x7E, "func_983 returned incorrect byte");
+    TEST_ASSERT(de == 0x2001, "func_983 did not increment de");
+    TEST_ASSERT(gb.rom_bank == 0x03, "func_983 did not switch to hMultiPurpose8");
+
+    /* 4. Test func_999 */
+    gb_init(&gb);
+    gb_attach_rom(&gb, mock_test_rom, sizeof(mock_test_rom));
+    mock_palette_counter = 1; /* will read 0xD121 then 0xD122 */
+    gb_write(&gb, hIntersectedObjectBGAddressHigh, 0x9A);
+    gb_write(&gb, hIntersectedObjectBGAddressLow, 0x15);
+    gb_write(&gb, wDrawCommandsVRAM1Size, 0x00);
+    de = 0x3000;
+    func_999(&gb, &de, 0x08, mock_01a_6710);
+
+    TEST_ASSERT(gb.rom_bank == 0x08, "func_999 did not restore stacked bank");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandsVRAM1Size) == 0x05, "func_999 size not 5");
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose0) == 0x11, "func_999 hMultiPurpose0 wrong");
+    TEST_ASSERT(gb_read(&gb, hMultiPurpose1) == 0x22, "func_999 hMultiPurpose1 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 0) == 0x9A, "func_999 byte 0 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 1) == 0x15, "func_999 byte 1 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 2) == 0x01, "func_999 byte 2 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 3) == 0x11, "func_999 byte 3 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 4) == 0x22, "func_999 byte 4 wrong");
+    TEST_ASSERT(gb_read(&gb, wDrawCommandVRAM1 + 5) == 0x00, "func_999 terminator wrong");
+}
+
 int run_bank_tests(void) {
     printf("[*] Running AdjustBankNumberForGBC tests...\n");
     test_adjust_bank_number_for_gbc();
@@ -528,6 +627,9 @@ int run_bank_tests(void) {
     test_bank_trampolines();
     test_bank_trampolines_batch2();
     test_bank_trampolines_batch3();
+
+    printf("[*] Running BG Attributes Draw Commands tests...\n");
+    test_bg_attributes_draw_commands();
 
     if (failures == 0) {
         printf("  [PASS] All bank.asm functions verified successfully!\n");

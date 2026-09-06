@@ -291,6 +291,34 @@ void func_020_6D52_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_f
  */
 void func_036_4BE8_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_func)(GBState *));
 
+/**
+ * Room BG attributes update for intersected object.
+ * Computes bc = wDDD8 * 4, calls GetBGAttributesAddressForObject in bank $1A,
+ * appends a 10-byte 2-column draw command to wDrawCommandVRAM1, and restores stacked bank.
+ * Corresponds to func_91D (00:091D) in disassembly.
+ */
+void func_91D(GBState *gb, uint8_t stacked_bank, void (*get_bg_attr_addr)(GBState *));
+
+/**
+ * Same as func_91D but caller provides explicit bc (object attribute index * 4).
+ * Corresponds to func_91D.jp_92E (00:092E) in disassembly.
+ */
+void func_91D_jp_92E(GBState *gb, uint16_t bc, uint8_t stacked_bank, void (*get_bg_attr_addr)(GBState *));
+
+/**
+ * Loads a palette data byte via func_01A_6710 into hMultiPurpose9:hMultiPurposeA in bank $1A,
+ * switches to hMultiPurpose8, reads the byte, and increments de.
+ * Corresponds to func_983 (00:0983) in disassembly.
+ */
+uint8_t func_983(GBState *gb, uint16_t *de, void (*func_01A_6710)(GBState *));
+
+/**
+ * Calls func_983 twice to fetch 2 palette attribute bytes, appends a 5-byte row draw command
+ * to wDrawCommandVRAM1, and restores stacked bank.
+ * Corresponds to func_999 (00:0999) in disassembly.
+ */
+void func_999(GBState *gb, uint16_t *de, uint8_t stacked_bank, void (*func_01A_6710)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

@@ -42,6 +42,37 @@ uint8_t GetEntityTransitionCountdown(GBState *gb, uint16_t entity_index);
  */
 void DecrementEntityIgnoreHitsCountdown(GBState *gb, uint16_t entity_index);
 
+/**
+ * CreateTradingItemEntity (00:0C0C)
+ * Spawns a temporary entity with ENTITY_TRADING_ITEM (0xAF) at Link's current position.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param spawn_func Callback to spawn entity (e.g. SpawnNewEntity_trampoline)
+ */
+void CreateTradingItemEntity(GBState *gb, uint16_t (*spawn_func)(GBState *, uint8_t entity_type));
+
+/**
+ * SpawnNewEntity_trampoline (00:3B86)
+ * Switches to BANK(SpawnNewEntity) ($03), calls SpawnNewEntity, and restores saved bank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_type Type ID of entity to spawn
+ * @param spawn_new_entity Target callback
+ * @return Entity slot offset (de)
+ */
+uint16_t SpawnNewEntity_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*spawn_new_entity)(GBState *, uint8_t));
+
+/**
+ * SpawnNewEntityInRange_trampoline (00:3B98)
+ * Switches to BANK(SpawnNewEntityInRange) ($03), calls SpawnNewEntityInRange, and restores saved bank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_type Type ID of entity to spawn
+ * @param spawn_in_range Target callback
+ * @return Entity slot offset (de)
+ */
+uint16_t SpawnNewEntityInRange_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*spawn_in_range)(GBState *, uint8_t));
+
 #ifdef __cplusplus
 }
 #endif

@@ -428,3 +428,97 @@ void func_036_4BE8_trampoline(GBState *gb, uint8_t stacked_bank, void (*target_f
     }
     RestoreStackedBankAndReturn(gb, stacked_bank);
 }
+
+void func_91D_jp_92E(GBState *gb, uint16_t bc, uint8_t stacked_bank, void (*get_bg_attr_addr)(GBState *)) {
+    if (!gb) return;
+
+    (void)bc;
+    gb_write(gb, rSelectROMBank, 0x1A);
+    if (get_bg_attr_addr) {
+        get_bg_attr_addr(gb);
+    }
+
+    uint8_t bank = gb_read(gb, hMultiPurpose8);
+    gb_write(gb, rSelectROMBank, bank);
+
+    uint8_t size = gb_read(gb, wDrawCommandsVRAM1Size);
+    gb_write(gb, wDrawCommandsVRAM1Size, (uint8_t)(size + 0x0A));
+
+    uint16_t hl = (uint16_t)(wDrawCommandVRAM1 + size);
+    uint16_t de = ((uint16_t)gb_read(gb, hMultiPurpose9) << 8) | gb_read(gb, hMultiPurposeA);
+
+    uint8_t bg_high = gb_read(gb, hIntersectedObjectBGAddressHigh);
+    uint8_t bg_low = gb_read(gb, hIntersectedObjectBGAddressLow);
+
+    /* Entry 1: Column at (bg_high, bg_low) */
+    gb_write(gb, hl++, bg_high);
+    gb_write(gb, hl++, bg_low);
+    gb_write(gb, hl++, 0x81); /* DC_COPY_COLUMN | 1 */
+    gb_write(gb, hl++, gb_read(gb, de));
+    gb_write(gb, hl++, gb_read(gb, (uint16_t)(de + 2)));
+
+    /* Entry 2: Column at (bg_high, bg_low + 1) */
+    gb_write(gb, hl++, bg_high);
+    gb_write(gb, hl++, (uint8_t)(bg_low + 1));
+    gb_write(gb, hl++, 0x81); /* DC_COPY_COLUMN | 1 */
+    gb_write(gb, hl++, gb_read(gb, (uint16_t)(de + 1)));
+    gb_write(gb, hl++, gb_read(gb, (uint16_t)(de + 3)));
+
+    /* Terminator */
+    gb_write(gb, hl, 0x00);
+
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}
+
+void func_91D(GBState *gb, uint8_t stacked_bank, void (*get_bg_attr_addr)(GBState *)) {
+    if (!gb) return;
+
+    uint8_t ddd8 = gb_read(gb, wDDD8);
+    uint16_t bc = (uint16_t)ddd8 << 2;
+    func_91D_jp_92E(gb, bc, stacked_bank, get_bg_attr_addr);
+}
+
+uint8_t func_983(GBState *gb, uint16_t *de, void (*func_01A_6710)(GBState *)) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, 0x1A);
+    if (func_01A_6710) {
+        func_01A_6710(gb);
+    }
+
+    uint8_t bank = gb_read(gb, hMultiPurpose8);
+    gb_write(gb, rSelectROMBank, bank);
+
+    uint8_t high = gb_read(gb, hMultiPurpose9);
+    uint8_t low = gb_read(gb, hMultiPurposeA);
+    uint16_t addr = ((uint16_t)high << 8) | low;
+    uint8_t val = gb_read(gb, addr);
+
+    if (de) {
+        (*de)++;
+    }
+    return val;
+}
+
+void func_999(GBState *gb, uint16_t *de, uint8_t stacked_bank, void (*func_01A_6710)(GBState *)) {
+    if (!gb) return;
+
+    uint8_t val0 = func_983(gb, de, func_01A_6710);
+    gb_write(gb, hMultiPurpose0, val0);
+
+    uint8_t val1 = func_983(gb, de, func_01A_6710);
+    gb_write(gb, hMultiPurpose1, val1);
+
+    uint8_t size = gb_read(gb, wDrawCommandsVRAM1Size);
+    gb_write(gb, wDrawCommandsVRAM1Size, (uint8_t)(size + 5));
+
+    uint16_t hl = (uint16_t)(wDrawCommandVRAM1 + size);
+    gb_write(gb, hl++, gb_read(gb, hIntersectedObjectBGAddressHigh));
+    gb_write(gb, hl++, gb_read(gb, hIntersectedObjectBGAddressLow));
+    gb_write(gb, hl++, 0x01); /* DC_COPY_ROW | 1 */
+    gb_write(gb, hl++, val0);
+    gb_write(gb, hl++, val1);
+    gb_write(gb, hl, 0x00);   /* terminator */
+
+    RestoreStackedBankAndReturn(gb, stacked_bank);
+}

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 8.08%
-* **Number of Verified Functions**: 97
-* **Number of Decompiled Functions**: 97
-* **Number Remaining**: ~1160+ functions
-* **Current Subsystem**: Bank 0 - Bank Trampolines Batch 3
-* **Current Task**: Completed and verified 12 Bank 0 trampolines
-* **Last Completed Task**: Decompiled and verified `func_020_6D0E_trampoline`, `CheckPushedTombStone_trampoline`, `GetEntityInitHandler_trampoline`, `func_020_4874_trampoline`, `func_020_4954_trampoline`, `ReplaceObjects56and57_trampoline`, `func_036_505F_trampoline`, `func_036_4F9B_trampoline`, `func_003_5A2E_trampoline`, `func_036_4F68_trampoline`, `func_020_6D52_trampoline`, and `func_036_4BE8_trampoline`
-* **Next Task**: Proceed to the next Bank 0 subsystem (`func_91D`, `func_983`, `func_999`, and room BG attribute draw routines)
-* **Last Update Timestamp**: 2026-09-06T06:30:00+03:00
+* **Current Overall Progress**: 8.67%
+* **Number of Verified Functions**: 104
+* **Number of Decompiled Functions**: 104
+* **Number Remaining**: ~1150+ functions
+* **Current Subsystem**: Bank 0 - Room BG Attributes & Entity Spawning
+* **Current Task**: Completed and verified room BG attribute draw routines and entity spawn trampolines
+* **Last Completed Task**: Decompiled and verified `func_91D`, `func_91D_jp_92E`, `func_983`, `func_999`, `CreateTradingItemEntity`, `SpawnNewEntity_trampoline`, and `SpawnNewEntityInRange_trampoline`
+* **Next Task**: Proceed to the next Bank 0 subsystem (`SelectRoomTilesets` at `00:0D1E`)
+* **Last Update Timestamp**: 2026-09-06T06:50:00+03:00
 
 ---
 
@@ -116,6 +116,13 @@
 | `func_036_4F68_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_4F68, restores stacked bank (`00:0A77`) |
 | `func_020_6D52_trampoline` | VERIFIED | PASS | PASS | Selects bank $20, calls func_020_6D52, restores stacked bank (`00:0A83`) |
 | `func_036_4BE8_trampoline` | VERIFIED | PASS | PASS | Selects bank $36, calls func_036_4BE8, restores stacked bank (`00:0A8F`) |
+| `func_91D` | VERIFIED | PASS | PASS | Appends 2-column BG attribute draw command for room object to `wDrawCommandVRAM1` (`00:091D`) |
+| `func_91D_jp_92E` | VERIFIED | PASS | PASS | Fetches object BG attributes from bank $1A and queues 2-column draw command (`00:092E`) |
+| `func_983` | VERIFIED | PASS | PASS | Reads single object attribute byte from target ROM bank via helper `01A:6710` (`00:0983`) |
+| `func_999` | VERIFIED | PASS | PASS | Appends 2-byte row BG attribute draw command to `wDrawCommandVRAM1` (`00:0999`) |
+| `CreateTradingItemEntity` | VERIFIED | PASS | PASS | Spawns `ENTITY_TRADING_ITEM` at Link's current coordinates (`00:0C0C`) |
+| `SpawnNewEntity_trampoline` | VERIFIED | PASS | PASS | Switches to bank $03, calls `SpawnNewEntity`, reloads saved bank (`00:3B86`) |
+| `SpawnNewEntityInRange_trampoline` | VERIFIED | PASS | PASS | Switches to bank $03, calls `SpawnNewEntityInRange`, reloads saved bank (`00:3B98`) |
 
 ---
 
@@ -137,9 +144,14 @@
 - **Bank Trampolines and Graphic/Dialog Handlers**:
   - Trampolines switch `rSelectROMBank` or execute `SwitchBank` to target banks (such as `$03` for dungeon map, `$0F` for font dialog, `$20` for palettes/active sprite rects/tombstones/entity init, `$24` for BG columns, `$36` for rubble/items/photographer, and `$3D` for photo background map).
   - Stacked bank restoration is handled via `RestoreStackedBankAndReturn` (restores `rSelectROMBank` only) or `RestoreStackedBank` (updates both `rSelectROMBank` and `wCurrentBank`).
+- **Room BG Attributes Draw Queue & Entity Spawning (`code/bank0.asm:00:091D`, `00:0C0C`, `00:3B86`)**:
+  - `wDrawCommandVRAM1` (`$DC91`) stores VRAM bank 1 draw command queue.
+  - 2-column BG attribute draw command (`0x81`, 10 bytes): writes 2 vertical columns with TL/BL and TR/BR bytes fetched from `GetBGAttributesAddressForObject` in bank `$1A`.
+  - Row draw command (`0x01`, 5 bytes): writes 2 horizontal tiles via helper `func_983`.
+  - `CreateTradingItemEntity`: invokes `SpawnNewEntity_trampoline` with `ENTITY_TRADING_ITEM` (`$AF`), then records `hLinkPositionX` and `hLinkPositionY` in `wEntitiesPosXTable[de]` and `wEntitiesPosYTable[de]`.
 
 ---
 
 ## Verification Log
 
-- 97 functions tested and verified with 100% pass rate.
+- 104 functions tested and verified with 100% pass rate.

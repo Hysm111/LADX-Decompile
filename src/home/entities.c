@@ -1,5 +1,8 @@
 #include "home/entities.h"
+#include "home/bank.h"
 #include "constants/memory.h"
+#include "constants/hardware.h"
+#include "constants/entities.h"
 
 uint8_t IsZero(GBState *gb, uint16_t hl, uint16_t bc) {
     if (!gb) return 0;
@@ -25,4 +28,43 @@ void DecrementEntityIgnoreHitsCountdown(GBState *gb, uint16_t entity_index) {
     if (val != 0) {
         gb_write(gb, addr, (uint8_t)(val - 1));
     }
+}
+
+void CreateTradingItemEntity(GBState *gb, uint16_t (*spawn_func)(GBState *, uint8_t entity_type)) {
+    if (!gb) return;
+
+    uint16_t de = 0;
+    if (spawn_func) {
+        de = spawn_func(gb, ENTITY_TRADING_ITEM);
+    }
+
+    uint8_t link_x = gb_read(gb, hLinkPositionX);
+    uint8_t link_y = gb_read(gb, hLinkPositionY);
+
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + de), link_x);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + de), link_y);
+}
+
+uint16_t SpawnNewEntity_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*spawn_new_entity)(GBState *, uint8_t)) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    uint16_t de = 0;
+    if (spawn_new_entity) {
+        de = spawn_new_entity(gb, entity_type);
+    }
+    ReloadSavedBank(gb);
+    return de;
+}
+
+uint16_t SpawnNewEntityInRange_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*spawn_in_range)(GBState *, uint8_t)) {
+    if (!gb) return 0;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    uint16_t de = 0;
+    if (spawn_in_range) {
+        de = spawn_in_range(gb, entity_type);
+    }
+    ReloadSavedBank(gb);
+    return de;
 }

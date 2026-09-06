@@ -38,12 +38,15 @@
 #define wDrawCommandsVRAM1Size  0xDC90
 #define wDrawCommandVRAM1       0xDC91
 #define wAnimatedScrollingTilesStorage 0xDCC0
+#define wDDD8                   0xDDD8
 #define wFarcallBank            0xDE01
 #define wFarcallAdressHigh      0xDE02
 #define wFarcallAdressLow       0xDE03
 #define wFarcallReturnBank      0xDE04
 
 /* WRAM Entity Tables */
+#define wEntitiesPosXTable                    0xC200
+#define wEntitiesPosYTable                    0xC210
 #define wEntitiesTransitionCountdownTable     0xC2E0
 #define wEntitiesPrivateCountdown1Table       0xC2F0
 #define wEntitiesIgnoreHitsCountdownTable     0xC410
@@ -70,11 +73,16 @@
 #define hMusicFadeOutTimer           0xFFA8
 #define hContinueMusicAfterWarp      0xFFBC
 #define hNextDefaultMusicTrack       0xFFBF
+#define hIntersectedObjectBGAddressHigh 0xFFCF
+#define hIntersectedObjectBGAddressLow  0xFFD0
 #define hInterrupts                  0xFFD2
 #define hMultiPurpose0               0xFFD7
 #define hMultiPurpose1               0xFFD8
 #define hMultiPurpose2               0xFFD9
 #define hMultiPurpose3               0xFFDA
+#define hMultiPurpose8               0xFFDF
+#define hMultiPurpose9               0xFFE0
+#define hMultiPurposeA               0xFFE1
 #define hMultiPurposeF               0xFFE6
 #define hFrameCounter                0xFFE7
 #define hJingle                      0xFFF2
