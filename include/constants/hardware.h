@@ -130,3 +130,5 @@
 #define hAnimatedTilesDataOffset        0xFFA7
 #define hMultiPurpose5                  0xFFDC
 #define hMultiPurposeE                  0xFFE5
+#define hMultiPurposeB                  0xFFE2
+#define hMultiPurposeC                  0xFFE3

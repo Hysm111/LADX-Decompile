@@ -344,6 +344,50 @@ typedef struct LoadRoomCallbacks {
  */
 void LoadRoom(GBState *gb, const LoadRoomCallbacks *callbacks);
 
+
+/**
+ * Copies two horizontally-adjacent bytes from the object tilemap/attrmap to the BG tilemap (00:2214).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param hl Source pointer in object tilemap (in VRAM/ROM)
+ * @param bc Destination pointer in BG map
+ * @param out_hl Updated hl pointer output
+ * @param out_bc Updated bc pointer output
+ */
+void CopyObjectRowToBGMap(GBState *gb, uint16_t *hl, uint16_t *bc);
+
+/**
+ * Copies two vertically-adjacent bytes from the object tilemap/attrmap to the BG tilemap (00:2224).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param hl Source pointer in object tilemap
+ * @param bc Destination pointer in BG map
+ * @param out_hl Updated hl pointer output
+ * @param out_bc Updated bc pointer output
+ */
+void CopyObjectColumnToBGMap(GBState *gb, uint16_t *hl, uint16_t *bc);
+
+/**
+ * Updates a region (row or column) of the BG map with object tiles and attributes (00:2234).
+ */
+void DoUpdateBGRegion(GBState *gb,
+                      void (*func_020_4a76)(GBState *),
+                      void (*get_bg_attr_addr)(GBState *),
+                      void (*switch_to_tilemap_bank)(GBState *),
+                      void (*func_020_49d9)(GBState *),
+                      void (*update_origin)(GBState *));
+
+/**
+ * UpdateBGRegion (00:2209)
+ * Switches to Map Data bank ($08), calls DoUpdateBGRegion, and reloads saved bank.
+ */
+void UpdateBGRegion(GBState *gb,
+                    void (*func_020_4a76)(GBState *),
+                    void (*get_bg_attr_addr)(GBState *),
+                    void (*switch_to_tilemap_bank)(GBState *),
+                    void (*func_020_49d9)(GBState *),
+                    void (*update_origin)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

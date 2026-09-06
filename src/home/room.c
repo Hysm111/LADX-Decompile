@@ -7,6 +7,7 @@
 #include "constants/gfx.h"
 #include "constants/tilesets.h"
 #include "constants/sfx.h"
+#include "constants/link.h"
 
 void MarkTriggerAsResolved(GBState *gb) {
     if (!gb) return;
@@ -1252,5 +1253,169 @@ end_of_room:
     }
 
     /* Reload saved bank and return */
+    ReloadSavedBank(gb);
+}
+
+static const uint8_t BGRegionIncrement[4] = { 0x10, 0x10, 0x01, 0x01 };
+
+void CopyObjectRowToBGMap(GBState *gb, uint16_t *hl, uint16_t *bc) {
+    if (!gb || !hl || !bc) return;
+
+    uint16_t src = *hl;
+    uint16_t dst = *bc;
+
+    if ((gb_read(gb, wBGUpdateRegionOriginLow) & 0x20) != 0) {
+        src += 2;
+    }
+
+    gb_write(gb, dst, gb_read(gb, src));
+    src++;
+    dst++;
+    gb_write(gb, dst, gb_read(gb, src));
+    dst++;
+
+    *hl = src;
+    *bc = dst;
+}
+
+void CopyObjectColumnToBGMap(GBState *gb, uint16_t *hl, uint16_t *bc) {
+    if (!gb || !hl || !bc) return;
+
+    uint16_t src = *hl;
+    uint16_t dst = *bc;
+
+    if ((gb_read(gb, wBGUpdateRegionOriginLow) & 0x01) != 0) {
+        src += 1;
+    }
+
+    gb_write(gb, dst, gb_read(gb, src));
+    src += 2;
+    dst++;
+    gb_write(gb, dst, gb_read(gb, src));
+    dst++;
+
+    *hl = src;
+    *bc = dst;
+}
+
+void DoUpdateBGRegion(GBState *gb,
+                      void (*func_020_4a76)(GBState *),
+                      void (*get_bg_attr_addr)(GBState *),
+                      void (*switch_to_tilemap_bank)(GBState *),
+                      void (*func_020_49d9)(GBState *),
+                      void (*update_origin)(GBState *)) {
+    if (!gb) return;
+
+    if (func_020_4a76) {
+        gb_write(gb, rSelectROMBank, 0x20);
+        func_020_4a76(gb);
+    }
+    gb_write(gb, rSelectROMBank, 0x08);
+
+    uint8_t count = gb_read(gb, wBGUpdateRegionTilesCount);
+    while (count != 0) {
+        uint8_t mp2 = gb_read(gb, hMultiPurpose2);
+        uint16_t obj_addr = (uint16_t)(wRoomObjects + mp2);
+        uint8_t obj_id = 0;
+
+        if (gb_read(gb, hIsGBC) != 0 && gb_read(gb, wIsIndoor) == 0) {
+            gb_write(gb, rSVBK, 2);
+            obj_id = gb_read(gb, obj_addr);
+            gb_write(gb, rSVBK, 0);
+        } else {
+            obj_id = gb_read(gb, obj_addr);
+        }
+
+        uint16_t bc_offset = (uint16_t)(obj_id * 4);
+        uint16_t hl_base = 0;
+
+        if (gb_read(gb, wIsIndoor) != 0) {
+            if (gb_read(gb, hIsGBC) == 0) {
+                hl_base = 0x4000;
+            } else {
+                if (gb_read(gb, hMapId) == MAP_COLOR_DUNGEON) {
+                    hl_base = 0x4760;
+                } else {
+                    hl_base = 0x43B0;
+                }
+                if (get_bg_attr_addr) {
+                    gb_write(gb, rSelectROMBank, 0x1A);
+                    get_bg_attr_addr(gb);
+                }
+            }
+        } else {
+            if (gb_read(gb, hIsGBC) == 0) {
+                hl_base = 0x6749;
+            } else {
+                hl_base = 0x6B1D;
+                if (get_bg_attr_addr) {
+                    gb_write(gb, rSelectROMBank, 0x1A);
+                    get_bg_attr_addr(gb);
+                }
+            }
+        }
+
+        if (switch_to_tilemap_bank) {
+            switch_to_tilemap_bank(gb);
+        }
+
+        uint16_t hl = (uint16_t)(hl_base + bc_offset);
+        uint16_t dst_bc = (uint16_t)(gb_read(gb, hMultiPurposeB) | (gb_read(gb, hMultiPurposeC) << 8));
+
+        uint8_t dir = gb_read(gb, wRoomTransitionDirection);
+        if ((dir & DIRECTION_VERTICAL_MASK) != 0) {
+            CopyObjectRowToBGMap(gb, &hl, &dst_bc);
+            if (gb_read(gb, hIsGBC) != 0) {
+                if (func_020_49d9) {
+                    gb_write(gb, rSelectROMBank, 0x20);
+                    func_020_49d9(gb);
+                }
+                gb_write(gb, rSelectROMBank, gb_read(gb, hMultiPurpose8));
+                CopyObjectRowToBGMap(gb, &hl, &dst_bc);
+                gb_write(gb, hMultiPurposeB, (uint8_t)dst_bc);
+                gb_write(gb, hMultiPurposeC, (uint8_t)(dst_bc >> 8));
+                if (switch_to_tilemap_bank) {
+                    switch_to_tilemap_bank(gb);
+                }
+            }
+        } else {
+            CopyObjectColumnToBGMap(gb, &hl, &dst_bc);
+            if (gb_read(gb, hIsGBC) != 0) {
+                if (func_020_49d9) {
+                    gb_write(gb, rSelectROMBank, 0x20);
+                    func_020_49d9(gb);
+                }
+                gb_write(gb, rSelectROMBank, gb_read(gb, hMultiPurpose8));
+                CopyObjectColumnToBGMap(gb, &hl, &dst_bc);
+                gb_write(gb, hMultiPurposeB, (uint8_t)dst_bc);
+                gb_write(gb, hMultiPurposeC, (uint8_t)(dst_bc >> 8));
+                if (switch_to_tilemap_bank) {
+                    switch_to_tilemap_bank(gb);
+                }
+            }
+        }
+
+        uint8_t inc_val = BGRegionIncrement[dir & 0x03];
+        gb_write(gb, hMultiPurpose2, (uint8_t)(gb_read(gb, hMultiPurpose2) + inc_val));
+
+        count = (uint8_t)(gb_read(gb, wBGUpdateRegionTilesCount) - 1);
+        gb_write(gb, wBGUpdateRegionTilesCount, count);
+    }
+
+    if (update_origin) {
+        gb_write(gb, rSelectROMBank, 0x20);
+        update_origin(gb);
+    }
+}
+
+void UpdateBGRegion(GBState *gb,
+                    void (*func_020_4a76)(GBState *),
+                    void (*get_bg_attr_addr)(GBState *),
+                    void (*switch_to_tilemap_bank)(GBState *),
+                    void (*func_020_49d9)(GBState *),
+                    void (*update_origin)(GBState *)) {
+    if (!gb) return;
+    gb_write(gb, rSelectROMBank, 0x08);
+    DoUpdateBGRegion(gb, func_020_4a76, get_bg_attr_addr, switch_to_tilemap_bank, func_020_49d9, update_origin);
     ReloadSavedBank(gb);
 }

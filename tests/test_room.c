@@ -1091,7 +1091,97 @@ static void test_load_room(void) {
     TEST_ASSERT(mock_lr_pad_count == 1, "Goriya cave alt room not loaded");
 }
 
+
+static bool mock_4a76_called = false;
+static void mock_func_020_4a76(GBState *gb) {
+    (void)gb;
+    mock_4a76_called = true;
+}
+
+static bool mock_update_origin_called = false;
+static void mock_update_origin(GBState *gb) {
+    (void)gb;
+    mock_update_origin_called = true;
+}
+
+static void test_update_bg_region(void) {
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. CopyObjectRowToBGMap */
+    /* Case A: lower part not selected (& 0x20 == 0) -> copies bytes 0 and 1 */
+    gb_write(&gb, 0xC500, 0xAA);
+    gb_write(&gb, 0xC501, 0xBB);
+    gb_write(&gb, 0xC502, 0xCC);
+    gb_write(&gb, 0xC503, 0xDD);
+    gb_write(&gb, wBGUpdateRegionOriginLow, 0x00);
+
+    uint16_t hl = 0xC500;
+    uint16_t bc = 0xC600;
+    CopyObjectRowToBGMap(&gb, &hl, &bc);
+
+    TEST_ASSERT(gb_read(&gb, 0xC600) == 0xAA, "CopyObjectRow byte 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0xC601) == 0xBB, "CopyObjectRow byte 1 mismatch");
+    TEST_ASSERT(bc == 0xC602, "bc not advanced by 2");
+
+    /* Case B: lower part selected (& 0x20 != 0) -> copies bytes 2 and 3 */
+    gb_write(&gb, wBGUpdateRegionOriginLow, 0x20);
+    hl = 0xC500;
+    bc = 0xC600;
+    CopyObjectRowToBGMap(&gb, &hl, &bc);
+
+    TEST_ASSERT(gb_read(&gb, 0xC600) == 0xCC, "CopyObjectRow byte 2 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0xC601) == 0xDD, "CopyObjectRow byte 3 mismatch");
+
+    /* 2. CopyObjectColumnToBGMap */
+    /* Case A: right side not selected (& 0x01 == 0) -> copies bytes 0 and 2 */
+    gb_write(&gb, wBGUpdateRegionOriginLow, 0x00);
+    hl = 0xC500;
+    bc = 0xC610;
+    CopyObjectColumnToBGMap(&gb, &hl, &bc);
+
+    TEST_ASSERT(gb_read(&gb, 0xC610) == 0xAA, "CopyObjectCol byte 0 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0xC611) == 0xCC, "CopyObjectCol byte 2 mismatch");
+    TEST_ASSERT(bc == 0xC612, "bc not advanced by 2");
+
+    /* Case B: right side selected (& 0x01 != 0) -> copies bytes 1 and 3 */
+    gb_write(&gb, wBGUpdateRegionOriginLow, 0x01);
+    hl = 0xC500;
+    bc = 0xC610;
+    CopyObjectColumnToBGMap(&gb, &hl, &bc);
+
+    TEST_ASSERT(gb_read(&gb, 0xC610) == 0xBB, "CopyObjectCol byte 1 mismatch");
+    TEST_ASSERT(gb_read(&gb, 0xC611) == 0xDD, "CopyObjectCol byte 3 mismatch");
+
+    /* 3. UpdateBGRegion & DoUpdateBGRegion */
+    gb_init(&gb);
+    mock_4a76_called = false;
+    mock_update_origin_called = false;
+
+    gb_write(&gb, wCurrentBank, 0x04);
+    gb.rom_bank = 0x04;
+
+    gb_write(&gb, wBGUpdateRegionTilesCount, 1);
+    gb_write(&gb, hMultiPurpose2, 0);
+    gb_write(&gb, wRoomObjects, 0);
+    gb_write(&gb, wRoomTransitionDirection, 2); /* DIRECTION_UP (vertical) */
+    gb_write(&gb, wBGUpdateRegionOriginLow, 0);
+    gb_write(&gb, hMultiPurposeB, 0x20);
+    gb_write(&gb, hMultiPurposeC, 0xC6);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, hIsGBC, 0);
+
+    UpdateBGRegion(&gb, mock_func_020_4a76, NULL, NULL, NULL, mock_update_origin);
+
+    TEST_ASSERT(mock_4a76_called, "func_020_4a76 not called in UpdateBGRegion");
+    TEST_ASSERT(mock_update_origin_called, "UpdateBGRegionOrigin not called");
+    TEST_ASSERT(gb_read(&gb, wBGUpdateRegionTilesCount) == 0, "Tiles count not decremented to 0");
+    TEST_ASSERT(gb.rom_bank == 0x04, "ROM bank not restored to 0x04 after UpdateBGRegion");
+}
+
 void run_room_tests(void) {
+    printf("[*] Running UpdateBGRegion and room transition BG update tests...\n");
+    test_update_bg_region();
     printf("[*] Running PadRoomObjectsArea and LoadRoom tests...\n");
     test_pad_room_objects_area();
     test_load_room();

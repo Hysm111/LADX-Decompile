@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 32.33%
-* **Number of Verified Functions**: 388
-* **Number of Decompiled Functions**: 388
-* **Number Remaining**: ~812 functions
-* **Current Subsystem**: Bank 0 - Link Interactive Motion & Position Physics (`code/bank0.asm`, `00:1F61`-`00:2204`)
-* **Current Task**: Bank 0 Link Interactive Motion & Position Physics completed
-* **Last Completed Task**: Decompiled and verified 8 Bank 0 Link interactive motion, lifting, and position integration routines (`label_1F69_trampoline`, `label_1F69`, `func_2165`, `RevealObjectUnderObject_trampoline`, `label_2183`, `UpdateFinalLinkPosition`, `ComputeLinkPosition`, `func_21E1`) (`00:1F61` - `00:2204`)
-* **Next Task**: Decompile and verify next logical unfinished subsystem in Bank 0 (Room transition BG region update routines `00:2209`+)
-* **Last Update Timestamp**: 2026-09-07T00:35:00+03:00
+* **Current Overall Progress**: 32.92%
+* **Number of Verified Functions**: 395
+* **Number of Decompiled Functions**: 395
+* **Number Remaining**: ~805 functions
+* **Current Subsystem**: Bank 0 - Room Transition BG Region Updates & Transition Audio Handlers (`code/bank0.asm`, `00:2209`-`00:2319`, `00:27DD`-`00:27F2`)
+* **Current Task**: Bank 0 Room Transition BG Region Updates & Transition Audio Handlers completed
+* **Last Completed Task**: Decompiled and verified 7 Bank 0 room transition BG update and transition audio routines (`UpdateBGRegion`, `CopyObjectRowToBGMap`, `CopyObjectColumnToBGMap`, `DoUpdateBGRegion`, `SelectMusicTrackAfterTransition_trampoline`, `ResetMusicFadeTimer`, `func_27F2`) (`00:2209`-`00:2319`, `00:27DD`-`00:27F2`)
+* **Next Task**: Decompile and verify next logical unfinished routines in Bank 0 (Room loading & collision / physics helpers `00:28E8`+)
+* **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---
 
@@ -336,10 +336,24 @@
 | `UpdateFinalLinkPosition` | VERIFIED | PASS | PASS | Integrates Link horizontal and vertical velocities into position unless inventory is appearing (`00:21A8`) |
 | `ComputeLinkPosition` | VERIFIED | PASS | PASS | Fixed-point 4.4 speed integrator with subpixel accumulator updating Link coordinate along specified axis (`00:21B6`) |
 | `func_21E1` | VERIFIED | PASS | PASS | Fixed-point 4.4 Z-axis velocity integrator with subpixel accumulator updating hLinkPositionZ (`00:21E1`) |
+| `UpdateBGRegion` | VERIFIED | PASS | PASS | Selects Map Data ROM bank ($08), invokes DoUpdateBGRegion, and restores previous bank (`00:2209`) |
+| `CopyObjectRowToBGMap` | VERIFIED | PASS | PASS | Copies two horizontally-adjacent bytes from 4-byte object tilemap/attrmap to destination BG map (`00:2214`) |
+| `CopyObjectColumnToBGMap` | VERIFIED | PASS | PASS | Copies two vertically-adjacent bytes from 4-byte object tilemap/attrmap to destination BG map (`00:2224`) |
+| `DoUpdateBGRegion` | VERIFIED | PASS | PASS | Core loop updating a region (row/column) of BG tilemap and GBC attributes during room transitions (`00:2234`) |
+| `SelectMusicTrackAfterTransition_trampoline` | VERIFIED | PASS | PASS | Trampoline switching to bank $02 to select new world music track and reloading saved bank (`00:27DD`) |
+| `ResetMusicFadeTimer` | VERIFIED | PASS | PASS | Resets audio fade-out timer to max ($38) and clears fade-in timer (`00:27EA`) |
+| `func_27F2` | VERIFIED | PASS | PASS | If music does not continue after warp, invokes bank $1F helper $4003 and reloads saved bank (`00:27F2`) |
 
 ---
 
 ## Technical Notes & Implementation Details
+
+1. **Room Transition BG Region Updates (`00:2209`-`00:2319`)**:
+   - `UpdateBGRegion` orchestrates progressive streaming of the destination room's background tiles during camera pan scrolling transitions.
+   - For vertical scrolling (`DIRECTION_UP` / `DIRECTION_DOWN`), tiles are copied as 1x2 horizontal slices (`CopyObjectRowToBGMap`) selecting upper or lower pair based on `wBGUpdateRegionOriginLow & 0x20`.
+   - For horizontal scrolling (`DIRECTION_LEFT` / `DIRECTION_RIGHT`), tiles are copied as 2x1 vertical slices (`CopyObjectColumnToBGMap`) selecting left or right column based on `wBGUpdateRegionOriginLow & 0x01`.
+   - On Game Boy Color, the routine alternates tilemap copying with attribute copying using bank switching to `hMultiPurpose8`.
+   - On GBC Overworld, dynamic room modifications are preserved by reading object values from WRAM Bank 2 (`rSVBK = 2`).
 
 1. **Link Interactive Motion & Position Physics (`00:1F61`-`00:2204`)**:
    - `ComputeLinkPosition` and `func_21E1` treat speeds as signed 4.4 fixed-point numbers:

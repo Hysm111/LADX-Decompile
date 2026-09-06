@@ -335,3 +335,5 @@
 #define wOcarinaSongFlags               0xDB49
 #define wRoomEvent                      0xC18E
 #define wInventoryItems                 0xDB00
+#define wBGUpdateRegionOriginLow        0xC127
+#define wBGUpdateRegionTilesCount       0xC128
