@@ -343,3 +343,5 @@
 #define wWreckingBallPosY                       0xDB71
 #define wEntitiesLoadOrderTable                 0xC460
 #define wEntitiesClearedRooms                   0xCF00
+#define wRecentRoomsIndex                       0xCE80
+#define wRecentRooms                            0xCE81

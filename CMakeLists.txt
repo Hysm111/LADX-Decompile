@@ -28,6 +28,7 @@ set(LADX_CORE_SOURCES
     src/home/gfx.c
     src/home/check_items_to_use.c
     src/home/animated_tiles.c
+    src/bank1/room_transition.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -52,6 +53,7 @@ add_executable(ladx_tests
     tests/test_gfx.c
     tests/test_check_items_to_use.c
     tests/test_animated_tiles.c
+    tests/test_bank1.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 33.75%
-* **Number of Verified Functions**: 405
-* **Number of Decompiled Functions**: 405
-* **Number Remaining**: ~795 functions
-* **Current Subsystem**: Bank 0 (Home Bank) - Room Entities & Final Tile Handlers (`code/bank0.asm`, `00:37FE`-`00:3FD1`) [100% OF BANK 0 COMPLETE]
-* **Current Task**: Bank 0 Room Entities & Final Tile Handlers completed - 100% of Bank 0 verified!
-* **Last Completed Task**: Decompiled and verified final 5 Bank 0 routines (`LoadRoomEntities`, `LoadEntityFromDefinition`, `ReplaceEvilEagleRiderVisibleTiles`, `ReplaceEvilEagleRiderHiddenTiles`, `ReloadColorDungeonNpcTiles`) (`00:37FE`-`00:3FD1`)
-* **Next Task**: Begin deconstruction of Bank 1 (Room transitions, world physics, entity mechanics)
+* **Current Overall Progress**: 34.17%
+* **Number of Verified Functions**: 410
+* **Number of Decompiled Functions**: 410
+* **Number Remaining**: ~790 functions
+* **Current Subsystem**: Bank 1 - Room Transition & Sprite Visibility (`code/bank1.asm`, `01:5EAB`-`01:5F68`)
+* **Current Task**: Bank 1 Room Transition & Sprite Visibility completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 1 room transition & sprite hiding routines (`PrepareEntityPositionForRoomTransition`, `UpdateRecentRoomsList`, `HideAllSprites`, `HideSprites`, `HideSpritesUnderDialog`) (`01:5EAB`-`01:5F68`)
+* **Next Task**: Decompile and verify Bank 1 following NPC spawner (`CreateFollowingNpcEntity`, `01:5FB3`) and room transition physics routines
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

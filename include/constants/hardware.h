@@ -35,6 +35,7 @@
 #define rSelectROMBank   0x2100
 #define rRAMB            0x4000
 #define CART_SRAM_ENABLE 0x0A
+#define CART_SRAM_DISABLE 0x00
 
 /* Hardware I/O registers */
 #define rP1              0xFF00
