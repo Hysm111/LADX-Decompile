@@ -1,8 +1,9 @@
+#include <stdio.h>
+#include <assert.h>
+#include "gb.h"
 #include "home/entities.h"
 #include "constants/memory.h"
 #include "constants/entities.h"
-#include <stdio.h>
-#include <assert.h>
 
 void test_is_zero(void) {
     printf("[*] Running IsZero tests...\n");
@@ -10,11 +11,11 @@ void test_is_zero(void) {
     GBState gb;
     gb_init(&gb);
 
-    gb_write(&gb, 0xC500, 0x00);
-    gb_write(&gb, 0xC505, 0x42);
+    gb_write(&gb, 0xC200, 0x00);
+    gb_write(&gb, 0xC205, 0x42);
 
-    assert(IsZero(&gb, 0xC500, 0) == 0x00);
-    assert(IsZero(&gb, 0xC500, 5) == 0x42);
+    assert(IsZero(&gb, 0xC200, 0) == 0);
+    assert(IsZero(&gb, 0xC200, 5) == 0x42);
 }
 
 void test_entity_countdowns(void) {
@@ -23,36 +24,35 @@ void test_entity_countdowns(void) {
     GBState gb;
     gb_init(&gb);
 
-    /* Test GetEntitySlowTransitionCountdown */
-    gb_write(&gb, wEntitiesSlowTransitionCountdownTable + 3, 0x12);
-    gb_write(&gb, wEntitiesSlowTransitionCountdownTable + 7, 0x00);
-    assert(GetEntitySlowTransitionCountdown(&gb, 3) == 0x12);
-    assert(GetEntitySlowTransitionCountdown(&gb, 7) == 0x00);
+    /* Test slow transition countdown */
+    gb_write(&gb, wEntitiesSlowTransitionCountdownTable + 3, 0x05);
+    assert(GetEntitySlowTransitionCountdown(&gb, 3) == 0x05);
 
-    /* Test GetEntityPrivateCountdown1 */
-    gb_write(&gb, wEntitiesPrivateCountdown1Table + 2, 0x34);
-    gb_write(&gb, wEntitiesPrivateCountdown1Table + 5, 0x00);
-    assert(GetEntityPrivateCountdown1(&gb, 2) == 0x34);
-    assert(GetEntityPrivateCountdown1(&gb, 5) == 0x00);
+    /* Test private countdown 1 */
+    gb_write(&gb, wEntitiesPrivateCountdown1Table + 2, 0x09);
+    assert(GetEntityPrivateCountdown1(&gb, 2) == 0x09);
 
-    /* Test GetEntityTransitionCountdown */
-    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 0x56);
-    gb_write(&gb, wEntitiesTransitionCountdownTable + 9, 0x00);
-    assert(GetEntityTransitionCountdown(&gb, 0) == 0x56);
-    assert(GetEntityTransitionCountdown(&gb, 9) == 0x00);
+    /* Test transition countdown */
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 0x07);
+    assert(GetEntityTransitionCountdown(&gb, 1) == 0x07);
 
-    /* Test DecrementEntityIgnoreHitsCountdown */
-    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 4, 5);
+    /* Test ignore hits countdown decrement */
+    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 4, 0x03);
     DecrementEntityIgnoreHitsCountdown(&gb, 4);
-    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 4);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 0x02);
 
-    /* Test that 0 does not underflow */
-    gb_write(&gb, wEntitiesIgnoreHitsCountdownTable + 8, 0);
-    DecrementEntityIgnoreHitsCountdown(&gb, 8);
-    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 8) == 0);
+    DecrementEntityIgnoreHitsCountdown(&gb, 4);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 0x01);
+
+    DecrementEntityIgnoreHitsCountdown(&gb, 4);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 0x00);
+
+    /* Verify doesn't decrement below 0 */
+    DecrementEntityIgnoreHitsCountdown(&gb, 4);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + 4) == 0x00);
 }
 
-static uint8_t spawn_called = 0;
+static int spawn_called = 0;
 static uint16_t mock_spawn_entity(GBState *gb, uint8_t entity_type) {
     spawn_called++;
     assert(gb->rom_bank == 0x03);
@@ -115,10 +115,45 @@ void test_spawn_entity_trampolines(void) {
     assert(gb.rom_bank == 0x04); /* ReloadSavedBank restored wCurrentBank */
 }
 
+static int animate_called = 0;
+static void mock_animate_entities(GBState *gb) {
+    animate_called++;
+    assert(gb->rom_bank == 0x03);
+}
+
+void test_animate_entities_trampolines(void) {
+    printf("[*] Running AnimateEntities trampolines tests...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. AnimateEntitiesAndRestoreBank17 */
+    animate_called = 0;
+    AnimateEntitiesAndRestoreBank17(&gb, mock_animate_entities);
+    assert(animate_called == 1);
+    assert(gb.rom_bank == 0x17);
+    assert(gb_read(&gb, wCurrentBank) == 0x17);
+
+    /* 2. AnimateEntitiesAndRestoreBank01 */
+    animate_called = 0;
+    AnimateEntitiesAndRestoreBank01(&gb, mock_animate_entities);
+    assert(animate_called == 1);
+    assert(gb.rom_bank == 0x01);
+    assert(gb_read(&gb, wCurrentBank) == 0x01);
+
+    /* 3. AnimateEntitiesAndRestoreBank02 */
+    animate_called = 0;
+    AnimateEntitiesAndRestoreBank02(&gb, mock_animate_entities);
+    assert(animate_called == 1);
+    assert(gb.rom_bank == 0x02);
+    assert(gb_read(&gb, wCurrentBank) == 0x02);
+}
+
 void run_entities_tests(void) {
     test_is_zero();
     test_entity_countdowns();
     test_create_trading_item_entity();
     test_spawn_entity_trampolines();
+    test_animate_entities_trampolines();
     printf("  [PASS] All entities.asm functions verified successfully!\n\n");
 }

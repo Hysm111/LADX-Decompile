@@ -68,3 +68,33 @@ uint16_t SpawnNewEntityInRange_trampoline(GBState *gb, uint8_t entity_type, uint
     ReloadSavedBank(gb);
     return de;
 }
+
+void AnimateEntitiesAndRestoreBank(GBState *gb, uint8_t bank, void (*animate_entities)(GBState *)) {
+    if (!gb) return;
+
+    if (animate_entities) {
+        animate_entities(gb);
+    }
+    SwitchBank(gb, bank);
+}
+
+void AnimateEntitiesAndRestoreBank17(GBState *gb, void (*animate_entities)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    AnimateEntitiesAndRestoreBank(gb, 0x17, animate_entities);
+}
+
+void AnimateEntitiesAndRestoreBank01(GBState *gb, void (*animate_entities)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    AnimateEntitiesAndRestoreBank(gb, 0x01, animate_entities);
+}
+
+void AnimateEntitiesAndRestoreBank02(GBState *gb, void (*animate_entities)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x03);
+    AnimateEntitiesAndRestoreBank(gb, 0x02, animate_entities);
+}

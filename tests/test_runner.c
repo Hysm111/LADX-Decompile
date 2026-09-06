@@ -9,6 +9,7 @@ extern void run_entities_tests(void);
 extern void run_audio_tests(void);
 extern void run_dialog_tests(void);
 extern void run_room_tests(void);
+extern void run_gameplay_tests(void);
 extern void run_link_tests(void);
 extern void run_vfx_tests(void);
 extern void run_ui_tests(void);
@@ -28,6 +29,7 @@ int main(void) {
     run_audio_tests();
     run_dialog_tests();
     run_room_tests();
+    run_gameplay_tests();
     run_link_tests();
     run_vfx_tests();
     run_ui_tests();

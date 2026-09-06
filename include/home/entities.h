@@ -73,6 +73,43 @@ uint16_t SpawnNewEntity_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*
  */
 uint16_t SpawnNewEntityInRange_trampoline(GBState *gb, uint8_t entity_type, uint16_t (*spawn_in_range)(GBState *, uint8_t));
 
+/**
+ * AnimateEntitiesAndRestoreBank (00:0EF4)
+ * Calls AnimateEntities, then switches to bank given in argument via SwitchBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param bank Bank number to restore/switch to
+ * @param animate_entities Callback to AnimateEntities handler
+ */
+void AnimateEntitiesAndRestoreBank(GBState *gb, uint8_t bank, void (*animate_entities)(GBState *));
+
+/**
+ * AnimateEntitiesAndRestoreBank17 (00:0EED)
+ * Selects bank $03 in rSelectROMBank, then calls AnimateEntitiesAndRestoreBank with bank $17.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param animate_entities Callback to AnimateEntities handler
+ */
+void AnimateEntitiesAndRestoreBank17(GBState *gb, void (*animate_entities)(GBState *));
+
+/**
+ * AnimateEntitiesAndRestoreBank01 (00:0EFC)
+ * Selects bank $03 in rSelectROMBank, then calls AnimateEntitiesAndRestoreBank with bank $01.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param animate_entities Callback to AnimateEntities handler
+ */
+void AnimateEntitiesAndRestoreBank01(GBState *gb, void (*animate_entities)(GBState *));
+
+/**
+ * AnimateEntitiesAndRestoreBank02 (00:0F05)
+ * Selects bank $03 in rSelectROMBank, then calls AnimateEntitiesAndRestoreBank with bank $02.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param animate_entities Callback to AnimateEntities handler
+ */
+void AnimateEntitiesAndRestoreBank02(GBState *gb, void (*animate_entities)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif

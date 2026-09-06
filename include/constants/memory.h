@@ -12,6 +12,8 @@
 
 /* WRAM Gameplay Variables */
 #define wMusicTrackTiming       0xC10B
+#define wEntityTilesSpriteslotIndexB 0xC10D
+#define wNeedsUpdatingEntityTilesB 0xC10E
 #define wLinkMotionState        0xC11C
 #define wIsUsingSpinAttack      0xC121
 #define wSwordCharge            0xC122
@@ -26,13 +28,20 @@
 #define wC167                   0xC167
 #define wC16C                   0xC16C
 #define wRoomEventEffectExecuted 0xC18F
+#define wLoadedEntitySpritesheets 0xC193
+#define wEntityTilesSpriteslotIndexA 0xC197
 #define wC19D                   0xC19D
+#define wDialogState            0xC19F
 #define wC1CF                   0xC1CF
 #define w2_D16A                 0xD16A
 #define wWarp0MapCategory       0xD401
+#define wD464                   0xD464
+#define wD474                   0xD474
 #define wD478                   0xD478
 #define wDrawCommand            0xD601
+#define wOverworldRoomStatus    0xD800
 #define wGameplayType           0xDB95
+#define wGameplaySubtype        0xDB96
 #define wIsIndoor               0xDBA5
 #define wCurrentBank            0xDBAF
 #define wDrawCommandsVRAM1Size  0xDC90
@@ -66,6 +75,7 @@
 #define hNeedsUpdatingBGTiles        0xFF90
 #define hNeedsUpdatingEntityTilesA   0xFF91
 #define hBGTilesLoadingStage         0xFF92
+#define hWorldTileset                0xFF94
 #define hLinkPositionX               0xFF98
 #define hLinkPositionY               0xFF99
 #define hLinkFinalPositionX          0xFF9F
@@ -73,6 +83,7 @@
 #define hMusicFadeOutTimer           0xFFA8
 #define hContinueMusicAfterWarp      0xFFBC
 #define hNextDefaultMusicTrack       0xFFBF
+#define hPressedButtonsMask          0xFFCB
 #define hIntersectedObjectBGAddressHigh 0xFFCF
 #define hIntersectedObjectBGAddressLow  0xFFD0
 #define hInterrupts                  0xFFD2
@@ -88,6 +99,8 @@
 #define hJingle                      0xFFF2
 #define hWaveSfx                     0xFFF3
 #define hNoiseSfx                    0xFFF4
+#define hMapRoom                     0xFFF6
+#define hMapId                       0xFFF7
 #define hIsComputingFrame            0xFFFD
 #define hIsGBC                       0xFFFE
 

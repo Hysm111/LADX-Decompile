@@ -17,6 +17,21 @@ extern "C" {
  */
 void MarkTriggerAsResolved(GBState *gb);
 
+/**
+ * Schedule the loading of object and OAM tilesets for the next room,
+ * (either during a map transition or a room transition).
+ * Actual loading will be done during the next vblank period.
+ *
+ * Switches ROM bank to 0x20 to look up Indoors/Overworld tileset tables,
+ * evaluates special cases (Egg room, Color Dungeon, Camera Shop, Siren, Walrus),
+ * schedules BG tiles updates (hNeedsUpdatingBGTiles),
+ * schedules entity spritesheet updates (hNeedsUpdatingEntityTilesA, wNeedsUpdatingEntityTilesB),
+ * and reloads the saved ROM bank via ReloadSavedBank.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void SelectRoomTilesets(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

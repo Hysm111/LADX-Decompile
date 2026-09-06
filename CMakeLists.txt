@@ -21,6 +21,7 @@ set(LADX_CORE_SOURCES
     src/home/audio.c
     src/home/dialog.c
     src/home/room.c
+    src/home/gameplay.c
     src/home/link.c
     src/home/vfx.c
     src/home/ui.c
@@ -41,6 +42,7 @@ add_executable(ladx_tests
     tests/test_audio.c
     tests/test_dialog.c
     tests/test_room.c
+    tests/test_gameplay.c
     tests/test_link.c
     tests/test_vfx.c
     tests/test_ui.c

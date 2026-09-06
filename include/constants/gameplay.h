@@ -37,6 +37,7 @@
 /* Values for wGameplaySubtype */
 #define GAMEPLAY_INTRO_SEA              0x03
 #define GAMEPLAY_INTRO_LINK_FACE        0x04
+#define GAMEPLAY_WORLD_INTERACTIVE      0x07
 
 /* Values for wLinkMotionState */
 #define LINK_MOTION_DEFAULT             0x00
