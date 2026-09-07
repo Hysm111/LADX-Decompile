@@ -72,5 +72,41 @@ void label_001_4555(GBState *gb);
  */
 void TransitionToFileMenu(GBState *gb, uint8_t force_music);
 
+extern const uint8_t Data_001_4B30[64];
+extern const uint8_t Data_001_4B70[64];
+extern const uint8_t Data_001_4BB0[5];
+extern const uint8_t NameEntryCharacterTable[64];
+
+/**
+ * Appends draw commands to display 5-character save slot name and empty spacing row on BG map (01:4852).
+ */
+void DrawSaveSlotName(GBState *gb, uint16_t dest_bg, uint16_t name_addr);
+
+/**
+ * Navigates 16x4 character grid for name entry, handles repeating directional inputs, and draws cursor (01:4BF5).
+ */
+void func_001_4BF5(GBState *gb);
+
+/**
+ * Handles A/B buttons for character entry/backspace and draws blinking underline cursor (01:4C8A).
+ */
+void func_001_4C8A(GBState *gb);
+
+/**
+ * Inserts current character from NameEntryCharacterTable into current slot name (01:4CDA).
+ */
+void func_001_4CDA(GBState *gb);
+
+/**
+ * Interactive handler for file creation screen (01:4A9B).
+ */
+void FileCreationInteractiveHandler(GBState *gb);
+
+/**
+ * Entry point and dispatcher for file creation (01:4A07).
+ */
+void FileCreationEntryPoint(GBState *gb);
+
 #endif /* LADX_BANK1_FILE_MENU_H */
+
 

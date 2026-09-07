@@ -1,3 +1,4 @@
+#include "constants/audio.h"
 #include "bank1/file_menu.h"
 #include "constants/directions.h"
 #include "bank1/save.h"
@@ -1645,6 +1646,107 @@ void test_transition_to_file_menu_reload(void) {
     assert(gb_read(&gb, wBGPalette) == 0);
 }
 
+
+void test_file_creation_grid_and_entry(void) {
+    printf("[*] Running FileCreation character grid & entry point tests (01:4852, 01:4A07-01:4CDA)...\n");
+    GBState gb;
+
+    /* Test 1: DrawSaveSlotName */
+    gb_init(&gb);
+    gb_write(&gb, wDrawCommandsSize, 0);
+    gb_write(&gb, wSaveSlot1Name + 0, 'A');
+    gb_write(&gb, wSaveSlot1Name + 1, 0);
+    gb_write(&gb, wSaveSlot1Name + 2, 0);
+    gb_write(&gb, wSaveSlot1Name + 3, 0);
+    gb_write(&gb, wSaveSlot1Name + 4, 0);
+    DrawSaveSlotName(&gb, 0x984A, wSaveSlot1Name);
+    assert(gb_read(&gb, wDrawCommandsSize) == 0x10);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0x4A);
+    assert(gb_read(&gb, wDrawCommand + 2) == 0x04);
+    assert(gb_read(&gb, wDrawCommand + 8) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 9) == 0x2A);
+    assert(gb_read(&gb, wDrawCommand + 10) == 0x04);
+    assert(gb_read(&gb, wDrawCommand + 16) == 0x00);
+
+    /* Test 2: func_001_4CDA */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, wSaveSlotNameCharIndex, 0);
+    gb_write(&gb, wNameEntryCurrentChar, 0); /* 'A' (0x42) */
+    func_001_4CDA(&gb);
+    assert(gb_read(&gb, wSaveSlot1Name) == 0x42);
+
+    /* Test 3: func_001_4C8A (A button and B button) */
+    gb_write(&gb, hJoypadState, J_A);
+    gb_write(&gb, hFrameCounter, 0x10); /* underline cursor visible */
+    func_001_4C8A(&gb);
+    assert(gb_read(&gb, wSaveSlotNameCharIndex) == 1);
+    assert(gb_read(&gb, wOAMBuffer + 4) == 0x23);
+    assert(gb_read(&gb, wOAMBuffer + 6) == 0xE0);
+
+    gb_write(&gb, hJoypadState, J_B);
+    func_001_4C8A(&gb);
+    assert(gb_read(&gb, wSaveSlotNameCharIndex) == 0);
+
+    /* Test 4: func_001_4BF5 (Grid navigation) */
+    gb_init(&gb);
+    gb_write(&gb, wNameEntryCurrentChar, 0);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    func_001_4BF5(&gb);
+    assert(gb_read(&gb, wNameEntryCurrentChar) == 1);
+    assert(gb_read(&gb, wOAMBuffer + 0) == (0x38 + 0x0B));
+    assert(gb_read(&gb, wOAMBuffer + 1) == (0x1C + 0x04));
+    assert(gb_read(&gb, wOAMBuffer + 2) == 0xE0);
+
+    /* Left from 0 wraps to 63 */
+    gb_write(&gb, wNameEntryCurrentChar, 0);
+    gb_write(&gb, hJoypadState, J_LEFT);
+    func_001_4BF5(&gb);
+    assert(gb_read(&gb, wNameEntryCurrentChar) == 63);
+
+    /* Up from 0 wraps to 48 */
+    gb_write(&gb, wNameEntryCurrentChar, 0);
+    gb_write(&gb, hJoypadState, J_UP);
+    func_001_4BF5(&gb);
+    assert(gb_read(&gb, wNameEntryCurrentChar) == 48);
+
+    /* Test 5: FileCreationInteractiveHandler with "ZELDA" secret name */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    /* "ZELDA" in NameEntryCharmap: 0x5B, 0x46, 0x4D, 0x45, 0x42 */
+    gb_write(&gb, wSaveSlotNames + 0, 0x5B);
+    gb_write(&gb, wSaveSlotNames + 1, 0x46);
+    gb_write(&gb, wSaveSlotNames + 2, 0x4D);
+    gb_write(&gb, wSaveSlotNames + 3, 0x45);
+    gb_write(&gb, wSaveSlotNames + 4, 0x42);
+    gb_write(&gb, hJoypadState, J_START);
+    FileCreationInteractiveHandler(&gb);
+
+    /* Music track should trigger easter egg */
+    assert(gb_read(&gb, wMusicTrackToPlay) == MUSIC_FILE_SELECT_ZELDA);
+    /* SRAM SaveGame1.main name written */
+    assert(gb_read(&gb, 0xA454 + 0) == 0x5B);
+    assert(gb_read(&gb, 0xA454 + 4) == 0x42);
+    /* SRAM SaveGame1.main health written (0x18) */
+    assert(gb_read(&gb, 0xA45F) == 0x18);
+    /* SRAM SaveGame1.main max hearts written (0x03) */
+    assert(gb_read(&gb, 0xA460) == 0x03);
+    /* SRAM SaveGame1.main death count written (0) */
+    assert(gb_read(&gb, 0xA45C) == 0);
+    assert(gb_read(&gb, 0xA45D) == 0);
+    /* Returns to file select screen */
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+
+    /* Test 6: FileCreationEntryPoint dispatcher */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 0);
+    FileCreationEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+    FileCreationEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1689,5 +1791,6 @@ void run_bank1_tests(void) {
     test_file_selection_interactive_and_choice();
     test_file_creation_init_and_sram();
     test_transition_to_file_menu_reload();
+    test_file_creation_grid_and_entry();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

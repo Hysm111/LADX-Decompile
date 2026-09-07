@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 38.92%
-* **Number of Verified Functions**: 467
+* **Current Overall Progress**: 39.42%
+* **Number of Verified Functions**: 473
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~733 functions
-* **Current Subsystem**: Bank 1 - File Creation & Menu Reload (`code/file_menus.asm`, `01:4A11`-`01:4A46`, `code/world_handler.asm`, `01:4552`-`01:4555`)
-* **Current Task**: Bank 1 File Creation initialization and file menu reload routines verified
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 file creation & menu reload routines (`FileCreationInit1Handler`, `FileCreationInit2Handler`, `WriteByteToSRAM`, `label_001_4555`, `TransitionToFileMenu`) (`01:4A11`-`01:4A46`, `01:4552`-`01:4555`)
-* **Next Task**: Decompile and verify Bank 1 Name Entry Character Grid & Interactive Handlers (`func_001_4BF5`, `func_001_4C8A`, `func_001_4CDA`, `FileCreationInteractiveHandler`) (`code/file_menus.asm`, `01:4A9B`-`01:4D10`)
-* **Last Update Timestamp**: 2026-09-07T03:00:00+03:00
+* **Number Remaining**: ~727 functions
+* **Current Subsystem**: Bank 1 - File Creation & Name Entry Grid (`code/file_menus.asm`, `01:4852`-`01:4CFA`)
+* **Current Task**: Entire Bank 1 File Creation subsystem decompiled and verified
+* **Last Completed Task**: Decompiled and verified 6 Bank 1 File Creation routines (`DrawSaveSlotName`, `func_001_4CDA`, `func_001_4C8A`, `func_001_4BF5`, `FileCreationInteractiveHandler`, `FileCreationEntryPoint`) (`01:4852`, `01:4A07`-`01:4CFA`)
+* **Next Task**: Decompile and verify Bank 1 File Deletion subsystem (`FileDeletionEntryPoint`, `FileDeletionState0Handler`-`FileDeletionState4Handler`) (`code/file_menus.asm`, `01:4CFB`-`01:4E40`)
+* **Last Update Timestamp**: 2026-09-07T03:15:00+03:00
 
 ---
 
@@ -380,6 +380,12 @@
 | `WriteByteToSRAM` | VERIFIED | PASS | PASS | Enables SRAM and writes a single byte at specified offset (`01:4A3F`) |
 | `label_001_4555` | VERIFIED | PASS | PASS | Reads all slots from SRAM and resets file select screen (`01:4555`) |
 | `TransitionToFileMenu` | VERIFIED | PASS | PASS | Sets forced music track and reloads file selection menu (`01:4552`) |
+| `DrawSaveSlotName` | VERIFIED | PASS | PASS | Formulates draw commands for 5-letter save slot name and dark background row (`01:4852`) |
+| `func_001_4CDA` | VERIFIED | PASS | PASS | Inserts current character from NameEntryCharacterTable into save slot name (`01:4CDA`) |
+| `func_001_4C8A` | VERIFIED | PASS | PASS | Handles A/B button character insertion/backspace and blinking cursor underline (`01:4C8A`) |
+| `func_001_4BF5` | VERIFIED | PASS | PASS | Navigates 16x4 character grid with repeat timing and updates cursor sprite (`01:4BF5`) |
+| `FileCreationInteractiveHandler` | VERIFIED | PASS | PASS | Interactive file creation handler, checks ZELDA easter egg, saves new file (`01:4A9B`) |
+| `FileCreationEntryPoint` | VERIFIED | PASS | PASS | Entry point jump table for file creation states 0, 1, and 2 (`01:4A07`) |
 
 ---
 
