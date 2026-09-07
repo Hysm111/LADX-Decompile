@@ -32,6 +32,7 @@ set(LADX_CORE_SOURCES
     src/bank1/world_map.c
     src/bank1/save.c
     src/bank1/file_menu.c
+    src/bank1/game_over.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})

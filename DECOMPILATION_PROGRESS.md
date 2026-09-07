@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 43.92%
-* **Number of Verified Functions**: 527
+* **Current Overall Progress**: 44.50%
+* **Number of Verified Functions**: 534
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~673 functions
-* **Current Subsystem**: Bank 1 - File Save Screen & Save Slot Initializer Complete (`code/file_save_screen.asm`, `01:4000`-`01:414F`, `01:46AA`-`01:47CD`)
-* **Current Task**: File Save Screen & Save Slot Initializer Complete
-* **Last Completed Task**: Decompiled and verified 11 Bank 1 Save Screen and Save Init routines (`FileSaveEntryPoint`, `FileSaveInitial`, `FileSaveMapFadeOut`, `FileSaveDelay1`, `FileSaveDelay2`, `FileSaveVisible`, `func_001_412A`, `FileSaveInteractive`, `LCDOn`, `func_001_4794`, `InitSaveFiles`) (`01:4000`-`01:414F`, `01:46AA`-`01:47CD`)
-* **Next Task**: Decompile and verify Bank 1 Game Over routines (`code/game_over.asm`, `01:41C2`-`01:44D5`)
-* **Last Update Timestamp**: 2026-09-07T04:30:00+03:00
+* **Number Remaining**: ~666 functions
+* **Current Subsystem**: Bank 1 - Game Over Subsystem Complete (`code/game_over.asm`, 100% VERIFIED)
+* **Current Task**: Entire Bank 1 Game Over Subsystem (`code/game_over.asm`) 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 7 Bank 1 Game Over routines and complete subsystem (`LinkPassOut`, `LinkPassOutHandler`, `LoadGameOverStage1Handler`, `LoadGameOverStage2Handler`, `LoadGameOverStage3Handler`, `GameOverInteractiveHandler`, `func_001_4339`) (`01:41C2`-`01:4370`)
+* **Next Task**: Decompile and verify Bank 1 World Handler routines (`code/world_handler.asm`, `01:4371`-`01:46A9`)
+* **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
 
 ---
 
@@ -440,6 +440,13 @@
 | `FileSaveInteractive` | VERIFIED | PASS | PASS | Save screen state 5 interactive handler, Return vs Save & Quit (`01:40AA`) |
 | `LCDOn` | VERIFIED | PASS | PASS | Enables LCD, restores window and audio volume upon menu exit (`01:410D`) |
 | `FileSaveEntryPoint` | VERIFIED | PASS | PASS | Master state machine dispatcher for GAMEPLAY_FILE_SAVE (`01:4000`) |
+| `LinkPassOut` | VERIFIED | PASS | PASS | State machine dispatcher for Game Over sequence (`01:41C2`) |
+| `LinkPassOutHandler` | VERIFIED | PASS | PASS | Link passing out animation handler, transition to stage 1, BCD death counter (`01:4203`) |
+| `LoadGameOverStage1Handler` | VERIFIED | PASS | PASS | Loads save menu tileset and increments game over stage (`01:4291`) |
+| `LoadGameOverStage2Handler` | VERIFIED | PASS | PASS | Configures Game Over BG map, palettes, and executes file menu BG trampoline (`01:429B`) |
+| `LoadGameOverStage3Handler` | VERIFIED | PASS | PASS | Waits for countdown, advances stage, and starts Game Over music (`01:42CA`) |
+| `GameOverInteractiveHandler` | VERIFIED | PASS | PASS | Game Over interactive handler (Save & Continue, Save & Quit, Continue without saving) (`01:42D9`) |
+| `func_001_4339` | VERIFIED | PASS | PASS | Option selection navigation and cursor arrow sprite rendering (`01:4339`) |
 
 ---
 

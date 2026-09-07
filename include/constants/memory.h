@@ -143,6 +143,9 @@
 #define wEntitiesClearedRooms                 0xCF00
 #define wEnemyWasKilled                       0xC113
 #define wInventoryAppearing                   0xC14F
+#define wObjectAffectingBGPalette             0xC3CB
+#define wBGPaletteEffectAddress               0xC3CC
+#define wC3CD                                 0xC3CD
 #define wOcarinaMenuOpen                      0xC1B5
 #define wOcarinaMenuOpening                   0xC1B8
 #define wOcarinaMenuClosing                   0xC1B9
@@ -452,3 +455,16 @@
 #define wFile2MaxHearts                        0xDC0A
 #define wFile3MaxHearts                        0xDC0B
 #define wForceFileSelectionScreenMusic         0xD47B
+#define wDeathCount                           0xDB57
+#define hGameOverStage                        0xFF9C
+#define hLinkCountdown                        0xFFB7
+#define wPieceOfPowerKillCount                0xD415
+#define wActivePowerUp                        0xD47C
+#define wPowerUpHits                          0xD47A
+#define wD475                                 0xD475
+#define wObjectAffectingBGPalette             0xC3CB
+#define wBGPaletteEffectAddress               0xC3CC
+#define wC3CD                                 0xC3CD
+#define wDBD1                                 0xDBD1
+#define wInvincibilityCounter                 0xDBC7
+#define hActiveEntityTilesOffset              0xFFF5

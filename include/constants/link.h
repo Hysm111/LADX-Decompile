@@ -4,6 +4,7 @@
 #define MAX_PEGASUS_BOOTS_CHARGE    0x20
 #define OBJ_PHYSICS_SHALLOW_WATER   0x05
 
+#define LINK_ANIMATION_STATE_HIDDEN                        0xFF
 #define LINK_ANIMATION_STATE_STANDING_DOWN                 0x00
 #define LINK_ANIMATION_STATE_WALKING_DOWN                  0x01
 #define LINK_ANIMATION_STATE_STANDING_UP                   0x04
