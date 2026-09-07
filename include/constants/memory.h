@@ -61,6 +61,7 @@
 #define wDialogNextChar               0xC3C3
 #define wName                         0xDB4F
 #define wIsThief                      0xDB6E
+#define wLinkAnimationFrame           0xC198
 #define wDialogState                  0xC19F
 #define wDialogInteractionLocked      0xC1AB
 #define wBGPaletteEffectAddress       0xC3CC
@@ -357,7 +358,9 @@
 #define wD014                                 0xD014
 #define wD015                                 0xD015
 #define wD018                                 0xD018
+#define wObjPal1                              0xDC50
 #define wObjPal6                              0xDC78
+#define wObjPal8                              0xDC88
 #define wPalettePartialCopyColorIndexStart    0xDDD3
 #define wPalettePartialCopyColorCount         0xDDD4
 #define wD00F                                 0xD00F

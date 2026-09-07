@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 55.25%
-* **Number of Verified Functions**: 663
+* **Current Overall Progress**: 55.75%
+* **Number of Verified Functions**: 669
 * **Number of Decompiled Functions**: 492
 * **Number Remaining**: ~547 functions
-* **Current Subsystem**: ROM Bank 2 (Shovel Digging, Hole Drawing, and Drop Uncovering, 02:4B41-02:4D96)
-* **Current Task**: Bank 2 Shovel Digging, Hole Drawing, and Drop Uncovering routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `func_020_4B4A_trampoline`, `func_002_4B49`, `func_002_4BC8`, `func_002_4BD4`, `func_002_4C14`, `label_002_4C92`, `func_002_4D20`, and 3 lookup tables (`02:4B41`-`02:4D96`)
-* **Next Task**: Decompile and verify Bank 2 Room Tile Modification & Tunic Palette Sync (`label_002_4D97`, `func_002_4DFC`, `02:4D97`-`02:4E50`+)
+* **Current Subsystem**: ROM Bank 2 (Room Tile Modification, Tunic Palette Sync & Revolving Door, 02:4D97-02:4EEF)
+* **Current Task**: Bank 2 Room Tile Modification, Tunic Palette Sync & Revolving Door routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `label_002_4D97`, `func_002_4DFC`, `func_002_4E2C`, `func_002_4E48`, `func_002_4EDD`, `LinkMotionRevolvingDoorHandler`, and 2 lookup tables (`02:4D97`-`02:4EEF`)
+* **Next Task**: Decompile and verify Bank 2 Swimming & Diving Subsystem (`LinkMotionSwimmingHandler`, `02:4EF0`-`02:5100`+)
 * **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
@@ -19,6 +19,12 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `label_002_4D97` | VERIFIED | PASS | PASS | Replaces room object with 0xAE, queries GBC attributes via func_91D_jp_92E, emits 10-byte draw command (`02:4D97`) |
+| `func_002_4DFC` | VERIFIED | PASS | PASS | Copies 8 bytes of object palette 1 from WRAM bank 1 to WRAM bank 2 (`02:4DFC`) |
+| `func_002_4E2C` | VERIFIED | PASS | PASS | Loads 8 bytes from Data_002_4E1C into wObjPal8 and flags palette update (`02:4E2C`) |
+| `func_002_4E48` | VERIFIED | PASS | PASS | Restores 8 bytes of wObjPal8 from WRAM bank 2 to WRAM bank 1 and flags palette update (`02:4E48`) |
+| `LinkMotionRevolvingDoorHandler` | VERIFIED | PASS | PASS | Handles Eagle's Tower revolving door: Link positioning, palette effects, door animation sequence, transition (`02:4E6D`) |
+| `func_002_4EDD` | VERIFIED | PASS | PASS | Resets revolving door animation frame, wC167, palette transition effect, wDDD7, returns to LINK_MOTION_DEFAULT (`02:4EDD`) |
 | `func_020_4B4A_trampoline` | VERIFIED | PASS | PASS | Switches to ROM Bank $20, executes func_020_4B4A, and restores saved bank (`00:134B`) |
 | `func_002_4B49` | VERIFIED | PASS | PASS | Shovel usage state handler: advances digging animation, triggers hole placement, Marin scolding (`02:4B49`) |
 | `func_002_4BC8` | VERIFIED | PASS | PASS | Validates facing tile for digging, sets shovel state = 2, and invokes hole/drop placement (`02:4BC8`) |
