@@ -1,3 +1,8 @@
+#include "constants/directions.h"
+#include "constants/gameplay.h"
+#include "constants/link.h"
+#include "constants/maps.h"
+#include "constants/gfx.h"
 #include "bank1/room_transition.h"
 #include "bank1/save.h"
 #include "home/gameplay.h"
@@ -188,4 +193,116 @@ void SaveGameToFile(GBState *gb) {
     uint8_t p2 = gb_read(gb, wPhotos2);
     EnableSRAM(gb);
     gb_write(gb, sram_dest++, p2);
+}
+
+void LoadSavedFile(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, hIsSideScrolling, 0);
+
+    if (gb_read(gb, wHealth) == 0) {
+        uint8_t max_hearts = gb_read(gb, wMaxHearts);
+        if (max_hearts < 15) {
+            gb_write(gb, wHealth, MaxHeartsToStartingHealthTable[max_hearts]);
+        }
+    }
+
+    uint8_t dbd1 = gb_read(gb, wDBD1);
+    gb_write(gb, wDBD1, 0);
+    if (dbd1 == 0) {
+        uint8_t slot = gb_read(gb, wSaveSlot);
+        if (slot >= 3) {
+            slot = 0;
+        }
+        uint16_t sram_src = SaveGameTable[slot];
+
+        /* Load Main */
+        for (uint16_t i = 0; i < SAVE_MAIN_SIZE; i++) {
+            EnableSRAM(gb);
+            uint8_t val = gb_read(gb, (uint16_t)(sram_src + i));
+            gb_write(gb, (uint16_t)(wOverworldRoomStatus + i), val);
+        }
+        sram_src += SAVE_MAIN_SIZE;
+
+        /* Load DX1 */
+        for (uint16_t i = 0; i < SAVE_DX1_SIZE; i++) {
+            EnableSRAM(gb);
+            uint8_t val = gb_read(gb, (uint16_t)(sram_src + i));
+            gb_write(gb, (uint16_t)(wColorDungeonItemFlags + i), val);
+        }
+        sram_src += SAVE_DX1_SIZE;
+
+        /* Load DX2 */
+        for (uint16_t i = 0; i < SAVE_DX2_SIZE; i++) {
+            EnableSRAM(gb);
+            uint8_t val = gb_read(gb, (uint16_t)(sram_src + i));
+            gb_write(gb, (uint16_t)(wColorDungeonRoomStatus + i), val);
+        }
+        sram_src += SAVE_DX2_SIZE;
+
+        /* Load DX3 */
+        EnableSRAM(gb);
+        gb_write(gb, wTunicType, gb_read(gb, sram_src++));
+        EnableSRAM(gb);
+        gb_write(gb, wPhotos1, gb_read(gb, sram_src++));
+        EnableSRAM(gb);
+        gb_write(gb, wPhotos2, gb_read(gb, sram_src++));
+    }
+
+    /* jr_001_531D */
+    gb_write(gb, wGameplayType, GAMEPLAY_WORLD);
+    gb_write(gb, wGameplaySubtype, 0);
+    gb_write(gb, wLinkMotionState, 0);
+    gb_write(gb, hLinkPhysicsModifier, 0);
+    gb_write(gb, wAddHealthBuffer, 0);
+    gb_write(gb, wSubtractHealthBuffer, 0);
+    gb_write(gb, wAddRupeeBufferLow, 0);
+    gb_write(gb, wAddRupeeBufferHigh, 0);
+    gb_write(gb, wSubstractRupeeBufferLow, 0);
+    gb_write(gb, wSubstractRupeeBufferHigh, 0);
+
+    if (gb_read(gb, wWreckingBallRoom) == 0) {
+        gb_write(gb, wWreckingBallRoom, 0x16);
+        gb_write(gb, wWreckingBallPosX, 0x50);
+        gb_write(gb, wWreckingBallPosY, 0x27);
+    }
+
+    uint8_t spawn_x = gb_read(gb, wSpawnPositionX);
+    if (spawn_x == 0) {
+        /* initNewGame */
+        gb_write(gb, wMaxArrows, 0x30);
+        gb_write(gb, wMaxBombs, 0x30);
+        gb_write(gb, wMaxMagicPowder, 0x20);
+        gb_write(gb, wMapEntranceRoom, ROOM_INDOOR_B_MARIN_HOUSE);
+        gb_write(gb, hMapRoom, ROOM_INDOOR_B_MARIN_HOUSE);
+        gb_write(gb, wDB54, ROOM_INDOOR_B_MARIN_HOUSE);
+        gb_write(gb, wIsIndoor, 1);
+        gb_write(gb, hMapId, MAP_HOUSE);
+        gb_write(gb, wMapEntrancePositionX, 0x50);
+        gb_write(gb, wMapEntrancePositionY, 0x60);
+        gb_write(gb, hLinkAnimationState, 0);
+        gb_write(gb, hLinkDirection, DIRECTION_DOWN);
+        gb_write(gb, wWreckingBallRoom, 0x16);
+        gb_write(gb, wWreckingBallPosX, 0x50);
+        gb_write(gb, wWreckingBallPosY, 0x27);
+    } else {
+        gb_write(gb, wMapEntrancePositionX, spawn_x);
+        gb_write(gb, wMapEntrancePositionY, gb_read(gb, wSpawnPositionY));
+        uint8_t map_room = gb_read(gb, wSpawnMapRoom);
+        gb_write(gb, hMapRoom, map_room);
+        gb_write(gb, wMapEntranceRoom, map_room);
+        gb_write(gb, hMapId, gb_read(gb, wSpawnMapId));
+        gb_write(gb, wIndoorRoom, gb_read(gb, wSpawnIndoorRoom));
+        gb_write(gb, hIsSideScrolling, 0);
+        gb_write(gb, hLinkDirection, DIRECTION_DOWN);
+
+        uint8_t is_indoor = gb_read(gb, wSpawnIsIndoor) & 1;
+        gb_write(gb, wIsIndoor, is_indoor);
+        if (is_indoor != 0) {
+            gb_write(gb, hLinkAnimationState, LINK_ANIMATION_STATE_STANDING_UP);
+            gb_write(gb, hLinkDirection, DIRECTION_UP);
+        }
+    }
+
+    gb_write(gb, wBGMapToLoad, TILEMAP_INVENTORY);
 }

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 37.92%
-* **Number of Verified Functions**: 455
+* **Current Overall Progress**: 38.00%
+* **Number of Verified Functions**: 456
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~745 functions
-* **Current Subsystem**: Bank 1 - Save Game & Save Slot Hearts (`code/bank1.asm`, `01:5D14`-`01:5E66`)
-* **Current Task**: Bank 1 Save Game & Save Slot Hearts routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified 3 Bank 1 save slot hearts and file save routines (`BuildSaveSlotHeartsDrawCommand`, `func_5DC0`, `SaveGameToFile`) (`01:5D53`, `01:5DC0`, `01:5DE6`)
-* **Next Task**: Decompile and verify Bank 1 Load Game & Save Slot Selection routines (`LoadSavedFile`, `LoadGameFromFile`) (`code/bank1.asm`, `01:52A4`-`01:5380`)
-* **Last Update Timestamp**: 2026-09-07T02:15:00+03:00
+* **Number Remaining**: ~744 functions
+* **Current Subsystem**: Bank 1 - Save & Load Game Routines (`code/bank1.asm`, `01:52A4`-`01:5E66`)
+* **Current Task**: Bank 1 Save & Load Game Subsystem completed and verified
+* **Last Completed Task**: Decompiled and verified Bank 1 main saved file loader (`LoadSavedFile`) (`01:52A4`)
+* **Next Task**: Decompile and verify Bank 1 File Selection and File Operations menus (`FileSelectionLoadSavedFile`, `FileSaveFadeIn`, `SaveGameMenu`) (`code/file_menus.asm`, `01:4A04`+)
+* **Last Update Timestamp**: 2026-09-07T02:30:00+03:00
 
 ---
 
@@ -368,6 +368,7 @@
 | `BuildSaveSlotHeartsDrawCommand` | VERIFIED | PASS | PASS | Builds wDrawCommand for file select hearts display across 2 rows (`01:5D53`) |
 | `func_5DC0` | VERIFIED | PASS | PASS | Scans 15 characters of wSaveSlotNames to set wSaveFilesCount bitfield (`01:5DC0`) |
 | `SaveGameToFile` | VERIFIED | PASS | PASS | Saves game data (Main 0x380, DX1 0x05, DX2 0x20, DX3 0x03) to SRAM (`01:5DE6`) |
+| `LoadSavedFile` | VERIFIED | PASS | PASS | Loads saved file from SRAM or initializes new game in Marin's house (`01:52A4`) |
 
 ---
 

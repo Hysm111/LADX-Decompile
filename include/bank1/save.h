@@ -32,4 +32,13 @@ void func_5DC0(GBState *gb);
  */
 void SaveGameToFile(GBState *gb);
 
+
+/**
+ * Main entry point for loading a saved game (01:52A4).
+ * Handles health reset, save data loading from SRAM, wrecking ball initialization,
+ * and spawn location configuration (or new game initialization in Marin's house).
+ */
+void LoadSavedFile(GBState *gb);
+
 #endif /* LADX_BANK1_SAVE_H */
+

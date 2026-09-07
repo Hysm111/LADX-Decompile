@@ -308,6 +308,7 @@
 #define wSwitchBlocksState              0xD6FB
 #define wSpawnLocationData              0xDB5F
 #define wHasInstrument7                 0xDB6B
+#define wMapEntranceRoom                0xDB9C
 #define wMapEntrancePositionX           0xDB9D
 #define wMapEntrancePositionY           0xDB9E
 #define wIndoorRoom                     0xDBAE
@@ -409,3 +410,19 @@
 #define wSaveSlotNames                        0xDB80
 #define wSaveSlot                             0xDBA6
 #define wSaveFilesCount                       0xDBA7
+#define wDBD1                                  0xDBD1
+#define wAddHealthBuffer                       0xDB93
+#define wSubtractHealthBuffer                  0xDB94
+#define wAddRupeeBufferLow                     0xDB90
+#define wAddRupeeBufferHigh                    0xDB8F
+#define wSubstractRupeeBufferLow               0xDB92
+#define wSubstractRupeeBufferHigh              0xDB91
+#define wSpawnPositionX                        0xDB62
+#define wSpawnPositionY                        0xDB63
+#define wSpawnMapRoom                          0xDB61
+#define wSpawnMapId                            0xDB60
+#define wSpawnIndoorRoom                       0xDB64
+#define wSpawnIsIndoor                         0xDB5F
+#define wMaxArrows                             0xDB78
+#define wMaxBombs                              0xDB77
+#define wMaxMagicPowder                        0xDB76

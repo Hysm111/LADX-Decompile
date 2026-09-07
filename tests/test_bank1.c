@@ -1,3 +1,4 @@
+#include "constants/directions.h"
 #include "bank1/save.h"
 #include "bank1/world_map.h"
 #include "constants/joypad.h"
@@ -1327,6 +1328,88 @@ void test_func_5DC0_and_save_game_to_file(void) {
     assert(gb_read(&gb, 0xA4B2 + 0x05) == 0x99);
 }
 
+
+void test_load_saved_file(void) {
+    printf("[*] Running LoadSavedFile tests (01:52A4)...\n");
+    GBState gb;
+
+    /* Test 1: New game initialization when wSpawnPositionX is 0 */
+    gb_init(&gb);
+    /* In a new game file, SRAM has wSpawnPositionX = 0, health = 24 */
+    gb_write(&gb, 0xA105 + (wHealth - wOverworldRoomStatus), 24);
+    gb_write(&gb, 0xA105 + (wMaxHearts - wOverworldRoomStatus), 3);
+    gb_write(&gb, 0xA105 + (wSpawnPositionX - wOverworldRoomStatus), 0);
+
+    LoadSavedFile(&gb);
+    assert(gb_read(&gb, wHealth) == 24); /* 3 hearts = 24 */
+    assert(gb_read(&gb, wMaxArrows) == 0x30);
+    assert(gb_read(&gb, wMaxBombs) == 0x30);
+    assert(gb_read(&gb, wMaxMagicPowder) == 0x20);
+    assert(gb_read(&gb, wMapEntranceRoom) == ROOM_INDOOR_B_MARIN_HOUSE);
+    assert(gb_read(&gb, hMapRoom) == ROOM_INDOOR_B_MARIN_HOUSE);
+    assert(gb_read(&gb, wDB54) == ROOM_INDOOR_B_MARIN_HOUSE);
+    assert(gb_read(&gb, wIsIndoor) == 1);
+    assert(gb_read(&gb, hMapId) == MAP_HOUSE);
+    assert(gb_read(&gb, wMapEntrancePositionX) == 0x50);
+    assert(gb_read(&gb, wMapEntrancePositionY) == 0x60);
+    assert(gb_read(&gb, hLinkDirection) == DIRECTION_DOWN);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_INVENTORY);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
+
+    /* Test 2: Loading existing save from SRAM slot 0 with indoor spawn */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    /* Populate SRAM for slot 0 (SaveGame1.main: 0xA105) */
+    gb_write(&gb, 0xA105 + 0x20, 0x7E); /* room status */
+    /* DX1: 0xA105 + 0x380 = 0xA485 */
+    gb_write(&gb, 0xA485 + 2, 0x33);
+    /* DX2: 0xA485 + 5 = 0xA48A */
+    gb_write(&gb, 0xA48A + 3, 0x44);
+    /* DX3: 0xA48A + 0x20 = 0xA4AA */
+    gb_write(&gb, 0xA4AA + 0, 1);    /* tunic */
+    gb_write(&gb, 0xA4AA + 1, 0x88); /* photo1 */
+    gb_write(&gb, 0xA4AA + 2, 0x99); /* photo2 */
+
+    /* Set up spawn variables in SRAM room status / WRAM */
+    gb_write(&gb, 0xA105 + (wSpawnPositionX - wOverworldRoomStatus), 0x48);
+    gb_write(&gb, 0xA105 + (wSpawnPositionY - wOverworldRoomStatus), 0x52);
+    gb_write(&gb, 0xA105 + (wSpawnMapRoom - wOverworldRoomStatus), 0x37);
+    gb_write(&gb, 0xA105 + (wSpawnMapId - wOverworldRoomStatus), 0x05);
+    gb_write(&gb, 0xA105 + (wSpawnIndoorRoom - wOverworldRoomStatus), 0x12);
+    gb_write(&gb, 0xA105 + (wSpawnIsIndoor - wOverworldRoomStatus), 0x01);
+
+    LoadSavedFile(&gb);
+    /* Check loaded SRAM data */
+    assert(gb_read(&gb, wOverworldRoomStatus + 0x20) == 0x7E);
+    assert(gb_read(&gb, wColorDungeonItemFlags + 2) == 0x33);
+    assert(gb_read(&gb, wColorDungeonRoomStatus + 3) == 0x44);
+    assert(gb_read(&gb, wTunicType) == 1);
+    assert(gb_read(&gb, wPhotos1) == 0x88);
+    assert(gb_read(&gb, wPhotos2) == 0x99);
+
+    /* Check spawn positions and directions */
+    assert(gb_read(&gb, wMapEntrancePositionX) == 0x48);
+    assert(gb_read(&gb, wMapEntrancePositionY) == 0x52);
+    assert(gb_read(&gb, hMapRoom) == 0x37);
+    assert(gb_read(&gb, wMapEntranceRoom) == 0x37);
+    assert(gb_read(&gb, hMapId) == 0x05);
+    assert(gb_read(&gb, wIndoorRoom) == 0x12);
+    assert(gb_read(&gb, wIsIndoor) == 1);
+    assert(gb_read(&gb, hLinkDirection) == DIRECTION_UP);
+    assert(gb_read(&gb, hLinkAnimationState) == LINK_ANIMATION_STATE_STANDING_UP);
+
+    /* Test 3: wDBD1 != 0 skips SRAM loading and restores health from max hearts if 0 */
+    gb_init(&gb);
+    gb_write(&gb, wDBD1, 1);
+    gb_write(&gb, wHealth, 0);
+    gb_write(&gb, wMaxHearts, 6); /* MaxHeartsToStartingHealthTable[6] == 40 */
+    gb_write(&gb, wSpawnPositionX, 0x48);
+    LoadSavedFile(&gb);
+    assert(gb_read(&gb, wDBD1) == 0);
+    assert(gb_read(&gb, wHealth) == 40);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1366,5 +1449,6 @@ void run_bank1_tests(void) {
     test_world_map_interactive_and_entry_point();
     test_build_save_slot_hearts_draw_command();
     test_func_5DC0_and_save_game_to_file();
+    test_load_saved_file();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

@@ -280,3 +280,5 @@
 #define TILEMAP_WORLD_MAP                     0x08
 
 #endif /* LADX_CONSTANTS_GFX_H */
+
+#define TILEMAP_INVENTORY 0x02
