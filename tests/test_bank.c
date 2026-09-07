@@ -233,6 +233,15 @@ static void test_bank_trampolines(void) {
     TEST_ASSERT(tramp_called == 1, "func_020_6A30_trampoline callback not called");
     TEST_ASSERT(gb.rom_bank == 0x05, "func_020_6A30_trampoline did not restore wCurrentBank");
 
+    /* func_020_4B4A_trampoline -> executes in 0x20, restores wCurrentBank */
+    gb_init(&gb);
+    gb_write(&gb, wCurrentBank, 0x02);
+    gb.rom_bank = 0x02;
+    tramp_called = 0;
+    func_020_4B4A_trampoline(&gb, hook_bank20);
+    TEST_ASSERT(tramp_called == 1, "func_020_4B4A_trampoline callback not called");
+    TEST_ASSERT(gb.rom_bank == 0x02, "func_020_4B4A_trampoline did not restore wCurrentBank");
+
     /* 2. func_020_6AC1_trampoline -> executes in 0x20, restores wCurrentBank */
     gb_init(&gb);
     gb_write(&gb, wCurrentBank, 0x08);

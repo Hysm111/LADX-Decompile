@@ -72,6 +72,7 @@
 #define OBJECT_CLOSED_GATE           0xC2
 #define OBJECT_GROUND_STAIRS         0xC6
 #define OBJECT_STAIRS_UP             0xCB
+#define OBJECT_SHOVEL_HOLE           0xCC
 #define OBJECT_CONVEYOR_BOTTOM       0xCF
 #define OBJECT_TRENDY_GAME_BORDER    0xD3
 #define OBJECT_BUSH_GROUND_STAIRS    0xD3

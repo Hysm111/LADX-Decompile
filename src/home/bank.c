@@ -522,3 +522,13 @@ void func_999(GBState *gb, uint16_t *de, uint8_t stacked_bank, void (*func_01A_6
 
     RestoreStackedBankAndReturn(gb, stacked_bank);
 }
+
+void func_020_4B4A_trampoline(GBState *gb, void (*func_020_4B4A)(GBState *)) {
+    if (!gb) return;
+
+    gb_write(gb, rSelectROMBank, 0x20);
+    if (func_020_4B4A) {
+        func_020_4B4A(gb);
+    }
+    ReloadSavedBank(gb);
+}

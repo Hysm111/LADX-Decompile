@@ -428,6 +428,7 @@
 #define wD213                                 0xD213
 #define wD214                                 0xD214
 #define wD215                                 0xD215
+#define wFinalNightmareForm                   0xD219
 #define wC116                                 0xC116
 #define wScrollXOffset                        0xC1BF
 #define wBGPal1                               0xDC10

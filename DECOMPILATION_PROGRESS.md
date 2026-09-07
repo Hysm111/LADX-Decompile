@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 54.67%
-* **Number of Verified Functions**: 656
+* **Current Overall Progress**: 55.25%
+* **Number of Verified Functions**: 663
 * **Number of Decompiled Functions**: 492
 * **Number Remaining**: ~547 functions
-* **Current Subsystem**: ROM Bank 2 (Link Unstucking, Ocarina Playing, and Walking Lists, 02:4905-02:4B40)
-* **Current Task**: Bank 2 Link Unstucking, Ocarina Playing, and Movement Lists decompiled and verified
-* **Last Completed Task**: Decompiled and verified `ApplyLinkGroundMotion_noChecks`, `LinkMotionUnstuckingHandler`, `LinkPlayingOcarinaHandler`, and 16 lookup tables (`02:48C5`-`02:4B40`)
-* **Next Task**: Decompile and verify Bank 2 Shovel Digging and Uncovered Items handlers (`func_002_4B49`, `func_002_4BC8`, `02:4B41`-`02:4C90`)
+* **Current Subsystem**: ROM Bank 2 (Shovel Digging, Hole Drawing, and Drop Uncovering, 02:4B41-02:4D96)
+* **Current Task**: Bank 2 Shovel Digging, Hole Drawing, and Drop Uncovering routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `func_020_4B4A_trampoline`, `func_002_4B49`, `func_002_4BC8`, `func_002_4BD4`, `func_002_4C14`, `label_002_4C92`, `func_002_4D20`, and 3 lookup tables (`02:4B41`-`02:4D96`)
+* **Next Task**: Decompile and verify Bank 2 Room Tile Modification & Tunic Palette Sync (`label_002_4D97`, `func_002_4DFC`, `02:4D97`-`02:4E50`+)
 * **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
@@ -19,6 +19,13 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `func_020_4B4A_trampoline` | VERIFIED | PASS | PASS | Switches to ROM Bank $20, executes func_020_4B4A, and restores saved bank (`00:134B`) |
+| `func_002_4B49` | VERIFIED | PASS | PASS | Shovel usage state handler: advances digging animation, triggers hole placement, Marin scolding (`02:4B49`) |
+| `func_002_4BC8` | VERIFIED | PASS | PASS | Validates facing tile for digging, sets shovel state = 2, and invokes hole/drop placement (`02:4BC8`) |
+| `func_002_4BD4` | VERIFIED | PASS | PASS | Prepares DMG draw command buffer for a dug shovel hole tile at intersected object address (`02:4BD4`) |
+| `func_002_4C14` | VERIFIED | PASS | PASS | Prepares CGB draw commands in VRAM0 and VRAM1 for a dug shovel hole tile (`02:4C14`) |
+| `label_002_4C92` | VERIFIED | PASS | PASS | Places shovel hole in wRoomObjects, backups to RAM2, issues draw commands, rolls random drop (`02:4C92`) |
+| `func_002_4D20` | VERIFIED | PASS | PASS | Validates whether the tile in front of Link can be dug with the shovel (`02:4D20`) |
 | `ApplyLinkGroundMotion_noChecks` | VERIFIED | PASS | PASS | Air motion & vertical physics integration without air/side-scrolling guards (`02:44FA`) |
 | `LinkMotionUnstuckingHandler` | VERIFIED | PASS | PASS | Unstick Link from solid geometry: loops vertical adjustments, calls background collision, updates air physics (`02:4960`) |
 | `LinkPlayingOcarinaHandler` | VERIFIED | PASS | PASS | Ocarina playing handler: song countdown, note VFX entities, Marin/dialog triggers, Manbo warp transition (`02:4A16`) |
