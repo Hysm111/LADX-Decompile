@@ -13,6 +13,20 @@
 #include "constants/memory.h"
 #include "constants/rooms.h"
 #include "constants/sfx.h"
+#include "constants/physics.h"
+#include "constants/vfx.h"
+
+static int g_mock_ground_physics_calls = 0;
+static void mock_apply_ground_physics(GBState *gb) {
+    (void)gb;
+    g_mock_ground_physics_calls++;
+}
+
+static int g_mock_map_transition_calls = 0;
+static void mock_check_map_transition(GBState *gb) {
+    (void)gb;
+    g_mock_map_transition_calls++;
+}
 #include "gb.h"
 
 static uint16_t mock_spawn_entity_slot3(GBState *gb, uint8_t entity_type) {
@@ -509,6 +523,196 @@ void run_bank2_tests(void) {
         func_002_438F(&gb, 0);
         assert(gb_read_hram(&gb, hLinkSpeedX) == 0x00);
         assert(gb_read_hram(&gb, hLinkSpeedY) == 0xED);
+    }
+
+
+    /* Test 22: Data_002_44E7 and Data_002_68B1 Lookup Tables */
+    {
+        assert(sizeof(Data_002_44E7) == 6);
+        assert(Data_002_44E7[0] == 0);
+        assert(Data_002_44E7[1] == -16);
+        assert(Data_002_44E7[2] == 16);
+        assert(Data_002_44E7[3] == 0);
+        assert(Data_002_44E7[4] == -1);
+        assert(Data_002_44E7[5] == 1);
+
+        assert(sizeof(Data_002_68B1) == 3);
+        assert(Data_002_68B1[0] == 0);
+        assert(Data_002_68B1[1] == 0x10);
+        assert(Data_002_68B1[2] == (int8_t)0xF0);
+    }
+
+    /* Test 23: shallowWaterVfx */
+    {
+        GBState gb;
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPositionY, 0x48);
+        gb_write_hram(&gb, hLinkPositionX, 0x5C);
+        gb_write_hram(&gb, hJingle, 0);
+
+        shallowWaterVfx(&gb);
+
+        assert(gb_read_hram(&gb, hMultiPurpose1) == 0x48);
+        assert(gb_read_hram(&gb, hMultiPurpose0) == 0x5C);
+        assert(gb_read_hram(&gb, hJingle) == JINGLE_WATER_SPLASH);
+    }
+
+    /* Test 24: label_002_44B5 and func_002_44AD */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* label_002_44B5 */
+        gb_write(&gb, wLinkGroundStatus, 0x05);
+        gb_write(&gb, wC130, 0x00);
+        g_mock_map_transition_calls = 0;
+
+        label_002_44B5(&gb, mock_check_map_transition);
+        assert(gb_read(&gb, wC130) == 0x05);
+        assert(gb_read(&gb, wLinkGroundStatus) == 0x00);
+        assert(g_mock_map_transition_calls == 1);
+
+        /* func_002_44AD: wInventoryAppearing != 0 -> returns early */
+        gb_write(&gb, wInventoryAppearing, 1);
+        g_mock_map_transition_calls = 0;
+        func_002_44AD(&gb, mock_check_map_transition);
+        assert(g_mock_map_transition_calls == 0);
+
+        /* func_002_44AD: wInventoryAppearing == 0 -> executes */
+        gb_write(&gb, wInventoryAppearing, 0);
+        gb_write(&gb, wLinkGroundStatus, 0x09);
+        func_002_44AD(&gb, mock_check_map_transition);
+        assert(gb_read(&gb, wC130) == 0x09);
+        assert(gb_read(&gb, wLinkGroundStatus) == 0x00);
+        assert(g_mock_map_transition_calls == 1);
+    }
+
+    /* Test 25: func_002_44C2 - Collision Countdown & Collision Handling */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* When countdown == 0, returns false immediately */
+        gb_write(&gb, wIgnoreLinkCollisionsCountdown, 0);
+        g_mock_map_transition_calls = 0;
+        bool handled = func_002_44C2(&gb, mock_check_map_transition);
+        assert(!handled);
+        assert(g_mock_map_transition_calls == 0);
+
+        /* When countdown > 0 and collision == 0 */
+        gb_write(&gb, wIgnoreLinkCollisionsCountdown, 5);
+        gb_write(&gb, wCollisionType, 0);
+        gb_write_hram(&gb, hLinkSpeedX, 0x10);
+        gb_write_hram(&gb, hLinkSpeedY, 0x20);
+
+        handled = func_002_44C2(&gb, mock_check_map_transition);
+        assert(handled);
+        assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 4);
+        assert(g_mock_map_transition_calls == 1);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x10);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x20);
+
+        /* Collision vertical (collision & 3 != 0) -> clears speed Y */
+        gb_write(&gb, wIgnoreLinkCollisionsCountdown, 2);
+        gb_write(&gb, wCollisionType, COLLISION_TYPE_UP);
+        handled = func_002_44C2(&gb, mock_check_map_transition);
+        assert(handled);
+        assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 1);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x10);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Collision horizontal (collision & 3 == 0) -> clears speed X */
+        gb_write(&gb, wIgnoreLinkCollisionsCountdown, 1);
+        gb_write(&gb, wCollisionType, COLLISION_TYPE_LEFT);
+        gb_write_hram(&gb, hLinkSpeedX, 0x10);
+        gb_write_hram(&gb, hLinkSpeedY, 0x20);
+        handled = func_002_44C2(&gb, mock_check_map_transition);
+        assert(handled);
+        assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x00);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x20);
+    }
+
+    /* Test 26: ApplyLinkGroundMotion */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* 1. Not in air -> returns early */
+        gb_write(&gb, wIsLinkInTheAir, 0);
+        gb_write_hram(&gb, hLinkVelocityZ, 0x10);
+        ApplyLinkGroundMotion(&gb, NULL);
+        assert(gb_read_hram(&gb, hLinkVelocityZ) == 0x10);
+
+        /* 2. Side scrolling -> returns early */
+        gb_write(&gb, wIsLinkInTheAir, 1);
+        gb_write_hram(&gb, hIsSideScrolling, 1);
+        ApplyLinkGroundMotion(&gb, NULL);
+        assert(gb_read_hram(&gb, hLinkVelocityZ) == 0x10);
+
+        /* 3. In air, overhead, still airborne (pos Z > 0, bit 7 == 0) */
+        gb_write_hram(&gb, hIsSideScrolling, 0);
+        gb_write_hram(&gb, hLinkPositionZ, 0x08);
+        gb_write_hram(&gb, hLinkVelocityZ, 0x04);
+        gb_write(&gb, wConsecutiveStepsCount, 0x00);
+        ApplyLinkGroundMotion(&gb, NULL);
+        assert(gb_read_hram(&gb, hLinkVelocityZ) == 0x02);
+        assert(gb_read(&gb, wConsecutiveStepsCount) == 0xFF);
+        /* Still in air */
+        assert(gb_read(&gb, wIsLinkInTheAir) == 1);
+
+        /* 4. Joypad movement in air: Right pressed (speed nudged towards +16) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x01);
+        gb_write_hram(&gb, hLinkSpeedX, 0x0E);
+        ApplyLinkGroundMotion(&gb, NULL);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x0F);
+
+        /* 5. Landing on normal ground (pos Z == 0): triggers landing reset and footstep SFX */
+        gb_write_hram(&gb, hLinkPositionZ, 0x00);
+        gb_write_hram(&gb, hLinkPositionY, 0x50);
+        gb_write_hram(&gb, hObjectUnderLink, 0x20);
+        gb_write(&gb, wLinkObjectPhysics, OBJ_PHYSICS_NONE);
+        gb_write_hram(&gb, hNoiseSfx, 0);
+        g_mock_ground_physics_calls = 0;
+
+        ApplyLinkGroundMotion(&gb, mock_apply_ground_physics);
+        assert(gb_read_hram(&gb, hLinkPositionZ) == 0);
+        assert(gb_read_hram(&gb, hLinkVelocityZ) == 0);
+        assert(gb_read(&gb, wIsLinkInTheAir) == 0);
+        assert(gb_read(&gb, wC149) == 0);
+        assert(gb_read(&gb, wC152) == 0);
+        assert(gb_read(&gb, wC153) == 0);
+        assert(gb_read(&gb, wC10A) == 0);
+        assert(g_mock_ground_physics_calls == 1);
+        assert(gb_read_hram(&gb, hNoiseSfx) == NOISE_SFX_FOOTSTEP);
+
+        /* 6. Landing in shallow water: triggers shallowWaterVfx */
+        gb_write(&gb, wIsLinkInTheAir, 1);
+        gb_write_hram(&gb, hLinkPositionZ, 0x80); /* bit 7 set -> ground reached */
+        gb_write_hram(&gb, hLinkPositionY, 0x60);
+        gb_write_hram(&gb, hLinkPositionX, 0x30);
+        gb_write(&gb, wLinkObjectPhysics, OBJ_PHYSICS_SHALLOW_WATER);
+        gb_write_hram(&gb, hJingle, 0);
+
+        ApplyLinkGroundMotion(&gb, NULL);
+        assert(gb_read(&gb, wIsLinkInTheAir) == 0);
+        assert(gb_read_hram(&gb, hJingle) == JINGLE_WATER_SPLASH);
+        assert(gb_read_hram(&gb, hMultiPurpose1) == 0x60);
+        assert(gb_read_hram(&gb, hMultiPurpose0) == 0x30);
+
+        /* 7. Landing on water/lava/pit: no footstep SFX */
+        const uint8_t no_footstep_physics[] = {
+            OBJ_PHYSICS_DEEP_WATER, OBJ_PHYSICS_LAVA, OBJ_PHYSICS_PIT, OBJ_PHYSICS_PIT_WARP
+        };
+        for (size_t p = 0; p < sizeof(no_footstep_physics); p++) {
+            gb_write(&gb, wIsLinkInTheAir, 1);
+            gb_write_hram(&gb, hLinkPositionZ, 0x00);
+            gb_write(&gb, wLinkObjectPhysics, no_footstep_physics[p]);
+            gb_write_hram(&gb, hNoiseSfx, 0);
+
+            ApplyLinkGroundMotion(&gb, NULL);
+            assert(gb_read_hram(&gb, hNoiseSfx) == 0);
+        }
     }
 
     printf("[+] Bank 2 unit tests passed successfully!\n");

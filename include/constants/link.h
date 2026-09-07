@@ -77,4 +77,8 @@
 
 #define ATTACK_STEP_DURATION_MASK                          0x7F
 
+#define ITEM_USAGE_DEFAULT                                 0x00
+#define ITEM_USAGE_NEAR_NPC                                0x01
+#define ITEM_USAGE_ON_RAFT                                 0x80
+
 #endif /* LADX_CONSTANTS_LINK_H */

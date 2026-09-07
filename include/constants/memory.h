@@ -539,5 +539,10 @@
 #define wC5A5                                 0xC5A5
 #define wBossDefeated                         0xD46C
 #define wSelectedSongIndex                    0xDB4A
+#define wC10A                                 0xC10A
+#define wCollisionType                        0xC133
+#define wIgnoreLinkCollisionsCountdown        0xC13E
+#define wLinkGroundStatus                     0xC11F
+#define wInventoryAppearing                   0xC14F
 
 #endif /* LADX_CONSTANTS_MEMORY_H */

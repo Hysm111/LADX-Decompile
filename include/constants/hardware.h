@@ -137,5 +137,6 @@
 #define hMultiPurposeE                  0xFFE5
 #define hMultiPurposeB                  0xFFE2
 #define hMultiPurposeC                  0xFFE3
+#define hObjectUnderLink             0xFFB8
 
 #endif /* LADX_CONSTANTS_HARDWARE_H */

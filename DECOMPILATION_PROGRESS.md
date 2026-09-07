@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 53.33%
-* **Number of Verified Functions**: 640
-* **Number of Decompiled Functions**: 479
-* **Number Remaining**: ~560 functions
-* **Current Subsystem**: ROM Bank 2 (Link Motion Movement Physics & State Helpers, 02:4338-02:43B9)
-* **Current Task**: Bank 2 Link Motion Movement Physics & State Helpers decompiled and verified
-* **Last Completed Task**: Decompiled and verified Bank 2 Link Motion Helpers: `func_002_4338`, `func_002_434A`, `MoveLinkToPressedButtonDirection`, `func_002_438F`, and lookup tables (`02:4338`-`02:43B9`, `02:48C5`-`02:4910`)
-* **Next Task**: Decompile and verify Bank 2 Link Motion Default core physics loop (`LinkMotionDefault`, `ApplyLinkGroundMotion`, `02:4287`+)
-* **Last Update Timestamp**: 2026-09-07T23:05:00+03:00
+* **Current Overall Progress**: 53.75%
+* **Number of Verified Functions**: 645
+* **Number of Decompiled Functions**: 484
+* **Number Remaining**: ~555 functions
+* **Current Subsystem**: ROM Bank 2 (Link Motion Physics & Landing Handlers, 02:44AD-02:45AC)
+* **Current Task**: Bank 2 Link Motion Ground Physics, Collisions & Landing Handlers decompiled and verified
+* **Last Completed Task**: Decompiled and verified Bank 2 Link Motion routines: `ApplyLinkGroundMotion`, `shallowWaterVfx`, `func_002_44AD`, `label_002_44B5`, `func_002_44C2`, and lookup tables `Data_002_44E7`, `Data_002_68B1` (`02:44AD`-`02:45AC`, `02:68B1`)
+* **Next Task**: Decompile and verify Bank 2 Link Motion Default core loop and overhead walk physics (`LinkMotionDefault`, `jr_002_43BA`, `02:4287`+)
+* **Last Update Timestamp**: 2026-09-07T23:45:00+03:00
 
 ---
 
@@ -19,6 +19,11 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `ApplyLinkGroundMotion` | VERIFIED | PASS | PASS | Updates velocity from gravity, joypad movement in air, landing reset, and terrain noise/splash (`02:44ED`) |
+| `shallowWaterVfx` | VERIFIED | PASS | PASS | Shallow water splash particle VFX and water splash audio (`02:45AD`) |
+| `func_002_44AD` | VERIFIED | PASS | PASS | Checks inventory appearing state, updates final position, and falls through to ground status reset (`02:44AD`) |
+| `label_002_44B5` | VERIFIED | PASS | PASS | Copies wLinkGroundStatus to wC130, zeroes ground status, and checks map transition (`02:44B5`) |
+| `func_002_44C2` | VERIFIED | PASS | PASS | Decrements ignore collisions countdown, checks collision axis, clears speed X/Y, and calls ApplyLinkMotionState (`02:44C2`) |
 | `func_002_4338` | VERIFIED | PASS | PASS | Lifted object state updater and motion blocking (`02:4338`) |
 | `func_002_434A` | VERIFIED | PASS | PASS | Decrements attack step animation countdown and updates animation state from direction (`02:434A`) |
 | `MoveLinkToPressedButtonDirection` | VERIFIED | PASS | PASS | Applies joypad d-pad directional speed increments (normal / piece of power) (`02:437A`) |

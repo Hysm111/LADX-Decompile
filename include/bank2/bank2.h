@@ -2,7 +2,6 @@
 #define LADX_BANK2_BANK2_H
 
 #include "gb.h"
-#include <stdbool.h>
 
 extern const int8_t HookshotChainSpeedX[4];
 extern const int8_t HookshotChainSpeedY[4];
@@ -10,19 +9,20 @@ extern const uint8_t DirectionToLinkAnimationState[4];
 extern const int8_t HorizontalIncrementForLinkPosition[32];
 extern const int8_t VerticalIncrementForLinkPosition[32];
 extern const uint8_t JoypadToLinkDirection[11];
+extern const int8_t Data_002_44E7[6];
+extern const int8_t Data_002_68B1[3];
 
 /**
  * Spawns a chest containing an item at the coordinates of the intersected object. (02:41D0)
  *
  * @param gb Pointer to Game Boy system state.
- * @param spawn_new_entity Optional callback to spawn an entity; if NULL, uses default allocation.
- * @return true if entity was successfully spawned, false if entity table was full.
+ * @param spawn_new_entity Optional callback to spawn an entity. If NULL, standard slot search is used.
+ * @return true if chest was spawned, false if no free entity slot.
  */
 bool SpawnChestWithItem(GBState *gb, uint16_t (*spawn_new_entity)(GBState *, uint8_t));
 
 /**
- * Executes the Ocarina item action when Link is on the ground.
- * Updates song countdown timer and plays the selected song audio wave SFX. (02:41FC)
+ * Plays the currently selected Ocarina song or off-key notes if no songs learned. (02:41FC)
  *
  * @param gb Pointer to Game Boy system state.
  */
@@ -66,5 +66,45 @@ void MoveLinkToPressedButtonDirection(GBState *gb, uint8_t offset);
  * @param offset Table offset: 0 for normal, 0x10 for Piece of Power.
  */
 void func_002_438F(GBState *gb, uint8_t offset);
+
+/**
+ * Triggers shallow water splash visual effect and plays water splash jingle. (02:45AD)
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void shallowWaterVfx(GBState *gb);
+
+/**
+ * If on the ground, updates Link speed from gravity and joypad input, and handles ground landing. (02:44ED)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_ground_physics Optional callback for ground physics handling on landing.
+ */
+void ApplyLinkGroundMotion(GBState *gb, void (*apply_ground_physics)(GBState *));
+
+/**
+ * Copies wLinkGroundStatus to wC130, clears wLinkGroundStatus, and checks map transition. (02:44B5)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_map_transition Optional callback to check position for map transition.
+ */
+void label_002_44B5(GBState *gb, void (*check_map_transition)(GBState *));
+
+/**
+ * If inventory is not appearing, updates final Link position and checks map transition. (02:44AD)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_map_transition Optional callback to check position for map transition.
+ */
+void func_002_44AD(GBState *gb, void (*check_map_transition)(GBState *));
+
+/**
+ * Decrements ignore collisions countdown, updates position, checks transition, and handles collision stop. (02:44C2)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_map_transition Optional callback to check position for map transition.
+ * @return true if collision countdown was active (caller should pop return and jump to ApplyLinkMotionState), false otherwise.
+ */
+bool func_002_44C2(GBState *gb, void (*check_map_transition)(GBState *));
 
 #endif /* LADX_BANK2_BANK2_H */
