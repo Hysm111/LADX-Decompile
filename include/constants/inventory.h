@@ -35,3 +35,8 @@
 #define SWORD_ANIMATION_STATE_HOLDING       0x05
 
 #endif /* LADX_CONSTANTS_INVENTORY_H */
+
+/* Tunic types (wTunicType) */
+#define TUNIC_GREEN                     0x00
+#define TUNIC_RED                       0x01
+#define TUNIC_BLUE                      0x02

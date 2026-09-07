@@ -496,3 +496,12 @@
 #define wHasInstrument6                       0xDB6A
 #define wHasInstrument8                       0xDB6C
 #define wC3C4                                 0xC3C4
+#define wC3C5                                 0xC3C5
+#define wC3C7                                 0xC3C7
+#define wD466                                 0xD466
+#define wNoiseSfxSeaWavesCounter              0xC114
+#define wC550                                 0xC550
+#define wC560                                 0xC560
+#define wC570                                 0xC570
+#define wC590                                 0xC590
+#define wD200                                 0xD200

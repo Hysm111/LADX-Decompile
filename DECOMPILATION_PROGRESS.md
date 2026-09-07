@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 46.25%
-* **Number of Verified Functions**: 555
+* **Current Overall Progress**: 48.33%
+* **Number of Verified Functions**: 580
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~645 functions
-* **Current Subsystem**: Bank 1 - Face Shrine Mural & Siren Instruments Subsystems (`code/face_shrine_mural.asm` & `code/bank1.asm`, 100% VERIFIED)
-* **Current Task**: Bank 1 Face Shrine Mural & Siren Instruments Subsystems 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 11 Bank 1 Face Shrine Mural & Siren Instruments routines (`FaceShrineMuralEntryPoint`, `FaceShrineMuralStage0Handler`, `FaceShrineMuralStage1Handler`, `FaceShrineMuralStage2Handler`, `FaceShrineMuralStage3Handler`, `FaceShrineMuralStage4Handler`, `FaceShrineMuralStage5Handler`, `LoadSirenInstruments`, `LoadInstrumentsBG`, `GetInstrumentNextBGAddress`, `LoadSirenInstrumentTiles`) (`01:6AF8`-`01:6C76`)
-* **Next Task**: Decompile and verify Marin Beach cinematic subsystem (`code/marin_beach.asm`, `01:61F0`-`01:67ED`)
+* **Number Remaining**: ~620 functions
+* **Current Subsystem**: Bank 1 - Marin Beach Cinematic Subsystem (`code/marin_beach.asm`, 100% VERIFIED)
+* **Current Task**: Bank 1 Marin Beach Cinematic Subsystem 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 25 Bank 1 Marin Beach routines (`MarinBeachEntryPoint`, `MarinBeachPrepare0`..`Prepare3`, `MarinBeachScroll1`..`Scroll2`, `MarinBeachScrollStop`, `MarinBeachDialog1`..`Dialog4`, `MarinBeachPause1`..`Pause2`, `MarinBeachAreYouListening`, `OpenMarinBeachDialog`, `func_001_64FF`, `func_001_651E`, `func_001_658B`, `func_001_65AE`, `func_001_65DD`, `func_001_6673`, `func_001_66FD`, `func_001_67A8`, `func_001_67B5`) (`01:61F0`-`01:67ED`)
+* **Next Task**: Decompile and verify Intro cutscene sequence (`code/intro.asm`, `01:6D50`-`01:7FFF`)
 * **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
 
 ---
@@ -471,6 +471,31 @@
 | `LoadInstrumentsBG` | VERIFIED | PASS | PASS | Draws 4 instruments into BG map at $9D00, using obtained picture or numbered placeholder (`01:6BEF`) |
 | `GetInstrumentNextBGAddress` | VERIFIED | PASS | PASS | Calculates next tilemap VRAM address for 2x2 instrument block (`01:6C69`) |
 | `LoadSirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies $40 bytes of instrument tiles from ROM to $8D00, increments stage (`01:6C77`) |
+| `MarinBeachEntryPoint` | VERIFIED | PASS | PASS | Main entry point and stage dispatcher for Marin Beach cutscene (`01:6203`) |
+| `MarinBeachPrepare0` | VERIFIED | PASS | PASS | Stage 0: Increments subtype, copies 0x80 palette bytes to bank 3 on CGB (`01:623F`) |
+| `MarinBeachPrepare1` | VERIFIED | PASS | PASS | Stage 1: Screen fade-out via func_1A22, clears transition and VFX state, sets tileset 0F (`01:6260`) |
+| `MarinBeachPrepare2` | VERIFIED | PASS | PASS | Stage 2: Loads tileset TILESET_MARIN_BEACH, resets wC13F (`01:6282`) |
+| `MarinBeachPrepare3` | VERIFIED | PASS | PASS | Stage 3: Loads TILEMAP_MARIN_BEACH, sets initial positions/velocities for 7 seagulls (`01:628E`) |
+| `MarinBeachScroll1` | VERIFIED | PASS | PASS | Stage 4: Screen fade-in on CGB via func_1A39 or DMG palette rotation via Data_001_63AA (`01:63CA`) |
+| `MarinBeachScroll2` | VERIFIED | PASS | PASS | Stage 5: Vertical scroll-up step until hBaseScrollY reaches 0, sets wC3C7 = 0x80 (`01:6417`) |
+| `MarinBeachScrollStop` | VERIFIED | PASS | PASS | Stage 6: Waits for scroll delay timer, triggers Dialog 0x1D8 (`01:6432`) |
+| `MarinBeachDialog1` | VERIFIED | PASS | PASS | Stage 7: Waits for dialog close, sets timers wC3C4 = 0x80 and wC3C7 = 0xC0 (`01:6450`) |
+| `MarinBeachPause1` | VERIFIED | PASS | PASS | Stage 8: Waits for delay wC3C7 == 0, triggers Dialog 0x1D9 (`01:6467`) |
+| `MarinBeachDialog2` | VERIFIED | PASS | PASS | Stage 9: Waits for dialog close, sets timers wC3C4 = 0x80 and wC3C7 = 0xC0 (`01:6479`) |
+| `MarinBeachPause2` | VERIFIED | PASS | PASS | Stage 10: Waits for delay wC3C7 == 0, triggers Dialog 0x1DA (`01:6490`) |
+| `MarinBeachAreYouListening` | VERIFIED | PASS | PASS | Stage 11: Handles Marin's question: Dialog 0x1DB if Yes, or Dialog 0x1DE and loop to stage 6 if No (`01:64A2`) |
+| `MarinBeachDialog3` | VERIFIED | PASS | PASS | Stage 12: Waits for dialog close, triggers Dialog 0x1DC, sets wC3C7 = 0x30 (`01:64D0`) |
+| `MarinBeachDialog4` | VERIFIED | PASS | PASS | Stage 13: Waits for delay, calls label_27F2, func_001_68D9, sets wIsMarinFollowingLink = 1 (`01:64E7`) |
+| `OpenMarinBeachDialog` | VERIFIED | PASS | PASS | Opens dialog in Table 1 with Link's temporary Y position at 0x60 (`01:67DE`) |
+| `func_001_64FF` | VERIFIED | PASS | PASS | Clears 16 bytes of transient VFX type table wTranscientVfxTypeTable (`01:64FF`) |
+| `func_001_651E` | VERIFIED | PASS | PASS | Updates wave audio, seagull cries, and draws Link & Marin sitting sprites in OAM buffer (`01:651E`) |
+| `func_001_658B` | VERIFIED | PASS | PASS | Generates a 2-sprite 8x16 OAM descriptor pair with scroll Y offset and sets hMultiPurposeG (`01:658B`) |
+| `func_001_65AE` | VERIFIED | PASS | PASS | Iterates active seagull VFX slots 8 down to 0 and invokes func_001_65DD (`01:65AE`) |
+| `func_001_65DD` | VERIFIED | PASS | PASS | Dispatches seagull animation based on VFX type (type 1: splash, type 2: flying) (`01:65DD`) |
+| `func_001_6673` | VERIFIED | PASS | PASS | Updates and renders water splash and standing seagull animation frame sequence (`01:6673`) |
+| `func_001_66FD` | VERIFIED | PASS | PASS | Updates and renders flying seagull with flapping animation, movement, and boundary tracking (`01:66FD`) |
+| `func_001_67A8` | VERIFIED | PASS | PASS | Performs 2D fixed-point velocity integration for both X and Y dimensions (`01:67A8`) |
+| `func_001_67B5` | VERIFIED | PASS | PASS | Fixed-point 4.4 velocity integration with subpixel accumulation and sign extension (`01:67B5`) |
 
 ---
 
