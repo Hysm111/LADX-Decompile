@@ -283,3 +283,6 @@
 #endif /* LADX_CONSTANTS_GFX_H */
 
 #define TILEMAP_INVENTORY 0x02
+
+#define TILESET_FILL_TILEMAP                  0x08
+#define TILEMAP_MENU_FILE_CREATION            0x05

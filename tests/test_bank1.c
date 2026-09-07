@@ -1538,6 +1538,113 @@ void test_file_selection_interactive_and_choice(void) {
     assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
 }
 
+
+void test_file_creation_init_and_sram(void) {
+    printf("[*] Running FileCreationInit & WriteByteToSRAM tests (01:4A11-01:4A46)...\n");
+    GBState gb;
+
+    /* Test 1: FileCreationInit1Handler */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 0);
+    FileCreationInit1Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_FILL_TILEMAP);
+    assert(gb_read(&gb, wDBA8) == 0);
+    assert(gb_read(&gb, wNameEntryCurrentChar) == 0);
+    assert(gb_read(&gb, wSaveSlotNameCharIndex) == 0);
+
+    /* Test 2: FileCreationInit2Handler for Slot 1 */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 1);
+    gb_write(&gb, wGameplaySubtype, 1);
+    FileCreationInit2Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_MENU_FILE_CREATION);
+    assert(gb_read(&gb, wDrawCommand + 0) == (FILE_NEW_SAVE_SLOT_INDEX_BG >> 8));
+    assert(gb_read(&gb, wDrawCommand + 1) == (FILE_NEW_SAVE_SLOT_INDEX_BG & 0xFF));
+    assert(gb_read(&gb, wDrawCommand + 2) == 0);
+    assert(gb_read(&gb, wDrawCommand + 3) == (1 + FILE_NEW_SAVE_SLOT_1_TILE));
+    assert(gb_read(&gb, wDrawCommand + 4) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+
+    /* Test 3: WriteByteToSRAM */
+    gb_init(&gb);
+    WriteByteToSRAM(&gb, 0xA100, 0x05, 0x42);
+    assert(gb_read(&gb, 0xA105) == 0x42);
+}
+
+void test_transition_to_file_menu_reload(void) {
+    printf("[*] Running TransitionToFileMenu & label_001_4555 tests (01:4552, 01:4555)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Populate SRAM for Slot 1 */
+    gb_write(&gb, 0xA454 + 0, 'L');
+    gb_write(&gb, 0xA454 + 1, 'I');
+    gb_write(&gb, 0xA454 + 2, 'N');
+    gb_write(&gb, 0xA454 + 3, 'K');
+    gb_write(&gb, 0xA454 + 4, '1');
+    gb_write(&gb, 0xA45F, 24);
+    gb_write(&gb, 0xA460, 3);
+    gb_write(&gb, 0xA45C, 0);
+    gb_write(&gb, 0xA45D, 2);
+
+    /* Populate SRAM for Slot 2 */
+    gb_write(&gb, 0xA801 + 0, 'Z');
+    gb_write(&gb, 0xA801 + 1, 'E');
+    gb_write(&gb, 0xA801 + 2, 'L');
+    gb_write(&gb, 0xA801 + 3, 'D');
+    gb_write(&gb, 0xA801 + 4, 'A');
+    gb_write(&gb, 0xA80C, 40);
+    gb_write(&gb, 0xA80D, 5);
+    gb_write(&gb, 0xA809, 0);
+    gb_write(&gb, 0xA80A, 0);
+
+    /* Populate SRAM for Slot 3 */
+    gb_write(&gb, 0xABAE + 0, 'M');
+    gb_write(&gb, 0xABAE + 1, 'A');
+    gb_write(&gb, 0xABAE + 2, 'R');
+    gb_write(&gb, 0xABAE + 3, 'I');
+    gb_write(&gb, 0xABAE + 4, 'N');
+    gb_write(&gb, 0xABB9, 80);
+    gb_write(&gb, 0xABBA, 10);
+    gb_write(&gb, 0xABB6, 0);
+    gb_write(&gb, 0xABB7, 7);
+
+    TransitionToFileMenu(&gb, 1);
+    assert(gb_read(&gb, wForceFileSelectionScreenMusic) == 1);
+
+    /* Slot 1 checks */
+    assert(gb_read(&gb, wSaveSlot1Name + 0) == 'L');
+    assert(gb_read(&gb, wSaveSlot1Name + 4) == '1');
+    assert(gb_read(&gb, wFile1Health) == 24);
+    assert(gb_read(&gb, wFile1MaxHearts) == 3);
+    assert(gb_read(&gb, wFile1DeathCountHigh) == 0);
+    assert(gb_read(&gb, wFile1DeathCountLow) == 2);
+
+    /* Slot 2 checks */
+    assert(gb_read(&gb, wSaveSlot2Name + 0) == 'Z');
+    assert(gb_read(&gb, wSaveSlot2Name + 4) == 'A');
+    assert(gb_read(&gb, wFile2Health) == 40);
+    assert(gb_read(&gb, wFile2MaxHearts) == 5);
+    assert(gb_read(&gb, wFile2DeathCountHigh) == 0);
+    assert(gb_read(&gb, wFile2DeathCountLow) == 0);
+
+    /* Slot 3 checks */
+    assert(gb_read(&gb, wSaveSlot3Name + 0) == 'M');
+    assert(gb_read(&gb, wSaveSlot3Name + 4) == 'N');
+    assert(gb_read(&gb, wFile3Health) == 80);
+    assert(gb_read(&gb, wFile3MaxHearts) == 10);
+    assert(gb_read(&gb, wFile3DeathCountHigh) == 0);
+    assert(gb_read(&gb, wFile3DeathCountLow) == 7);
+
+    /* Mode and display checks */
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+    assert(gb_read(&gb, wGameplaySubtype) == 0);
+    assert(gb_read(&gb, hBaseScrollY) == 0);
+    assert(gb_read(&gb, hBaseScrollX) == 0);
+    assert(gb_read(&gb, wBGPalette) == 0);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1580,5 +1687,7 @@ void run_bank1_tests(void) {
     test_load_saved_file();
     test_func_001_4954();
     test_file_selection_interactive_and_choice();
+    test_file_creation_init_and_sram();
+    test_transition_to_file_menu_reload();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

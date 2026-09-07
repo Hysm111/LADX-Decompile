@@ -1,3 +1,4 @@
+#include "home/gameplay.h"
 #include "bank1/file_menu.h"
 #include "bank1/world_map.h"
 #include "bank1/room_transition.h"
@@ -169,4 +170,110 @@ void FileSelectionExecuteChoice(GBState *gb) {
 
 void FileSelectionLoadSavedFile(GBState *gb) {
     LoadSavedFile(gb);
+}
+
+const uint8_t SaveSlotNameAddresses[3] = {
+    0, 5, 10
+};
+
+const uint16_t Data_001_49F2[3] = {
+    0xA405, /* SaveGame1.main (0xA105) + 0x300 */
+    0xA7B2, /* SaveGame2.main (0xA4B2) + 0x300 */
+    0xAB5F  /* SaveGame3.main (0xA85F) + 0x300 */
+};
+
+void FileCreationInit1Handler(GBState *gb) {
+    if (!gb) return;
+
+    IncrementGameplaySubtype(gb);
+    gb_write(gb, wTilesetToLoad, TILESET_FILL_TILEMAP);
+    gb_write(gb, wDBA8, 0);
+    gb_write(gb, wNameEntryCurrentChar, 0);
+    gb_write(gb, wSaveSlotNameCharIndex, 0);
+}
+
+void FileCreationInit2Handler(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, wBGMapToLoad, TILEMAP_MENU_FILE_CREATION);
+
+    gb_write(gb, wDrawCommand + 0, (uint8_t)(FILE_NEW_SAVE_SLOT_INDEX_BG >> 8));
+    gb_write(gb, wDrawCommand + 1, (uint8_t)(FILE_NEW_SAVE_SLOT_INDEX_BG & 0xFF));
+    gb_write(gb, wDrawCommand + 2, 0);
+
+    uint8_t slot = gb_read(gb, wSaveSlot);
+    gb_write(gb, wDrawCommand + 3, (uint8_t)(slot + FILE_NEW_SAVE_SLOT_1_TILE));
+    gb_write(gb, wDrawCommand + 4, 0);
+
+    IncrementGameplaySubtype(gb);
+}
+
+void WriteByteToSRAM(GBState *gb, uint16_t hl, uint16_t bc, uint8_t val) {
+    if (!gb) return;
+
+    EnableSRAM(gb);
+    gb_write(gb, (uint16_t)(hl + bc), val);
+}
+
+void label_001_4555(GBState *gb) {
+    if (!gb) return;
+
+    /* SaveGame1: name at 0xA454, health at 0xA45F, max hearts at 0xA460, death count at 0xA45C */
+    for (uint8_t i = 0; i < 5; i++) {
+        EnableSRAM(gb);
+        gb_write(gb, (uint16_t)(wSaveSlot1Name + i), gb_read(gb, (uint16_t)(0xA454 + i)));
+    }
+    EnableSRAM(gb);
+    gb_write(gb, wFile1Health, gb_read(gb, 0xA45F));
+    EnableSRAM(gb);
+    gb_write(gb, wFile1MaxHearts, gb_read(gb, 0xA460));
+    EnableSRAM(gb);
+    gb_write(gb, wFile1DeathCountHigh, gb_read(gb, 0xA45C));
+    EnableSRAM(gb);
+    gb_write(gb, wFile1DeathCountLow, gb_read(gb, 0xA45D));
+
+    /* SaveGame2: name at 0xA801, health at 0xA80C, max hearts at 0xA80D, death count at 0xA809 */
+    for (uint8_t i = 0; i < 5; i++) {
+        EnableSRAM(gb);
+        gb_write(gb, (uint16_t)(wSaveSlot2Name + i), gb_read(gb, (uint16_t)(0xA801 + i)));
+    }
+    EnableSRAM(gb);
+    gb_write(gb, wFile2Health, gb_read(gb, 0xA80C));
+    EnableSRAM(gb);
+    gb_write(gb, wFile2MaxHearts, gb_read(gb, 0xA80D));
+    EnableSRAM(gb);
+    gb_write(gb, wFile2DeathCountHigh, gb_read(gb, 0xA809));
+    EnableSRAM(gb);
+    gb_write(gb, wFile2DeathCountLow, gb_read(gb, 0xA80A));
+
+    /* SaveGame3: name at 0xABAE, health at 0xABB9, max hearts at 0xABBA, death count at 0xABB6 */
+    for (uint8_t i = 0; i < 5; i++) {
+        EnableSRAM(gb);
+        gb_write(gb, (uint16_t)(wSaveSlot3Name + i), gb_read(gb, (uint16_t)(0xABAE + i)));
+    }
+    EnableSRAM(gb);
+    gb_write(gb, wFile3Health, gb_read(gb, 0xABB9));
+    EnableSRAM(gb);
+    gb_write(gb, wFile3MaxHearts, gb_read(gb, 0xABBA));
+    EnableSRAM(gb);
+    gb_write(gb, wFile3DeathCountHigh, gb_read(gb, 0xABB6));
+    EnableSRAM(gb);
+    gb_write(gb, wFile3DeathCountLow, gb_read(gb, 0xABB7));
+
+    /* Reset to file select screen */
+    gb_write(gb, wGameplayType, GAMEPLAY_FILE_SELECT);
+    gb_write(gb, wGameplaySubtype, 0);
+    gb_write(gb, hBaseScrollY, 0);
+    gb_write(gb, hBaseScrollX, 0);
+    gb_write(gb, wBGPalette, 0);
+    gb_write(gb, wOBJ0Palette, 0);
+    gb_write(gb, wOBJ1Palette, 0);
+    ClearFileMenuBG_trampoline(gb, 1, NULL);
+}
+
+void TransitionToFileMenu(GBState *gb, uint8_t force_music) {
+    if (!gb) return;
+
+    gb_write(gb, wForceFileSelectionScreenMusic, force_music);
+    label_001_4555(gb);
 }

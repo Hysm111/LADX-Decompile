@@ -39,4 +39,38 @@ void FileSelectionExecuteChoice(GBState *gb);
  */
 void FileSelectionLoadSavedFile(GBState *gb);
 
+#define FILE_NEW_SAVE_SLOT_INDEX_BG   0x9849
+#define FILE_NEW_SAVE_SLOT_1_TILE     0xAB
+
+extern const uint8_t SaveSlotNameAddresses[3];
+extern const uint16_t Data_001_49F2[3];
+
+/**
+ * Stage 0 init for file creation screen (01:4A11).
+ * Sets tileset to TILESET_FILL_TILEMAP, clears input index and name entry char, increments subtype.
+ */
+void FileCreationInit1Handler(GBState *gb);
+
+/**
+ * Stage 1 init for file creation screen (01:4A24).
+ * Sets BG map to TILEMAP_MENU_FILE_CREATION, writes draw command for slot index tile, increments subtype.
+ */
+void FileCreationInit2Handler(GBState *gb);
+
+/**
+ * Writes a single byte into SRAM at [hl + bc] (01:4A3F).
+ */
+void WriteByteToSRAM(GBState *gb, uint16_t hl, uint16_t bc, uint8_t val);
+
+/**
+ * Reloads all save slot names, health, hearts, and deaths from SRAM and switches to file select (01:4555).
+ */
+void label_001_4555(GBState *gb);
+
+/**
+ * Sets wForceFileSelectionScreenMusic to force_music and reloads file selection menu (01:4552).
+ */
+void TransitionToFileMenu(GBState *gb, uint8_t force_music);
+
 #endif /* LADX_BANK1_FILE_MENU_H */
+
