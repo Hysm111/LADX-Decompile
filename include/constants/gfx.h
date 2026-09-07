@@ -261,3 +261,15 @@
 #define EvilEagleRiderHiddenTiles               0x59FE
 #define ColorDungeonNpcTiles                    0x4000
 
+/* Cutscene & Special Tilesets */
+#define TILESET_CHRISTINE                     0x12
+#define TILESET_MARIN_BEACH                   0x13
+#define TILESET_FACE_SHRINE_MURAL             0x14
+#define TILESET_SCHULE_PAINTING               0x20
+#define TILESET_EAGLES_TOWER_TOP              0x21
+
+/* Cutscene & Special Tilemaps */
+#define TILEMAP_PEACH                         0x12
+#define TILEMAP_MARIN_BEACH                   0x13
+#define TILEMAP_SCHULE_PAINTING               0x23
+#define TILEMAP_EAGLES_TOWER_COLLAPSE         0x24

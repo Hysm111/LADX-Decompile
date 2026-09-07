@@ -149,6 +149,47 @@ void IncrementGameplaySubtype(GBState *gb);
  */
 void IncrementGameplaySubtypeAndReturn(GBState *gb);
 
+
+/**
+ * func_001_5888 (01:5888)
+ * Clears 12 bytes at wRoomTransitionState ($C124-$C12F).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_001_5888(GBState *gb);
+
+/**
+ * InitializeInventoryBar (01:5895)
+ * Configures the window and subscreen registers to display the inventory bar at the bottom.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void InitializeInventoryBar(GBState *gb);
+
+/**
+ * func_001_58A8 (01:58A8)
+ * Updates shallow water ripple animation sprite in OAM buffer at wDynamicOAMBuffer + 0x6C.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_001_58A8(GBState *gb);
+
+/**
+ * PeachPictureState2Handler (01:6856)
+ * Selects the appropriate tileset to load for full-screen pictures (Eagle's Tower collapse, Schule painting, Christine).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState2Handler(GBState *gb);
+
+/**
+ * PeachPictureState3Handler (01:6873)
+ * Selects the tilemap to load and resets window, scroll, transition counters and palette for picture display.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState3Handler(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

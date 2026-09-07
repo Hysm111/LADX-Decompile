@@ -1,4 +1,5 @@
 #include "bank1/room_transition.h"
+#include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/dialog.h"
@@ -440,5 +441,86 @@ void IncrementGameplaySubtype(GBState *gb) {
 }
 
 void IncrementGameplaySubtypeAndReturn(GBState *gb) {
+    IncrementGameplaySubtype(gb);
+}
+
+void func_001_5888(GBState *gb) {
+    if (!gb) return;
+    for (uint8_t i = 0; i < 0x0C; i++) {
+        gb_write(gb, (uint16_t)(wRoomTransitionState + i), 0x00);
+    }
+}
+
+void InitializeInventoryBar(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wWindowY, 0x80);
+    gb_write(gb, rWX, 0x07);
+    gb_write(gb, wSubscreenScrollIncrement, 0x08);
+    gb_write(gb, wInventoryAppearing, 0x00);
+}
+
+void func_001_58A8(GBState *gb) {
+    if (!gb) return;
+    uint16_t hl = (uint16_t)(wDynamicOAMBuffer + 0x6C);
+
+    uint8_t val = gb_read(gb, wDB54);
+    uint8_t y = (uint8_t)(((val >> 1) & 0x78) + 0x18);
+    gb_write(gb, hl++, y);
+
+    val = gb_read(gb, wDB54);
+    uint8_t swapped = (uint8_t)((val << 4) | (val >> 4));
+    uint8_t x = (uint8_t)(((swapped >> 1) & 0x78) + 0x18);
+    gb_write(gb, hl++, x);
+
+    gb_write(gb, hl++, 0x3E);
+
+    if (gb_read(gb, hIsGBC) != 0) {
+        if ((gb_read(gb, hFrameCounter) & 0x08) != 0) {
+            gb_write(gb, hl, 0x03);
+        } else {
+            gb_write(gb, hl, 0x00);
+        }
+    } else {
+        uint8_t frame = gb_read(gb, hFrameCounter);
+        uint8_t attr = (uint8_t)((frame << 1) & 0x10);
+        gb_write(gb, hl, attr);
+    }
+}
+
+void PeachPictureState2Handler(GBState *gb) {
+    if (!gb) return;
+    uint8_t tileset = TILESET_EAGLES_TOWER_TOP;
+    if (gb_read(gb, hMapId) != MAP_EAGLES_TOWER) {
+        if (gb_read(gb, hMapRoom) != ROOM_INDOOR_B_SCHULE_HOUSE) {
+            tileset = TILESET_CHRISTINE;
+        } else {
+            tileset = TILESET_SCHULE_PAINTING;
+        }
+    }
+    gb_write(gb, wTilesetToLoad, tileset);
+    gb_write(gb, wC13F, 0x00);
+    IncrementGameplaySubtype(gb);
+}
+
+void PeachPictureState3Handler(GBState *gb) {
+    if (!gb) return;
+    uint8_t tilemap = TILEMAP_EAGLES_TOWER_COLLAPSE;
+    if (gb_read(gb, hMapId) != MAP_EAGLES_TOWER) {
+        if (gb_read(gb, hMapRoom) != ROOM_INDOOR_B_SCHULE_HOUSE) {
+            tilemap = TILEMAP_PEACH;
+        } else {
+            tilemap = TILEMAP_SCHULE_PAINTING;
+        }
+    }
+    gb_write(gb, wBGMapToLoad, tilemap);
+    gb_write(gb, wWindowY, 0xFF);
+    gb_write(gb, hBaseScrollX, 0x00);
+    gb_write(gb, hBaseScrollY, 0x00);
+    gb_write(gb, wTransitionSequenceCounter, 0x00);
+    gb_write(gb, wC16C, 0x00);
+    for (uint8_t i = 0; i < 8; i++) {
+        gb_write(gb, (uint16_t)(wD210 + i), 0x00);
+    }
+    gb_write(gb, wPaletteUnknownE, 0x01);
     IncrementGameplaySubtype(gb);
 }

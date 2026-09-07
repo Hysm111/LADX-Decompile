@@ -1,4 +1,5 @@
 #include "bank1/room_transition.h"
+#include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/dialog.h"
@@ -541,6 +542,145 @@ void test_increment_gameplay_subtype(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 7);
 }
 
+
+void test_func_001_5888(void) {
+    printf("[*] Running func_001_5888 tests (01:5888)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    for (int i = 0; i < 0x0C; i++) {
+        gb_write(&gb, wRoomTransitionState + i, 0xAA);
+    }
+    gb_write(&gb, wRoomTransitionState - 1, 0x55);
+    gb_write(&gb, wRoomTransitionState + 0x0C, 0x55);
+
+    func_001_5888(&gb);
+
+    assert(gb_read(&gb, wRoomTransitionState - 1) == 0x55);
+    for (int i = 0; i < 0x0C; i++) {
+        assert(gb_read(&gb, wRoomTransitionState + i) == 0x00);
+    }
+    assert(gb_read(&gb, wRoomTransitionState + 0x0C) == 0x55);
+}
+
+void test_initialize_inventory_bar(void) {
+    printf("[*] Running InitializeInventoryBar tests (01:5895)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    InitializeInventoryBar(&gb);
+
+    assert(gb_read(&gb, wWindowY) == 0x80);
+    assert(gb_read(&gb, rWX) == 0x07);
+    assert(gb_read(&gb, wSubscreenScrollIncrement) == 0x08);
+    assert(gb_read(&gb, wInventoryAppearing) == 0x00);
+}
+
+void test_func_001_58A8(void) {
+    printf("[*] Running func_001_58A8 tests (01:58A8)...\n");
+    GBState gb;
+
+    /* 1. DMG mode */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 0);
+    gb_write(&gb, wDB54, 0x56);
+    gb_write(&gb, hFrameCounter, 0x08);
+
+    func_001_58A8(&gb);
+
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6C) == 0x40);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6D) == 0x48);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6E) == 0x3E);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6F) == 0x10);
+
+    /* 2. GBC mode with frame bit 3 set */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wDB54, 0x56);
+    gb_write(&gb, hFrameCounter, 0x08);
+
+    func_001_58A8(&gb);
+
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6F) == 0x03);
+
+    /* 3. GBC mode with frame bit 3 cleared */
+    gb_write(&gb, hFrameCounter, 0x00);
+    func_001_58A8(&gb);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x6F) == 0x00);
+}
+
+void test_peach_picture_state_2(void) {
+    printf("[*] Running PeachPictureState2Handler tests (01:6856)...\n");
+    GBState gb;
+
+    /* 1. Eagles Tower */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    gb_write(&gb, wGameplaySubtype, 2);
+    PeachPictureState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_EAGLES_TOWER_TOP);
+    assert(gb_read(&gb, wC13F) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* 2. Schule House */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_B_SCHULE_HOUSE);
+    gb_write(&gb, wGameplaySubtype, 2);
+    PeachPictureState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_SCHULE_PAINTING);
+    assert(gb_read(&gb, wC13F) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* 3. Christine */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hMapRoom, 0x00);
+    gb_write(&gb, wGameplaySubtype, 2);
+    PeachPictureState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_CHRISTINE);
+    assert(gb_read(&gb, wC13F) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
+void test_peach_picture_state_3(void) {
+    printf("[*] Running PeachPictureState3Handler tests (01:6873)...\n");
+    GBState gb;
+
+    /* 1. Eagles Tower Collapse */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    gb_write(&gb, wGameplaySubtype, 3);
+    PeachPictureState3Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_EAGLES_TOWER_COLLAPSE);
+    assert(gb_read(&gb, wWindowY) == 0xFF);
+    assert(gb_read(&gb, hBaseScrollX) == 0);
+    assert(gb_read(&gb, hBaseScrollY) == 0);
+    assert(gb_read(&gb, wTransitionSequenceCounter) == 0);
+    assert(gb_read(&gb, wC16C) == 0);
+    for (int i = 0; i < 8; i++) {
+        assert(gb_read(&gb, wD210 + i) == 0);
+    }
+    assert(gb_read(&gb, wPaletteUnknownE) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* 2. Schule Painting */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hMapRoom, ROOM_INDOOR_B_SCHULE_HOUSE);
+    gb_write(&gb, wGameplaySubtype, 3);
+    PeachPictureState3Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_SCHULE_PAINTING);
+
+    /* 3. Peach */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hMapRoom, 0x00);
+    gb_write(&gb, wGameplaySubtype, 3);
+    PeachPictureState3Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_PEACH);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -555,5 +695,10 @@ void run_bank1_tests(void) {
     test_write_dma_code_to_hram();
     test_update_minimap_entrance_arrow();
     test_increment_gameplay_subtype();
+    test_func_001_5888();
+    test_initialize_inventory_bar();
+    test_func_001_58A8();
+    test_peach_picture_state_2();
+    test_peach_picture_state_3();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

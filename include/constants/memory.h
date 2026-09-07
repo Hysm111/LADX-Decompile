@@ -367,3 +367,10 @@
 #define hButtonsInactiveDelay                   0xFFB5
 #define wBGPalette                              0xDB97
 #define hDMARoutine                             0xFFC0
+#define wDB54                                 0xDB54
+#define wC13F                                 0xC13F
+#define wBGMapToLoad                          0xD6FF
+#define wPaletteUnknownE                      0xDDD5
+#define wD210                                 0xD210
+#define wSubscreenScrollIncrement             0xC150
+#define wTilesetToLoad                        0xD6FE

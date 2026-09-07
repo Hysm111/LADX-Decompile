@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 35.00%
-* **Number of Verified Functions**: 420
-* **Number of Decompiled Functions**: 420
-* **Number Remaining**: ~780 functions
-* **Current Subsystem**: Bank 1 - World, DMA & Minimap Preparation (`code/bank1.asm`, `01:44D6`-`01:6E18`)
-* **Current Task**: Bank 1 World, DMA & Minimap Preparation block completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 routines (`LoadTileset0F`, `func_001_6D11`, `WriteDMACodeToHRAM`, `UpdateMinimapEntranceArrowAndReturn`, `IncrementGameplaySubtype`) (`01:44D6`-`01:6E18`)
-* **Next Task**: Decompile and verify Bank 1 Peach Picture / Eagle's Tower cutscene handlers (`code/bank1.asm`, `01:67F2`-`01:6950`)
+* **Current Overall Progress**: 35.42%
+* **Number of Verified Functions**: 425
+* **Number of Decompiled Functions**: 425
+* **Number Remaining**: ~775 functions
+* **Current Subsystem**: Bank 1 - Inventory Bar & Cutscene Dispatchers (`code/bank1.asm`, `01:5888`-`01:6873`)
+* **Current Task**: Bank 1 Inventory Bar & Cutscene Dispatchers block completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 1 routines (`func_001_5888`, `InitializeInventoryBar`, `func_001_58A8`, `PeachPictureState2Handler`, `PeachPictureState3Handler`) (`01:5888`-`01:6873`)
+* **Next Task**: Decompile and verify Bank 1 Peach Picture rendering & screen shake handlers (`code/bank1.asm`, `01:68AA`-`01:6AF7`)
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---
