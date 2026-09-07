@@ -1,3 +1,4 @@
+#include "bank1/world_map.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
 #include "bank1/room_transition.h"
@@ -934,6 +935,101 @@ void test_peach_picture_entry_point(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 3);
 }
 
+
+void test_play_validation_jingle(void) {
+    printf("[*] Running PlayValidationJingle tests (01:49BE)...\n");
+    GBState gb;
+    gb_init(&gb);
+    PlayValidationJingle(&gb);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+}
+
+void test_func_001_5A59(void) {
+    printf("[*] Running func_001_5A59 tests (01:5A59)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Room 0x06 has special table entry 0x3E -> lookup 0x3E is 0x5E */
+    gb_write(&gb, hMapRoom, 0x06);
+    gb_write(&gb, hLinkPositionY, 0x50); /* Place dialog at top */
+    func_001_5A59(&gb);
+    assert(gb_read(&gb, wDialogIndex) == 0x5E);
+    assert((gb_read(&gb, wDialogState) & 0x7F) == 1);
+}
+
+void test_world_map_states(void) {
+    printf("[*] Running WorldMapState0-4 tests (01:5648-01:570B)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Test State 2 */
+    gb_write(&gb, wGameplaySubtype, 2);
+    WorldMapState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_WORLD_MAP);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* Test State 3 */
+    WorldMapState3Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_WORLD_MAP_TILEMAP);
+    assert(gb_read(&gb, wPaletteUnknownE) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* Test State 4 (counter != 4) */
+    gb_write(&gb, wTransitionSequenceCounter, 2);
+    WorldMapState4Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* Test State 4 (counter == 4) */
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    WorldMapState4Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+
+    /* Test State 1 with Owl marker check */
+    gb_init(&gb);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    gb_write(&gb, wDB54, 0x16); /* room 0x16: MapSpecialLocationNamesTable has 0x06 (Owl reminder) */
+    gb_write(&gb, wC5A2, 0);
+    gb_write(&gb, (uint16_t)(wOverworldRoomStatus + 0x16), OW_ROOM_STATUS_OWL_TALKED);
+    gb_write(&gb, rLCDC, LCDCF_WINON | LCDCF_ON);
+
+    WorldMapState1Handler(&gb);
+    assert(gb_read(&gb, hVolumeRight) == 3);
+    assert(gb_read(&gb, hVolumeLeft) == 0x30);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+    assert(gb_read(&gb, wDBB4) == 0x16);
+    assert(gb_read(&gb, wC1B1) == 1); /* Owl talked -> 1 */
+    assert(gb_read(&gb, wC1B4) == 0x16);
+    assert((gb_read(&gb, rLCDC) & LCDCF_WINON) == 0);
+    assert((gb_read(&gb, wLCDControl) & LCDCF_WINON) == 0);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_WORLD_MAP);
+
+    /* Test State 1 with dungeon icon (room 0x0E: 0x17 -> category 1 -> icon 2) */
+    gb_init(&gb);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    gb_write(&gb, wDB54, 0x0E);
+    WorldMapState1Handler(&gb);
+    assert(gb_read(&gb, wC1B1) == 2);
+
+    /* Test State 0 on CGB */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wGameplaySubtype, 0);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    gb_write(&gb, wDB54, 0x00);
+    gb_write(&gb, rSVBK, 0);
+    gb_write(&gb, wBGPal1, 0x77);
+
+    WorldMapState0Handler(&gb);
+    /* Subtype was 0 -> State0 increments to 1 -> State1 increments to 2 */
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+    /* Verify palette copied to bank 3 */
+    gb_write(&gb, rSVBK, 3);
+    assert(gb_read(&gb, wBGPal1) == 0x77);
+    assert(gb_read(&gb, wIsFileSelectionArrowShifted) == 1);
+    gb_write(&gb, rSVBK, 0);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -963,5 +1059,8 @@ void run_bank1_tests(void) {
     test_file_save_fade_out_and_state_A();
     test_peach_picture_state_0_and_1();
     test_peach_picture_entry_point();
+    test_play_validation_jingle();
+    test_func_001_5A59();
+    test_world_map_states();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

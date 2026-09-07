@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 36.42%
-* **Number of Verified Functions**: 437
-* **Number of Decompiled Functions**: 437
-* **Number Remaining**: ~763 functions
-* **Current Subsystem**: Bank 1 - Cutscenes & World Map Navigation (`code/bank1.asm`, `01:67EE`-`01:6950`, `01:5822`-`01:5825`)
-* **Current Task**: Bank 1 Peach Picture / Eagle's Tower Collapse subsystem completed (100% verified)
-* **Last Completed Task**: Decompiled and verified 7 Bank 1 cutscene and screen fade-out routines (`PeachPictureState8Handler`, `PeachPictureState9Handler`, `PeachPictureStateAHandler`, `FileSaveFadeOut`, `PeachPictureState0Handler`, `PeachPictureState1Handler`, `PeachPictureEntryPoint`) (`01:67EE`-`01:6950`, `01:5822`-`01:5825`)
-* **Next Task**: Decompile and verify Bank 1 world map location name dialogs & map scrolling routines (`func_001_5A59`, `func_001_5A71`, `label_001_5B3F`, etc.) (`code/bank1.asm`, `01:5A59`+)
-* **Last Update Timestamp**: 2026-09-07T01:20:00+03:00
+* **Current Overall Progress**: 37.00%
+* **Number of Verified Functions**: 444
+* **Number of Decompiled Functions**: 444
+* **Number Remaining**: ~756 functions
+* **Current Subsystem**: Bank 1 - World Map Setup & Navigation (`code/world_map.asm`, `01:5648`-`01:571B`, `01:5A59`, `01:49BE`)
+* **Current Task**: Bank 1 World Map Setup & Transition block completed (100% verified)
+* **Last Completed Task**: Decompiled and verified 7 Bank 1 world map setup, transition, and location dialog routines (`PlayValidationJingle`, `func_001_5A59`, `WorldMapState0Handler`, `WorldMapState1Handler`, `WorldMapState2Handler`, `WorldMapState3Handler`, `WorldMapState4Handler`) (`01:49BE`, `01:5A59`, `01:5648`-`01:571B`)
+* **Next Task**: Decompile and verify Bank 1 World Map interactive cursor movement & display routines (`WorldMapInteractiveHandler`, `WorldMapEntryPoint`, `func_001_5A71`, `label_001_5B3F`) (`code/world_map.asm`, `01:5626`, `01:571C`-`01:5B3F`)
+* **Last Update Timestamp**: 2026-09-07T01:35:00+03:00
 
 ---
 
@@ -350,6 +350,13 @@
 | `PeachPictureState0Handler` | VERIFIED | PASS | PASS | Initial cutscene setup: advances subtype and copies palettes to WRAM bank 3 on CGB (`01:6808`) |
 | `PeachPictureState1Handler` | VERIFIED | PASS | PASS | Fades out screen, loads checkerboard tileset 0F, and initializes audio volume (`01:6829`) |
 | `PeachPictureEntryPoint` | VERIFIED | PASS | PASS | Main jump table dispatcher for full-screen picture cutscenes (states 0-A) (`01:67EE`) |
+| `PlayValidationJingle` | VERIFIED | PASS | PASS | Sets hJingle to JINGLE_VALIDATE ($13) (`01:49BE`) |
+| `func_001_5A59` | VERIFIED | PASS | PASS | Opens location name dialog on map using special room lookup tables (`01:5A59`) |
+| `WorldMapState0Handler` | VERIFIED | PASS | PASS | Map fade setup: advances subtype and copies palettes to WRAM bank 3 on CGB (`01:5648`) |
+| `WorldMapState1Handler` | VERIFIED | PASS | PASS | Draws Link sprite, animates entities, resets scroll, checks owl status, disables window (`01:5678`) |
+| `WorldMapState2Handler` | VERIFIED | PASS | PASS | Requests TILESET_WORLD_MAP ($0B) and advances subtype (`01:56F4`) |
+| `WorldMapState3Handler` | VERIFIED | PASS | PASS | Requests TILESET_WORLD_MAP_TILEMAP ($0E), sets wPaletteUnknownE, and advances subtype (`01:56FD`) |
+| `WorldMapState4Handler` | VERIFIED | PASS | PASS | Map fade-in via func_1A39, plays validation jingle, and advances subtype to interactive mode (`01:570B`) |
 
 ---
 

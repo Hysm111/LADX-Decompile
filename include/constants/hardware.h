@@ -97,6 +97,7 @@
 
 /* rLCDC flags */
 #define LCDCF_OFF        0x00
+#define LCDCF_WINON      0x20
 #define LCDCF_ON         0x80
 
 /* rIE flags */

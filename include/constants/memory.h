@@ -386,3 +386,10 @@
 #define wBGPal1                               0xDC10
 #define hVolumeRight                          0xFFA9
 #define hVolumeLeft                           0xFFAA
+#define wDBB4                                 0xDBB4
+#define wC1B1                                 0xC1B1
+#define wC1B2                                 0xC1B2
+#define wC1B3                                 0xC1B3
+#define wC1B4                                 0xC1B4
+#define wC5A2                                 0xC5A2
+#define wLCDControl                           0xD6FD

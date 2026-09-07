@@ -251,7 +251,6 @@
 #define BANK_OverworldLandscapeTiles   0x0C
 #define OverworldLandscapeTiles        0x5200
 
-#endif /* LADX_CONSTANTS_GFX_H */
 #define vTilesSwitchBlockA              0x9040
 #define vTilesSwitchBlockB              0x9080
 
@@ -276,3 +275,8 @@
 #define TILEMAP_MARIN_BEACH                   0x13
 #define TILEMAP_SCHULE_PAINTING               0x23
 #define TILEMAP_EAGLES_TOWER_COLLAPSE         0x24
+#define TILESET_WORLD_MAP                     0x0B
+#define TILESET_WORLD_MAP_TILEMAP             0x0E
+#define TILEMAP_WORLD_MAP                     0x08
+
+#endif /* LADX_CONSTANTS_GFX_H */
