@@ -95,4 +95,6 @@ void PlayBoomerangSfx_trampoline(GBState *gb, void (*play_sfx)(GBState *));
 }
 #endif
 
+void label_27F2(GBState *gb);
+
 #endif /* LADX_HOME_AUDIO_H */

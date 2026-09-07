@@ -143,6 +143,9 @@
 #define wEntitiesClearedRooms                 0xCF00
 #define wEnemyWasKilled                       0xC113
 #define wInventoryAppearing                   0xC14F
+#define wOcarinaMenuOpen                      0xC1B5
+#define wOcarinaMenuOpening                   0xC1B8
+#define wOcarinaMenuClosing                   0xC1B9
 #define wBossIntroDelay                       0xC165
 #define wTransitionSequenceCounter           0xC16B
 #define wDidBossIntro                         0xC1BD
@@ -322,6 +325,7 @@
 #define wC135                           0xC135
 #define wC13C                           0xC13C
 #define wCreditsScratch0                0xD000
+#define wIsFileSelectionArrowShifted    0xD000
 #define wIntroTimer                     0xD001
 #define wIntroSubTimer                  0xD002
 #define wD006                           0xD006

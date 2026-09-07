@@ -129,3 +129,9 @@ void PlayBoomerangSfx_trampoline(GBState *gb, void (*play_sfx)(GBState *)) {
     }
     gb_write(gb, rSelectROMBank, gb_read(gb, wCurrentBank));
 }
+
+void label_27F2(GBState *gb) {
+    if (!gb) return;
+    /* In LADX, if hContinueMusicAfterWarp is 0, this calls into audio driver to mute music */
+    ReloadSavedBank(gb);
+}

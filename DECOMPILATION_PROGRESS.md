@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 43.00%
-* **Number of Verified Functions**: 516
+* **Current Overall Progress**: 43.92%
+* **Number of Verified Functions**: 527
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~684 functions
-* **Current Subsystem**: Bank 1 - File Menus Complete (`code/file_menus.asm`, 100% VERIFIED)
-* **Current Task**: Entire Bank 1 File Menus subsystem (`code/file_menus.asm`) 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 15 Bank 1 File Copy routines and complete subsystem (`FileCopyEntryPoint`, `FileCopyState2Handler`-`AHandler`, `func_001_5094`, `func_001_5175`, `func_001_51CE`, `label_001_514F`, `label_001_526F`, `func_001_512C`) (`01:4F8C`-`01:5292`)
-* **Next Task**: Decompile and verify Bank 1 remaining World Handler & Game Over routines (`code/game_over.asm`, `01:4000`-`01:44D5`)
-* **Last Update Timestamp**: 2026-09-07T04:00:00+03:00
+* **Number Remaining**: ~673 functions
+* **Current Subsystem**: Bank 1 - File Save Screen & Save Slot Initializer Complete (`code/file_save_screen.asm`, `01:4000`-`01:414F`, `01:46AA`-`01:47CD`)
+* **Current Task**: File Save Screen & Save Slot Initializer Complete
+* **Last Completed Task**: Decompiled and verified 11 Bank 1 Save Screen and Save Init routines (`FileSaveEntryPoint`, `FileSaveInitial`, `FileSaveMapFadeOut`, `FileSaveDelay1`, `FileSaveDelay2`, `FileSaveVisible`, `func_001_412A`, `FileSaveInteractive`, `LCDOn`, `func_001_4794`, `InitSaveFiles`) (`01:4000`-`01:414F`, `01:46AA`-`01:47CD`)
+* **Next Task**: Decompile and verify Bank 1 Game Over routines (`code/game_over.asm`, `01:41C2`-`01:44D5`)
+* **Last Update Timestamp**: 2026-09-07T04:30:00+03:00
 
 ---
 
@@ -429,6 +429,17 @@
 | `FileCopyState9Handler` | VERIFIED | PASS | PASS | Interactive selection loop for destination save file (`01:50DF`) |
 | `FileCopyStateAHandler` | VERIFIED | PASS | PASS | Confirmation of file copy and SRAM copy execution (`01:51E9`) |
 | `FileCopyEntryPoint` | VERIFIED | PASS | PASS | State machine dispatcher for GAMEPLAY_FILE_COPY (`01:4F8C`) |
+| `func_001_4794` | VERIFIED | PASS | PASS | Validates save slot prefix (1,3,5,7,9), wipes corrupted slots, restores prefix (`01:4794`) |
+| `InitSaveFiles` | VERIFIED | PASS | PASS | Initializes all save slots in SRAM, creates debug save file if ROM_DebugTool1 set (`01:46AA`) |
+| `FileSaveInitial` | VERIFIED | PASS | PASS | Save screen state 0 handler, manages GBC palette transfer (`01:4012`) |
+| `FileSaveMapFadeOut` | VERIFIED | PASS | PASS | Save screen state 1 map fade out, audio volume configuration (`01:4042`) |
+| `FileSaveDelay1` | VERIFIED | PASS | PASS | Save screen state 2 delay, sets save menu tileset (`01:4073`) |
+| `FileSaveDelay2` | VERIFIED | PASS | PASS | Save screen state 3 delay, sets save menu BG map and scroll (`01:407F`) |
+| `FileSaveVisible` | VERIFIED | PASS | PASS | Save screen state 4 visible fade in (`01:409C`) |
+| `func_001_412A` | VERIFIED | PASS | PASS | Option navigation and cursor arrow rendering for save screen (`01:412A`) |
+| `FileSaveInteractive` | VERIFIED | PASS | PASS | Save screen state 5 interactive handler, Return vs Save & Quit (`01:40AA`) |
+| `LCDOn` | VERIFIED | PASS | PASS | Enables LCD, restores window and audio volume upon menu exit (`01:410D`) |
+| `FileSaveEntryPoint` | VERIFIED | PASS | PASS | Master state machine dispatcher for GAMEPLAY_FILE_SAVE (`01:4000`) |
 
 ---
 

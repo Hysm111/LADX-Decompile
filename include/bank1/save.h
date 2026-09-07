@@ -40,5 +40,64 @@ void SaveGameToFile(GBState *gb);
  */
 void LoadSavedFile(GBState *gb);
 
+extern const uint8_t DebugSaveFileData[67];
+extern const uint8_t Data_001_4128[2];
+
+/**
+ * Validates save slot prefix and initializes SRAM slot if corrupt (01:4794).
+ */
+void func_001_4794(GBState *gb, uint16_t de);
+
+/**
+ * Initializes all save slots in SRAM, and loads debug save file if ROM_DebugTool1 is set (01:46AA).
+ */
+void InitSaveFiles(GBState *gb);
+
+/**
+ * Save screen initial handler (01:4012).
+ */
+void FileSaveInitial(GBState *gb);
+
+/**
+ * Save screen map fade out handler (01:4042).
+ */
+void FileSaveMapFadeOut(GBState *gb);
+
+/**
+ * Save screen delay stage 1 (01:4073).
+ */
+void FileSaveDelay1(GBState *gb);
+
+/**
+ * Save screen delay stage 2 (01:407F).
+ */
+void FileSaveDelay2(GBState *gb);
+
+/**
+ * Save screen visible stage (01:409C).
+ */
+void FileSaveVisible(GBState *gb);
+
+/**
+ * Helper for save screen option navigation and cursor arrow rendering (01:412A).
+ */
+void func_001_412A(GBState *gb);
+
+/**
+ * Save screen interactive selection handler ("Return to Game" vs "Save and Quit") (01:40AA).
+ */
+void FileSaveInteractive(GBState *gb);
+
+/**
+ * Enables LCD and configures screen settings upon save & quit or return (01:410D).
+ */
+void LCDOn(GBState *gb);
+
+/**
+ * Master entry point dispatcher for GAMEPLAY_FILE_SAVE (01:4000).
+ */
+void FileSaveEntryPoint(GBState *gb);
+
 #endif /* LADX_BANK1_SAVE_H */
+
 

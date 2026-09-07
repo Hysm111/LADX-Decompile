@@ -2039,6 +2039,89 @@ void test_file_copy_subsystem(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 3);
 }
 
+
+void test_file_save_screen_and_init(void) {
+    printf("[*] Running FileSaveScreen and InitSaveFiles tests (01:4000-01:414F, 01:46AA-01:47CD)...\n");
+    GBState gb;
+
+    /* Test 1: func_001_4794 prefix validation and recovery */
+    gb_init(&gb);
+    /* Corrupt slot 0 prefix */
+    gb_write(&gb, 0xA100, 0x00);
+    gb_write(&gb, 0xA105, 0x55);
+    func_001_4794(&gb, 0);
+    /* Prefix should now be 1, 3, 5, 7, 9 */
+    assert(gb_read(&gb, 0xA100) == 1);
+    assert(gb_read(&gb, 0xA101) == 3);
+    assert(gb_read(&gb, 0xA102) == 5);
+    assert(gb_read(&gb, 0xA103) == 7);
+    assert(gb_read(&gb, 0xA104) == 9);
+    /* Main area wiped */
+    assert(gb_read(&gb, 0xA105) == 0);
+
+    /* Test 2: InitSaveFiles with DebugTool */
+    gb_init(&gb);
+    uint8_t dummy_rom[0x100] = { 0 };
+    dummy_rom[0x0003] = 1; /* Enable debug save creation */
+    gb_attach_rom(&gb, dummy_rom, sizeof(dummy_rom));
+    InitSaveFiles(&gb);
+    assert(gb_read(&gb, 0xA453) == 0x01); /* sword level 1 */
+    assert(gb_read(&gb, 0xA460) == 0x0A); /* 10 hearts */
+
+    /* Test 3: FileSaveDelay1 and FileSaveDelay2 */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FileSaveDelay1(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_SAVE_MENU);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    FileSaveDelay2(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_MENU_FILE_SAVE);
+    assert(gb_read(&gb, wWindowY) == 0xFF);
+    assert(gb_read(&gb, wPaletteUnknownE) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* Test 4: func_001_412A navigation */
+    gb_init(&gb);
+    gb_write(&gb, wC13F, 0);
+    gb_write(&gb, hJoypadState, J_DOWN);
+    func_001_412A(&gb);
+    assert(gb_read(&gb, wC13F) == 1);
+    assert(gb_read(&gb, wOAMBuffer + 0x18) == 0x58);
+    assert(gb_read(&gb, wOAMBuffer + 0x19) == 0x24);
+
+    /* Test 5: FileSaveInteractive Return to Game */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 5);
+    gb_write(&gb, wC13F, 0); /* Return to game */
+    gb_write(&gb, hJoypadState, J_A);
+    FileSaveInteractive(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+
+    /* Test 6: FileSaveInteractive Save and Quit */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 5);
+    gb_write(&gb, wC13F, 1); /* Save and Quit */
+    gb_write(&gb, hJoypadState, J_A);
+    FileSaveInteractive(&gb);
+    assert(gb_read(&gb, rLCDC) == 0xC7);
+    assert(gb_read(&gb, wLCDControl) == 0xC7);
+
+    /* Test 7: LCDOn configuration */
+    gb_init(&gb);
+    LCDOn(&gb);
+    assert(gb_read(&gb, rLCDC) == 0xC7);
+    assert(gb_read(&gb, rWX) == 0x07);
+    assert(gb_read(&gb, rWY) == 0x80);
+
+    /* Test 8: FileSaveEntryPoint dispatcher */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FileSaveEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -2087,5 +2170,6 @@ void run_bank1_tests(void) {
     test_file_deletion_and_digits();
     test_file_deletion_interactive_and_erase();
     test_file_copy_subsystem();
+    test_file_save_screen_and_init();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }
