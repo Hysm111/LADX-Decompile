@@ -107,4 +107,44 @@ void func_002_44AD(GBState *gb, void (*check_map_transition)(GBState *));
  */
 bool func_002_44C2(GBState *gb, void (*check_map_transition)(GBState *));
 
+/**
+ * Overhead walk physics and Link collision/movement processing. (02:43BA)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_map_transition Optional callback for map boundary transition checks.
+ */
+void OverheadWalkPhysics(GBState *gb, void (*check_map_transition)(GBState *));
+
+/**
+ * Dispatches between overhead walk physics and side-scrolling physics. (02:436C)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param side_scrolling_physics Optional callback for side-scrolling physics.
+ * @param check_map_transition Optional callback for map boundary transition checks.
+ */
+void func_002_436C(GBState *gb,
+                   void (*side_scrolling_physics)(GBState *),
+                   void (*check_map_transition)(GBState *));
+
+/**
+ * Main default Link motion handler (physics, animations, collisions, sword charging). (02:4287)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param side_scrolling_physics Optional callback for side-scrolling physics.
+ * @param check_map_transition Optional callback for map transition checks.
+ * @param ocarina_handler Optional callback for LinkPlayingOcarinaHandler.
+ * @param func_002_753a Optional callback for func_002_753a.
+ * @param update_link_animation Optional callback for UpdateLinkAnimation.
+ * @param func_002_4b49 Optional callback for func_002_4b49.
+ * @param apply_ground_physics Optional callback for ground physics handling.
+ */
+void LinkMotionDefault(GBState *gb,
+                       void (*side_scrolling_physics)(GBState *),
+                       void (*check_map_transition)(GBState *),
+                       void (*ocarina_handler)(GBState *),
+                       void (*func_002_753a)(GBState *),
+                       void (*update_link_animation)(GBState *),
+                       void (*func_002_4b49)(GBState *),
+                       void (*apply_ground_physics)(GBState *));
+
 #endif /* LADX_BANK2_BANK2_H */

@@ -144,6 +144,11 @@
 #define wEntitiesClearedRooms                 0xCF00
 #define wEnemyWasKilled                       0xC113
 #define wInventoryAppearing                   0xC14F
+#define wD46B                                 0xD46B
+#define wC199                                 0xC199
+#define wC16E                                 0xC16E
+#define wLiftedEntityType                     0xC5A8
+#define wPitSlippingCounter                   0xC1BB
 #define wObjectAffectingBGPalette             0xC3CB
 #define wBGPaletteEffectAddress               0xC3CC
 #define wC3CD                                 0xC3CD

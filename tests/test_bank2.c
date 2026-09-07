@@ -15,6 +15,9 @@
 #include "constants/sfx.h"
 #include "constants/physics.h"
 #include "constants/vfx.h"
+#include "constants/joypad.h"
+#include "constants/gameplay.h"
+#include "constants/inventory.h"
 
 static int g_mock_ground_physics_calls = 0;
 static void mock_apply_ground_physics(GBState *gb) {
@@ -23,6 +26,35 @@ static void mock_apply_ground_physics(GBState *gb) {
 }
 
 static int g_mock_map_transition_calls = 0;
+static int g_mock_side_scrolling_calls = 0;
+static void mock_side_scrolling_physics(GBState *gb) {
+    (void)gb;
+    g_mock_side_scrolling_calls++;
+}
+
+static int g_mock_ocarina_calls = 0;
+static void mock_ocarina_handler(GBState *gb) {
+    (void)gb;
+    g_mock_ocarina_calls++;
+}
+
+static int g_mock_753a_calls = 0;
+static void mock_func_002_753a(GBState *gb) {
+    (void)gb;
+    g_mock_753a_calls++;
+}
+
+static int g_mock_update_link_anim_calls = 0;
+static void mock_update_link_animation(GBState *gb) {
+    (void)gb;
+    g_mock_update_link_anim_calls++;
+}
+
+static int g_mock_4b49_calls = 0;
+static void mock_func_002_4b49(GBState *gb) {
+    (void)gb;
+    g_mock_4b49_calls++;
+}
 static void mock_check_map_transition(GBState *gb) {
     (void)gb;
     g_mock_map_transition_calls++;
@@ -713,6 +745,195 @@ void run_bank2_tests(void) {
             ApplyLinkGroundMotion(&gb, NULL);
             assert(gb_read_hram(&gb, hNoiseSfx) == 0);
         }
+    }
+
+
+    /* Test 27: OverheadWalkPhysics */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* 1. Sets wD46B from wIndoorRoom */
+        gb_write(&gb, wIndoorRoom, 0x55);
+        gb_write(&gb, wD46B, 0x00);
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read(&gb, wD46B) == 0x55);
+
+        /* 2. Interactive motion blocked on ground (Z == 0, blocked != 0) -> calls label_002_44B5 */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPositionZ, 0);
+        gb_write_hram(&gb, hLinkInteractiveMotionBlocked, 1);
+        gb_write(&gb, wLinkGroundStatus, 0x03);
+        g_mock_map_transition_calls = 0;
+        OverheadWalkPhysics(&gb, mock_check_map_transition);
+        assert(gb_read(&gb, wC130) == 0x03);
+        assert(gb_read(&gb, wLinkGroundStatus) == 0x00);
+        assert(g_mock_map_transition_calls == 1);
+
+        /* 3. Pegasus Boots Running: Straight */
+        gb_init(&gb);
+        gb_write(&gb, wIsRunningWithPegasusBoots, 1);
+        gb_write_hram(&gb, hJoypadState, J_RIGHT);
+        gb_write_hram(&gb, hLinkDirection, DIRECTION_RIGHT);
+        gb_write(&gb, wConsecutiveStepsCount, 10);
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read(&gb, wConsecutiveStepsCount) == 12);
+
+        /* 4. Pegasus Boots Running: Turning (joypad dir != link dir) */
+        gb_init(&gb);
+        gb_write(&gb, wIsRunningWithPegasusBoots, 1);
+        gb_write_hram(&gb, hJoypadState, J_UP);
+        gb_write_hram(&gb, hLinkDirection, DIRECTION_RIGHT);
+        gb_write(&gb, wC199, 0x10);
+        gb_write(&gb, (uint16_t)(wC199 + 1), 0x00);
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read(&gb, (uint16_t)(wC199 + 1)) == DIRECTION_RIGHT);
+        assert(gb_read(&gb, wC199) == 0x1C);
+
+        /* 5. Normal walking: no buttons pressed -> resets consecutive steps to 7 */
+        gb_init(&gb);
+        gb_write_hram(&gb, hPressedButtonsMask, 0x00);
+        gb_write(&gb, wConsecutiveStepsCount, 0x20);
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read(&gb, wConsecutiveStepsCount) == 0x07);
+
+        /* 6. Normal walking: button pressed -> increments consecutive steps and sets direction */
+        gb_init(&gb);
+        gb_write_hram(&gb, hPressedButtonsMask, 0x04); /* UP */
+        gb_write_hram(&gb, hLinkDirection, DIRECTION_RIGHT);
+        gb_write(&gb, wConsecutiveStepsCount, 0x05);
+        gb_write(&gb, wC16E, 0);
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read(&gb, wConsecutiveStepsCount) == 0x06);
+        assert(gb_read_hram(&gb, hLinkDirection) == DIRECTION_UP);
+
+        /* 7. Free movement mode doubles speed */
+        gb_init(&gb);
+        gb_write(&gb, wFreeMovementMode, 1);
+        gb_write_hram(&gb, hPressedButtonsMask, 0x01); /* RIGHT: base speed X is 0x10 */
+        OverheadWalkPhysics(&gb, NULL);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x20);
+
+        /* 8. Gel clinging throttles movement to 1 in 4 frames */
+        gb_init(&gb);
+        gb_write(&gb, wIsGelClingingToLink, 1);
+        gb_write(&gb, wLinkGroundStatus, 0x04);
+
+        /* Frame 1: 1 & 3 != 0 -> throttled, executes label_002_44B5 */
+        gb_write_hram(&gb, hFrameCounter, 1);
+        g_mock_map_transition_calls = 0;
+        OverheadWalkPhysics(&gb, mock_check_map_transition);
+        assert(gb_read(&gb, wC130) == 0x04);
+        assert(g_mock_map_transition_calls == 1);
+
+        /* Frame 4: 4 & 3 == 0 -> executes func_002_44AD */
+        gb_write(&gb, wLinkGroundStatus, 0x06);
+        gb_write_hram(&gb, hFrameCounter, 4);
+        g_mock_map_transition_calls = 0;
+        OverheadWalkPhysics(&gb, mock_check_map_transition);
+        assert(gb_read(&gb, wC130) == 0x06);
+        assert(g_mock_map_transition_calls == 1);
+    }
+
+    /* Test 28: func_002_436C */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* Not side scrolling -> overhead walk physics */
+        gb_write_hram(&gb, hIsSideScrolling, 0);
+        gb_write(&gb, wIndoorRoom, 0x77);
+        g_mock_side_scrolling_calls = 0;
+        func_002_436C(&gb, mock_side_scrolling_physics, NULL);
+        assert(g_mock_side_scrolling_calls == 0);
+        assert(gb_read(&gb, wD46B) == 0x77);
+
+        /* Side scrolling and normal movement -> calls side scrolling callback */
+        gb_write_hram(&gb, hIsSideScrolling, 1);
+        gb_write(&gb, wFreeMovementMode, 0);
+        func_002_436C(&gb, mock_side_scrolling_physics, NULL);
+        assert(g_mock_side_scrolling_calls == 1);
+
+        /* Side scrolling with free movement -> uses overhead walk physics */
+        gb_write(&gb, wFreeMovementMode, 1);
+        gb_write(&gb, wIndoorRoom, 0x88);
+        func_002_436C(&gb, mock_side_scrolling_physics, NULL);
+        assert(g_mock_side_scrolling_calls == 1); /* no new call */
+        assert(gb_read(&gb, wD46B) == 0x88);
+    }
+
+    /* Test 29: LinkMotionDefault */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* 1. Decrements countdown timers */
+        gb_write(&gb, wIsShootingArrow, 3);
+        gb_write(&gb, wC1C4, 5);
+        gb_write(&gb, wBombArrowCooldown, 2);
+        gb_write(&gb, wC16E, 4);
+
+        LinkMotionDefault(&gb, NULL, NULL, NULL, NULL, mock_update_link_animation, mock_func_002_4b49, NULL);
+
+        assert(gb_read(&gb, wIsShootingArrow) == 2);
+        assert(gb_read(&gb, wC1C4) == 4);
+        assert(gb_read(&gb, wBombArrowCooldown) == 1);
+        assert(gb_read(&gb, wC16E) == 3);
+
+        /* 2. Motion blocked == 2 branch */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkInteractiveMotionBlocked, 2);
+        gb_write_hram(&gb, hLinkSpeedX, 0x10);
+        gb_write_hram(&gb, hLinkSpeedY, 0x20);
+        gb_write_hram(&gb, hLinkVelocityZ, 0x05);
+        g_mock_ocarina_calls = 0;
+        g_mock_753a_calls = 0;
+
+        LinkMotionDefault(&gb, NULL, NULL, mock_ocarina_handler, mock_func_002_753a, NULL, NULL, NULL);
+
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0);
+        assert(gb_read_hram(&gb, hLinkVelocityZ) == 0);
+        assert(g_mock_ocarina_calls == 1);
+        assert(g_mock_753a_calls == 1);
+
+        /* 3. Sword Charging */
+        gb_init(&gb);
+        gb_write(&gb, wSwordAnimationState, SWORD_ANIMATION_STATE_HOLDING);
+        gb_write(&gb, wSwordCharge, 0x26);
+        gb_write_hram(&gb, hJingle, 0);
+
+        LinkMotionDefault(&gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        assert(gb_read(&gb, wSwordCharge) == 0x27);
+        assert(gb_read_hram(&gb, hJingle) == 0);
+
+        /* Reaching max charge triggers charging jingle */
+        gb_write(&gb, wSwordAnimationState, SWORD_ANIMATION_STATE_HOLDING);
+        LinkMotionDefault(&gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        assert(gb_read(&gb, wSwordCharge) == MAX_SWORD_CHARGE);
+        assert(gb_read_hram(&gb, hJingle) == JINGLE_CHARGING_SWORD);
+
+        /* 4. Releasing sword at max charge triggers spin attack */
+        gb_write(&gb, wSwordAnimationState, 0);
+        gb_write(&gb, wIsUsingSpinAttack, 0);
+        gb_write_hram(&gb, hNoiseSfx, 0);
+
+        LinkMotionDefault(&gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        assert(gb_read(&gb, wIsUsingSpinAttack) == USING_SPIN_ATTACK_MAX);
+        assert(gb_read_hram(&gb, hNoiseSfx) == NOISE_SFX_SPIN_ATTACK);
+        assert(gb_read(&gb, wSwordCharge) == 0);
+
+        /* 5. Releasing sword near NPC does not trigger spin attack */
+        gb_write(&gb, wSwordCharge, MAX_SWORD_CHARGE);
+        gb_write(&gb, wItemUsageContext, ITEM_USAGE_NEAR_NPC);
+        gb_write(&gb, wIsUsingSpinAttack, 0);
+        gb_write_hram(&gb, hNoiseSfx, 0);
+
+        LinkMotionDefault(&gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        assert(gb_read(&gb, wIsUsingSpinAttack) == 0);
+        assert(gb_read_hram(&gb, hNoiseSfx) == 0);
+        assert(gb_read(&gb, wSwordCharge) == 0);
     }
 
     printf("[+] Bank 2 unit tests passed successfully!\n");

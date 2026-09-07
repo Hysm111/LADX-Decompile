@@ -81,7 +81,6 @@
 #define ROOM_STATUS_EVENT_3             0x40
 #define ROOM_STATUS_VISITED             0x80
 
-#endif /* LADX_CONSTANTS_GAMEPLAY_H */
 #define TRANSITION_GFX_MANBO_OUT         0x03
 #define ATTACK_STEP_DURATION_MASK        0x7F
 #define MAX_SWORD_CHARGE                 0x28
@@ -119,3 +118,9 @@
 #define ENTITY_INTRO_MARIN              0x06
 #define ENTITY_INTRO_INERT_LINK         0x07
 #define ENTITY_INTRO_SPARKLE            0x08
+
+#define SWORD_ANIMATION_STATE_NONE      0x00
+#define USING_SPIN_ATTACK_MAX           0x20
+#define PIT_MAX_SLIPPING                24
+
+#endif /* LADX_CONSTANTS_GAMEPLAY_H */

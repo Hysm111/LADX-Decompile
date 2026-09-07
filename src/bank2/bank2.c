@@ -1,5 +1,7 @@
 #include "bank2/bank2.h"
 #include "constants/directions.h"
+#include "constants/gameplay.h"
+#include "constants/inventory.h"
 #include "constants/joypad.h"
 #include "constants/entities.h"
 #include "constants/hardware.h"
@@ -489,4 +491,289 @@ bool func_002_44C2(GBState *gb, void (*check_map_transition)(GBState *)) {
     /* jr_002_44E3: pop af; jp ApplyLinkMotionState */
     ApplyLinkMotionState(gb, NULL, NULL, NULL);
     return true;
+}
+
+void OverheadWalkPhysics(GBState *gb, void (*check_map_transition)(GBState *)) {
+    if (!gb) return;
+
+    /* ld a, [wIndoorRoom]; ld [wD46B], a */
+    gb_write(gb, wD46B, gb_read(gb, wIndoorRoom));
+
+    /* call func_002_44C2 */
+    if (func_002_44C2(gb, check_map_transition)) {
+        return;
+    }
+
+    /* ldh a, [hLinkPositionZ]; and a; jr nz, .jr_43CE
+     * ldh a, [hLinkInteractiveMotionBlocked]; and a; jp nz, label_002_44B5 */
+    if (gb_read_hram(gb, hLinkPositionZ) == 0 && gb_read_hram(gb, hLinkInteractiveMotionBlocked) != 0) {
+        label_002_44B5(gb, check_map_transition);
+        return;
+    }
+
+    /* .jr_43CE: ld a, [wIsRunningWithPegasusBoots]; and a; jr z, jr_002_4402 */
+    if (gb_read(gb, wIsRunningWithPegasusBoots) != 0) {
+        /* ldh a, [hJoypadState]; and J_RIGHT | J_LEFT | J_UP | J_DOWN; jr z, .jr_43E6 */
+        uint8_t joy_dir = gb_read_hram(gb, hJoypadState) & (J_RIGHT | J_LEFT | J_UP | J_DOWN);
+        if (joy_dir != 0) {
+            uint8_t target_dir = (joy_dir < sizeof(JoypadToLinkDirection)) ? JoypadToLinkDirection[joy_dir] : DIRECTION_KEEP;
+            uint8_t link_dir = gb_read_hram(gb, hLinkDirection);
+            if (link_dir != target_dir) {
+                /* jr_002_43F4:
+                 * ld [wC199+1], a
+                 * ld a, [wC199]; add bashC; ld [wC199], a
+                 * call ResetSpinAttack */
+                gb_write(gb, (uint16_t)(wC199 + 1), link_dir);
+                gb_write(gb, wC199, (uint8_t)(gb_read(gb, wC199) + 0x0C));
+                ResetSpinAttack(gb);
+                goto jr_002_4402;
+            }
+        }
+
+        /* .jr_43E6:
+         * ld a, [wConsecutiveStepsCount]; add bash2; ld [wConsecutiveStepsCount], a
+         * call DisplayTransientVfxForLinkRunning
+         * jp label_002_4464 */
+        uint8_t steps = gb_read(gb, wConsecutiveStepsCount);
+        gb_write(gb, wConsecutiveStepsCount, (uint8_t)(steps + 2));
+        DisplayTransientVfxForLinkRunning(gb);
+        goto label_002_4464;
+    }
+
+jr_002_4402:
+    /* ld a, [wIsLinkInTheAir]; and a; jp nz, label_002_4464 */
+    if (gb_read(gb, wIsLinkInTheAir) != 0) {
+        goto label_002_4464;
+    }
+
+    /* ld a, [wActivePowerUp]; cp ACTIVE_POWER_UP_PIECE_OF_POWER; jr nz, .jr_4416; ld e, 0 */
+    uint8_t offset = (gb_read(gb, wActivePowerUp) == ACTIVE_POWER_UP_PIECE_OF_POWER) ? 0x10 : 0x00;
+
+    /* MoveLinkToPressedButtonDirection */
+    MoveLinkToPressedButtonDirection(gb, offset);
+
+    /* jr_002_442A: ld a, [wFreeMovementMode]; and a; jr z, .jr_443A */
+    if (gb_read(gb, wFreeMovementMode) != 0) {
+        gb_write_hram(gb, hLinkSpeedX, (uint8_t)(gb_read_hram(gb, hLinkSpeedX) << 1));
+        gb_write_hram(gb, hLinkSpeedY, (uint8_t)(gb_read_hram(gb, hLinkSpeedY) << 1));
+    }
+
+    /* .jr_443A:
+     * ld a, e; and bashF; ld e, a; jr z, jr_002_4459 */
+    uint8_t pressed = gb_read_hram(gb, hPressedButtonsMask) & 0x0F;
+    if (pressed == 0) {
+        /* jr_002_4459:
+         * ld a, [wPegasusBootsChargeMeter]; and a; jr nz, label_002_4464
+         * ld a, bash7; ld [wConsecutiveStepsCount], a */
+        if (gb_read(gb, wPegasusBootsChargeMeter) == 0) {
+            gb_write(gb, wConsecutiveStepsCount, 0x07);
+        }
+    } else {
+        /* inc [wConsecutiveStepsCount] */
+        uint8_t steps = gb_read(gb, wConsecutiveStepsCount);
+        gb_write(gb, wConsecutiveStepsCount, (uint8_t)(steps + 1));
+
+        /* JoypadToLinkDirection */
+        if (pressed < sizeof(JoypadToLinkDirection)) {
+            uint8_t new_dir = JoypadToLinkDirection[pressed];
+            if (new_dir != DIRECTION_KEEP) {
+                if (gb_read(gb, wC16E) == 0) {
+                    gb_write_hram(gb, hLinkDirection, new_dir);
+                }
+            }
+        }
+    }
+
+label_002_4464:
+    {
+        uint8_t e_mask = 0x03;
+        if (gb_read(gb, wIsGelClingingToLink) != 0) {
+            /* e = 3 */
+        } else {
+            e_mask = 0x01;
+            bool rooster_in_air = (gb_read(gb, wIsCarryingLiftedObject) != 0) &&
+                                  (gb_read(gb, wLiftedEntityType) == ENTITY_ROOSTER) &&
+                                  (gb_read(gb, wIsLinkInTheAir) != 0);
+            if (rooster_in_air || gb_read_hram(gb, hLinkSlowWalkingSpeed) != 0) {
+                /* e = 1 */
+            } else {
+                uint8_t ground_status = gb_read(gb, wLinkGroundStatus);
+                if (ground_status == 0) {
+                    func_002_44AD(gb, check_map_transition);
+                    return;
+                }
+                if (ground_status != 0x07) {
+                    /* jr_002_44A9: ldh a, [hFrameCounter]; and [hl]; ret z */
+                    if ((gb_read_hram(gb, hFrameCounter) & ground_status) == 0) {
+                        return;
+                    }
+                    func_002_44AD(gb, check_map_transition);
+                    return;
+                }
+                /* ground_status == 0x07 */
+                if (gb_read(gb, wFreeMovementMode) != 0) {
+                    func_002_44AD(gb, check_map_transition);
+                    return;
+                }
+                if (gb_read(gb, wPitSlippingCounter) >= PIT_MAX_SLIPPING) {
+                    e_mask = 0x07;
+                } else {
+                    e_mask = 0x01;
+                }
+            }
+        }
+
+        /* jr_002_44A2:
+         * ldh a, [hFrameCounter]; and e; jr nz, label_002_44B5; jr func_002_44AD */
+        if ((gb_read_hram(gb, hFrameCounter) & e_mask) != 0) {
+            label_002_44B5(gb, check_map_transition);
+        } else {
+            func_002_44AD(gb, check_map_transition);
+        }
+    }
+}
+
+void func_002_436C(GBState *gb,
+                   void (*side_scrolling_physics)(GBState *),
+                   void (*check_map_transition)(GBState *)) {
+    if (!gb) return;
+
+    /* ldh a, [hIsSideScrolling]; and a; jr z, jr_002_43BA */
+    if (gb_read_hram(gb, hIsSideScrolling) == 0) {
+        OverheadWalkPhysics(gb, check_map_transition);
+        return;
+    }
+
+    /* ld a, [wFreeMovementMode]; and a; jr z, jp_002_68B7 */
+    if (gb_read(gb, wFreeMovementMode) == 0) {
+        if (side_scrolling_physics) {
+            side_scrolling_physics(gb);
+        }
+        return;
+    }
+
+    /* jr jr_002_43BA */
+    OverheadWalkPhysics(gb, check_map_transition);
+}
+
+void LinkMotionDefault(GBState *gb,
+                       void (*side_scrolling_physics)(GBState *),
+                       void (*check_map_transition)(GBState *),
+                       void (*ocarina_handler)(GBState *),
+                       void (*func_002_753a)(GBState *),
+                       void (*update_link_animation)(GBState *),
+                       void (*func_002_4b49)(GBState *),
+                       void (*apply_ground_physics)(GBState *)) {
+    if (!gb) return;
+
+    /* Decrement wIsShootingArrow if not already zero */
+    uint8_t arrow = gb_read(gb, wIsShootingArrow);
+    if (arrow != 0) {
+        gb_write(gb, wIsShootingArrow, (uint8_t)(arrow - 1));
+    }
+
+    /* Decrement wC1C4 if not already zero */
+    uint8_t c1c4 = gb_read(gb, wC1C4);
+    if (c1c4 != 0) {
+        gb_write(gb, wC1C4, (uint8_t)(c1c4 - 1));
+    }
+
+    /* Decrement wBombArrowCooldown if not already zero */
+    uint8_t bomb = gb_read(gb, wBombArrowCooldown);
+    if (bomb != 0) {
+        gb_write(gb, wBombArrowCooldown, (uint8_t)(bomb - 1));
+    }
+
+    /* call func_002_436C */
+    func_002_436C(gb, side_scrolling_physics, check_map_transition);
+
+    /* Decrement wC16E if not already zero */
+    uint8_t c16e = gb_read(gb, wC16E);
+    if (c16e != 0) {
+        gb_write(gb, wC16E, (uint8_t)(c16e - 1));
+    }
+
+    /* ldh a, [hLinkInteractiveMotionBlocked]; cp bash2; jr nz, .interactiveMotionBlockedEnd */
+    if (gb_read_hram(gb, hLinkInteractiveMotionBlocked) == 0x02) {
+        gb_write_hram(gb, hLinkInteractiveMotionBlocked, 0);
+        gb_write_hram(gb, hLinkSpeedX, 0);
+        gb_write_hram(gb, hLinkSpeedY, 0);
+        gb_write_hram(gb, hLinkVelocityZ, 0);
+        if (ocarina_handler) {
+            ocarina_handler(gb);
+        }
+        if (func_002_753a) {
+            func_002_753a(gb);
+        }
+        return;
+    }
+
+    /* .interactiveMotionBlockedEnd: */
+    UpdateLinkWalkingAnimation(gb);
+    gb_write_hram(gb, hLinkInteractiveMotionBlocked, 0);
+
+    label_1F69_trampoline(gb, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    CheckItemsToUse(gb, NULL, NULL, NULL);
+    ApplyLinkGroundMotion(gb, apply_ground_physics);
+    func_002_434A(gb);
+    if (update_link_animation) {
+        update_link_animation(gb);
+    }
+    if (func_002_4b49) {
+        func_002_4b49(gb);
+    }
+    ApplyLinkMotionState(gb, NULL, NULL, NULL);
+    func_002_4338(gb);
+    if (ocarina_handler) {
+        ocarina_handler(gb);
+    }
+
+    /* ld a, [wRoomTransitionState]; and a; jr nz, .return */
+    if (gb_read(gb, wRoomTransitionState) != 0) {
+        return;
+    }
+
+    /* ld a, [wSwordAnimationState]; ld [wC16A], a */
+    uint8_t sword_anim = gb_read(gb, wSwordAnimationState);
+    gb_write(gb, wC16A, sword_anim);
+
+    if (sword_anim == SWORD_ANIMATION_STATE_HOLDING) {
+        if (gb_read(gb, wIsRunningWithPegasusBoots) != 0) {
+            /* .resetSwordCharge: xor a; ld [wSwordCharge], a */
+            gb_write(gb, wSwordCharge, 0);
+            return;
+        }
+
+        /* xor a; ld [wSwordAnimationState], a */
+        gb_write(gb, wSwordAnimationState, SWORD_ANIMATION_STATE_NONE);
+
+        uint8_t charge = gb_read(gb, wSwordCharge);
+        if (charge == MAX_SWORD_CHARGE) {
+            return;
+        }
+        charge++;
+        gb_write(gb, wSwordCharge, charge);
+        if (charge == MAX_SWORD_CHARGE) {
+            gb_write_hram(gb, hJingle, JINGLE_CHARGING_SWORD);
+        }
+        return;
+    }
+
+    /* .lowerSword: */
+    if (gb_read(gb, wItemUsageContext) == ITEM_USAGE_NEAR_NPC) {
+        gb_write(gb, wSwordCharge, 0);
+        return;
+    }
+
+    if (gb_read(gb, wSwordCharge) != MAX_SWORD_CHARGE) {
+        gb_write(gb, wSwordCharge, 0);
+        return;
+    }
+
+    /* wSwordCharge == MAX_SWORD_CHARGE */
+    if (gb_read(gb, wC16E) == 0) {
+        gb_write(gb, wIsUsingSpinAttack, USING_SPIN_ATTACK_MAX);
+        gb_write_hram(gb, hNoiseSfx, NOISE_SFX_SPIN_ATTACK);
+    }
+    gb_write(gb, wSwordCharge, 0);
 }

@@ -5,6 +5,7 @@
 
 /* Values for hJingle */
 #define JINGLE_NONE                             0x00
+#define JINGLE_CHARGING_SWORD                   0x04
 #define JINGLE_PUZZLE_SOLVED                    0x02
 #define JINGLE_BUMP                             0x09
 #define JINGLE_MOVE_SELECTION                   0x0A
@@ -31,6 +32,7 @@
 
 /* Values for hNoiseSfx */
 #define NOISE_SFX_NONE                          0x00
+#define NOISE_SFX_SPIN_ATTACK                   0x03
 #define NOISE_SFX_SWORD_SWING_A                 0x02
 #define NOISE_SFX_STAIRS                        0x06
 #define NOISE_SFX_FOOTSTEP                      0x07

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 53.75%
-* **Number of Verified Functions**: 645
-* **Number of Decompiled Functions**: 484
-* **Number Remaining**: ~555 functions
-* **Current Subsystem**: ROM Bank 2 (Link Motion Physics & Landing Handlers, 02:44AD-02:45AC)
-* **Current Task**: Bank 2 Link Motion Ground Physics, Collisions & Landing Handlers decompiled and verified
-* **Last Completed Task**: Decompiled and verified Bank 2 Link Motion routines: `ApplyLinkGroundMotion`, `shallowWaterVfx`, `func_002_44AD`, `label_002_44B5`, `func_002_44C2`, and lookup tables `Data_002_44E7`, `Data_002_68B1` (`02:44AD`-`02:45AC`, `02:68B1`)
-* **Next Task**: Decompile and verify Bank 2 Link Motion Default core loop and overhead walk physics (`LinkMotionDefault`, `jr_002_43BA`, `02:4287`+)
-* **Last Update Timestamp**: 2026-09-07T23:45:00+03:00
+* **Current Overall Progress**: 54.00%
+* **Number of Verified Functions**: 648
+* **Number of Decompiled Functions**: 487
+* **Number Remaining**: ~552 functions
+* **Current Subsystem**: ROM Bank 2 (Link Motion Default Core Loop & Overhead Walk Physics, 02:4287-02:44AC)
+* **Current Task**: Bank 2 Link Motion Default Core Loop & Overhead Walk Physics decompiled and verified
+* **Last Completed Task**: Decompiled and verified `LinkMotionDefault`, `func_002_436C`, and `OverheadWalkPhysics` (`02:4287`-`02:44AC`)
+* **Next Task**: Decompile and verify Bank 2 Sword Animation, Spin Attack, and Sword Collision routines (`UpdateSpinAttackAnimation`, `UpdateLinkAnimation`, `02:4709`+)
+* **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
 
@@ -19,6 +19,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `LinkMotionDefault` | VERIFIED | PASS | PASS | Default Link motion handler: countdowns, walk physics, animations, spin attack charging and release (`02:4287`) |
+| `func_002_436C` | VERIFIED | PASS | PASS | Motion and collision physics dispatcher between overhead walk and side-scrolling physics (`02:436C`) |
+| `OverheadWalkPhysics` | VERIFIED | PASS | PASS | Overhead walking physics, Pegasus boots running, turning, piece of power boost, and slow-down throttling (`02:43BA`) |
 | `ApplyLinkGroundMotion` | VERIFIED | PASS | PASS | Updates velocity from gravity, joypad movement in air, landing reset, and terrain noise/splash (`02:44ED`) |
 | `shallowWaterVfx` | VERIFIED | PASS | PASS | Shallow water splash particle VFX and water splash audio (`02:45AD`) |
 | `func_002_44AD` | VERIFIED | PASS | PASS | Checks inventory appearing state, updates final position, and falls through to ground status reset (`02:44AD`) |
