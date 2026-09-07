@@ -262,6 +262,7 @@
 
 /* Cutscene & Special Tilesets */
 #define TILESET_INDOOR                        0x06
+#define TILESET_BASE_OVERWORLD                0x05
 #define TILESET_BASE_OVERWORLD_DUP            0x07
 #define TILESET_0F                            0x0F
 #define TILESET_CHRISTINE                     0x12

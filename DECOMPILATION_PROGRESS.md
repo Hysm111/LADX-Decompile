@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 38.00%
-* **Number of Verified Functions**: 456
+* **Current Overall Progress**: 38.50%
+* **Number of Verified Functions**: 462
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~744 functions
-* **Current Subsystem**: Bank 1 - Save & Load Game Routines (`code/bank1.asm`, `01:52A4`-`01:5E66`)
-* **Current Task**: Bank 1 Save & Load Game Subsystem completed and verified
-* **Last Completed Task**: Decompiled and verified Bank 1 main saved file loader (`LoadSavedFile`) (`01:52A4`)
-* **Next Task**: Decompile and verify Bank 1 File Selection and File Operations menus (`FileSelectionLoadSavedFile`, `FileSaveFadeIn`, `SaveGameMenu`) (`code/file_menus.asm`, `01:4A04`+)
-* **Last Update Timestamp**: 2026-09-07T02:30:00+03:00
+* **Number Remaining**: ~738 functions
+* **Current Subsystem**: Bank 1 - File Selection Menus (`code/file_menus.asm`, `01:48E8`-`01:4A04`)
+* **Current Task**: Bank 1 File Selection Menus interactive & choice handlers verified
+* **Last Completed Task**: Decompiled and verified 6 Bank 1 file selection routines (`func_001_4954`, `FileSelectionInteractiveHandler`, `HandleFileSelectionCommand`, `LoadSelectedFile`, `FileSelectionExecuteChoice`, `FileSelectionLoadSavedFile`) (`01:48E8`-`01:4A04`)
+* **Next Task**: Decompile and verify Bank 1 File Creation subsystem (`FileCreationEntryPoint`, `FileCreationInit1Handler`, `FileCreationInit2Handler`, `WriteByteToSRAM`) (`code/file_menus.asm`, `01:4A07`-`01:4A97`)
+* **Last Update Timestamp**: 2026-09-07T02:45:00+03:00
 
 ---
 
@@ -369,6 +369,12 @@
 | `func_5DC0` | VERIFIED | PASS | PASS | Scans 15 characters of wSaveSlotNames to set wSaveFilesCount bitfield (`01:5DC0`) |
 | `SaveGameToFile` | VERIFIED | PASS | PASS | Saves game data (Main 0x380, DX1 0x05, DX2 0x20, DX3 0x03) to SRAM (`01:5DE6`) |
 | `LoadSavedFile` | VERIFIED | PASS | PASS | Loads saved file from SRAM or initializes new game in Marin's house (`01:52A4`) |
+| `func_001_4954` | VERIFIED | PASS | PASS | Renders animated fairy pointer sprite at selected save slot Y position (`01:4954`) |
+| `FileSelectionInteractiveHandler` | VERIFIED | PASS | PASS | Interactive file menu navigation with slot wrapping and COPY/ERASE toggle (`01:48E8`) |
+| `HandleFileSelectionCommand` | VERIFIED | PASS | PASS | Switches to File Copy or Delete screen with validation jingle (`01:49DE`) |
+| `LoadSelectedFile` | VERIFIED | PASS | PASS | Clears palettes and menu BG, configures overworld tileset to load save (`01:49C3`) |
+| `FileSelectionExecuteChoice` | VERIFIED | PASS | PASS | Evaluates chosen menu item to open copy/erase, create new file, or load file (`01:4995`) |
+| `FileSelectionLoadSavedFile` | VERIFIED | PASS | PASS | Entry trampoline jumping directly to LoadSavedFile (`01:4A04`) |
 
 ---
 

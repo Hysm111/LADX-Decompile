@@ -1,3 +1,4 @@
+#include "bank1/file_menu.h"
 #include "constants/directions.h"
 #include "bank1/save.h"
 #include "bank1/world_map.h"
@@ -1410,6 +1411,133 @@ void test_load_saved_file(void) {
     assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
 }
 
+
+void test_func_001_4954(void) {
+    printf("[*] Running func_001_4954 tests (01:4954)...\n");
+    GBState gb;
+
+    /* Slot 0: Y = 0x3B. Frame counter bit 3 set: normal frame */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, hFrameCounter, 0x08);
+    func_001_4954(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x3B);
+    assert(gb_read(&gb, wOAMBuffer + 1) == 0x18);
+    assert(gb_read(&gb, wOAMBuffer + 2) == 0x00);
+    assert(gb_read(&gb, wOAMBuffer + 3) == 0x00);
+    assert(gb_read(&gb, wOAMBuffer + 4) == 0x3B);
+    assert(gb_read(&gb, wOAMBuffer + 5) == 0x20);
+    assert(gb_read(&gb, wOAMBuffer + 6) == 0x02);
+    assert(gb_read(&gb, wOAMBuffer + 7) == 0x00);
+
+    /* Frame counter bit 3 clear: flipped frame (attr 0x20) */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, hFrameCounter, 0x00);
+    func_001_4954(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x3B);
+    assert(gb_read(&gb, wOAMBuffer + 1) == 0x18);
+    assert(gb_read(&gb, wOAMBuffer + 2) == 0x02);
+    assert(gb_read(&gb, wOAMBuffer + 3) == 0x20);
+    assert(gb_read(&gb, wOAMBuffer + 4) == 0x3B);
+    assert(gb_read(&gb, wOAMBuffer + 5) == 0x20);
+    assert(gb_read(&gb, wOAMBuffer + 6) == 0x00);
+    assert(gb_read(&gb, wOAMBuffer + 7) == 0x20);
+
+    /* Slot 1: Y = 0x53 */
+    gb_write(&gb, wSaveSlot, 1);
+    func_001_4954(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x53);
+    assert(gb_read(&gb, wOAMBuffer + 4) == 0x53);
+
+    /* Slot 3: Y = 0x83 */
+    gb_write(&gb, wSaveSlot, 3);
+    func_001_4954(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x83);
+    assert(gb_read(&gb, wOAMBuffer + 4) == 0x83);
+}
+
+void test_file_selection_interactive_and_choice(void) {
+    printf("[*] Running FileSelection interactive & choice tests (01:48E8-01:4A04)...\n");
+    GBState gb;
+
+    /* Test 1: Navigation without saved files (wraps 0..2) */
+    gb_init(&gb);
+    gb_write(&gb, wSaveFilesCount, 0);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, hJoypadState, J_UP);
+    FileSelectionInteractiveHandler(&gb);
+    assert(gb_read(&gb, wSaveSlot) == 2);
+
+    /* DOWN from 2 wraps to 0 */
+    gb_write(&gb, hJoypadState, J_DOWN);
+    FileSelectionInteractiveHandler(&gb);
+    assert(gb_read(&gb, wSaveSlot) == 0);
+
+    /* Test 2: Navigation with saved files (wraps 0..3) */
+    gb_write(&gb, wSaveFilesCount, 1);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, hJoypadState, J_UP);
+    FileSelectionInteractiveHandler(&gb);
+    assert(gb_read(&gb, wSaveSlot) == 3);
+
+    /* On slot 3, test left/right shifts arrow */
+    gb_write(&gb, wIsFileSelectionArrowShifted, 0);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    gb_write(&gb, hFrameCounter, 0x00); /* Frame counter bit 4 clear: arrow visible */
+    FileSelectionInteractiveHandler(&gb);
+    assert(gb_read(&gb, wIsFileSelectionArrowShifted) == 1);
+    assert(gb_read(&gb, wOAMBuffer + 8) == 0x88);
+    assert(gb_read(&gb, wOAMBuffer + 9) == 0x64);
+    assert(gb_read(&gb, wOAMBuffer + 10) == 0xBE);
+
+    /* Test A button increments subtype */
+    gb_write(&gb, wGameplaySubtype, 2);
+    gb_write(&gb, hJoypadState, J_A);
+    FileSelectionInteractiveHandler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* Test 3: HandleFileSelectionCommand */
+    gb_init(&gb);
+    gb_write(&gb, wIsFileSelectionArrowShifted, 0);
+    HandleFileSelectionCommand(&gb);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_DELETE);
+    assert(gb_read(&gb, wGameplaySubtype) == 0);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+
+    gb_write(&gb, wIsFileSelectionArrowShifted, 1);
+    HandleFileSelectionCommand(&gb);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_COPY);
+
+    /* Test 4: FileSelectionExecuteChoice on empty slot */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 1);
+    /* Name is empty (all zeroes) */
+    FileSelectionExecuteChoice(&gb);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_NEW);
+    assert(gb_read(&gb, wGameplaySubtype) == 0);
+
+    /* Test 5: FileSelectionExecuteChoice on populated slot */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, wSaveSlotNames + 0, 'Z');
+    gb_write(&gb, wGameplaySubtype, 2);
+    FileSelectionExecuteChoice(&gb);
+    assert(gb_read(&gb, wBGPalette) == 0);
+    assert(gb_read(&gb, wOBJ0Palette) == 0);
+    assert(gb_read(&gb, wOBJ1Palette) == 0);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_BASE_OVERWORLD);
+    assert(gb_read(&gb, wGameplaySubtype) == 3); /* incremented */
+
+    /* Test 6: FileSelectionLoadSavedFile */
+    gb_init(&gb);
+    gb_write(&gb, wSpawnPositionX, 0);
+    gb_write(&gb, wHealth, 0);
+    gb_write(&gb, wMaxHearts, 3);
+    FileSelectionLoadSavedFile(&gb);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1450,5 +1578,7 @@ void run_bank1_tests(void) {
     test_build_save_slot_hearts_draw_command();
     test_func_5DC0_and_save_game_to_file();
     test_load_saved_file();
+    test_func_001_4954();
+    test_file_selection_interactive_and_choice();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }
