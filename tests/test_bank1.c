@@ -4,6 +4,8 @@
 #include "bank1/save.h"
 #include "bank1/game_over.h"
 #include "bank1/world_handler.h"
+#include "bank1/face_shrine_mural.h"
+#include "bank1/siren_instruments.h"
 #include "bank1/world_map.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
@@ -2341,6 +2343,156 @@ void test_world_handler_subsystem(void) {
     assert(gb_read(&gb, wTilesetToLoad) == TILESET_ROOM_SPECIFIC);
 }
 
+
+void test_face_shrine_mural_subsystem(void) {
+    printf("[*] Running Face Shrine Mural subsystem tests (01:6AF8-01:6BA7)...\n");
+    GBState gb;
+
+    /* Test 1: FaceShrineMuralStage0Handler CGB */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wBGPal1, 0x42);
+    FaceShrineMuralStage0Handler(&gb);
+    /* Subtype was 0, stage 0 increments to 1, then falls into stage 1 */
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+    gb_write(&gb, rSVBK, 3);
+    assert(gb_read(&gb, wBGPal1) == 0x42);
+    gb_write(&gb, rSVBK, 0);
+
+    /* Test 2: FaceShrineMuralStage1Handler transition completion */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 1);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    for (int i = 0; i < 12; i++) {
+        gb_write(&gb, wRoomTransitionState + i, 0xFF);
+    }
+    FaceShrineMuralStage1Handler(&gb);
+    assert(gb_read(&gb, wC167) == 1);
+    assert(gb_read(&gb, wRoomTransitionState) == 0);
+    assert(gb_read(&gb, wRoomTransitionState + 11) == 0);
+    assert(gb_read(&gb, hVolumeRight) == 0x03);
+    assert(gb_read(&gb, hVolumeLeft) == 0x30);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+    assert(gb_read(&gb, wScrollXOffset) == 0);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_FACE_SHRINE_MURAL);
+
+    /* Test 3: FaceShrineMuralStage2Handler */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FaceShrineMuralStage2Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_FACE_SHRINE_MURAL);
+    assert(gb_read(&gb, wWindowY) == 0xFF);
+    assert(gb_read(&gb, hBaseScrollX) == 0);
+    assert(gb_read(&gb, hBaseScrollY) == 0);
+    assert(gb_read(&gb, wTransitionSequenceCounter) == 0);
+    assert(gb_read(&gb, wC16C) == 0);
+    assert(gb_read(&gb, wPaletteUnknownE) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* Test 4: FaceShrineMuralStage3Handler */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 3);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    FaceShrineMuralStage3Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+    assert(gb_read(&gb, wC3C4) == 0);
+
+    /* Test 5: FaceShrineMuralStage4Handler */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 4);
+    gb_write(&gb, wDialogState, 1);
+    gb_write(&gb, wC3C4, 0x10);
+    FaceShrineMuralStage4Handler(&gb);
+    assert(gb_read(&gb, wC3C4) == 0x10); /* unchanged if dialog open */
+
+    gb_write(&gb, wDialogState, 0);
+    gb_write(&gb, wC3C4, 0x7F);
+    FaceShrineMuralStage4Handler(&gb);
+    assert(gb_read(&gb, wC3C4) == 0x80);
+    assert(gb_read(&gb, wDialogState) != 0); /* opened dialog 0xE7 */
+
+    /* Wrapped to 0 */
+    gb_write(&gb, wDialogState, 0);
+    gb_write(&gb, wC3C4, 0xFF);
+    FaceShrineMuralStage4Handler(&gb);
+    assert(gb_read(&gb, wC3C4) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+
+    /* Test 6: FaceShrineMuralStage5Handler */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 5);
+    gb_write(&gb, hJoypadState, 0);
+    FaceShrineMuralStage5Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+
+    gb_write(&gb, hJoypadState, J_A);
+    FaceShrineMuralStage5Handler(&gb);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+    assert(gb_read(&gb, wTransitionSequenceCounter) == 0);
+    assert(gb_read(&gb, wC16C) == 0);
+
+    /* Test 7: FaceShrineMuralEntryPoint */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FaceShrineMuralEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
+void test_siren_instruments_subsystem(void) {
+    printf("[*] Running Siren Instruments subsystem tests (01:6BB5-01:6C76)...\n");
+    GBState gb;
+
+    /* Test 1: GetInstrumentNextBGAddress */
+    uint16_t base = 0x9D00;
+    uint16_t next1 = GetInstrumentNextBGAddress(base, 0);
+    assert(next1 == 0x9D01);
+    uint16_t next2 = GetInstrumentNextBGAddress(next1, 1);
+    assert(next2 == 0x9D20);
+    uint16_t next3 = GetInstrumentNextBGAddress(next2, 2);
+    assert(next3 == 0x9D21);
+
+    /* Test 2: LoadInstrumentsBG right side (instruments 0..3) */
+    gb_init(&gb);
+    gb_write(&gb, wHasInstrument1 + 0, 0x02); /* Obtained: tile 0xD0 */
+    gb_write(&gb, wHasInstrument1 + 1, 0x00); /* Missing: placeholder 0xB2 */
+    LoadInstrumentsBG(&gb, 1);
+
+    /* Instrument 0 at 0x9D00 + 0x0F = 0x9D0F */
+    assert(gb_read(&gb, 0x9D0F) == 0xD0);
+    assert(gb_read(&gb, 0x9D10) == 0xD1);
+    assert(gb_read(&gb, 0x9D2F) == 0xE0);
+    assert(gb_read(&gb, 0x9D30) == 0xE1);
+
+    /* Instrument 1 at 0x9D00 + 0x51 = 0x9D51 */
+    assert(gb_read(&gb, 0x9D51) == 0x7C);
+    assert(gb_read(&gb, 0x9D52) == 0x7C);
+    assert(gb_read(&gb, 0x9D71) == 0x7C);
+    assert(gb_read(&gb, 0x9D72) == 0xB2);
+
+    /* Test 3: LoadSirenInstrumentTiles */
+    gb_init(&gb);
+    gb_write(&gb, hBGTilesLoadingStage, 2);
+    LoadSirenInstrumentTiles(&gb, 2);
+    assert(gb_read(&gb, hBGTilesLoadingStage) == 3);
+
+    /* Test 4: LoadSirenInstruments state machine */
+    gb_init(&gb);
+    gb_write(&gb, hBGTilesLoadingStage, 0);
+    LoadSirenInstruments(&gb);
+    assert(gb_read(&gb, hBGTilesLoadingStage) == 1);
+
+    gb_write(&gb, hBGTilesLoadingStage, 8);
+    LoadSirenInstruments(&gb);
+    assert(gb_read(&gb, hBGTilesLoadingStage) == 9);
+
+    gb_write(&gb, hBGTilesLoadingStage, 9);
+    gb_write(&gb, hNeedsUpdatingBGTiles, 1);
+    LoadSirenInstruments(&gb);
+    assert(gb_read(&gb, hBGTilesLoadingStage) == 0);
+    assert(gb_read(&gb, hNeedsUpdatingBGTiles) == 0);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -2392,5 +2544,7 @@ void run_bank1_tests(void) {
     test_file_save_screen_and_init();
     test_game_over_subsystem();
     test_world_handler_subsystem();
+    test_face_shrine_mural_subsystem();
+    test_siren_instruments_subsystem();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

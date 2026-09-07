@@ -489,3 +489,10 @@
 #define wLinkMapEntryPositionY                0xDBB2
 #define wMapEntrancePositionZ                 0xDBC8
 #define wSwitchButtonPressed                 0xC1CB
+#define wHasInstrument1                       0xDB65
+#define wHasInstrument2                       0xDB66
+#define wHasInstrument3                       0xDB67
+#define wHasInstrument5                       0xDB69
+#define wHasInstrument6                       0xDB6A
+#define wHasInstrument8                       0xDB6C
+#define wC3C4                                 0xC3C4

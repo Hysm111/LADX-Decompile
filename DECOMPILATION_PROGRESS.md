@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 45.33%
-* **Number of Verified Functions**: 544
+* **Current Overall Progress**: 46.25%
+* **Number of Verified Functions**: 555
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~656 functions
-* **Current Subsystem**: Bank 1 - World Handler & Dungeon Minimap Subsystem (`code/world_handler.asm` & `code/bank1.asm`, 100% VERIFIED)
-* **Current Task**: Bank 1 World Handler & Dungeon Minimap Subsystem 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 10 Bank 1 World Handler & Dungeon Minimap routines (`WorldHandlerEntryPoint`, `GameplayWorldLoad0Handler`, `GameplayWorldLoadRoomHandler`, `GameplayWorldSelectTilesetHandler`, `GameplayWorldLoadRoomTilemapHandler`, `GameplayWorldLoadHeartsAndRupeesHandler`, `GameplayWorldLoadABButtonsHandler`, `GameplayWorldLoad6Handler`, `CreateMinimapTilemap`, `func_001_5619`) (`01:4371`-`01:454F`, `01:5511`-`01:5625`)
-* **Next Task**: Decompile and verify remaining Bank 1 routines in `code/bank1.asm` (`01:4650`-`01:46A9`, `01:4E08`-`01:53D7`, `01:6800`-`01:6D49`)
+* **Number Remaining**: ~645 functions
+* **Current Subsystem**: Bank 1 - Face Shrine Mural & Siren Instruments Subsystems (`code/face_shrine_mural.asm` & `code/bank1.asm`, 100% VERIFIED)
+* **Current Task**: Bank 1 Face Shrine Mural & Siren Instruments Subsystems 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 11 Bank 1 Face Shrine Mural & Siren Instruments routines (`FaceShrineMuralEntryPoint`, `FaceShrineMuralStage0Handler`, `FaceShrineMuralStage1Handler`, `FaceShrineMuralStage2Handler`, `FaceShrineMuralStage3Handler`, `FaceShrineMuralStage4Handler`, `FaceShrineMuralStage5Handler`, `LoadSirenInstruments`, `LoadInstrumentsBG`, `GetInstrumentNextBGAddress`, `LoadSirenInstrumentTiles`) (`01:6AF8`-`01:6C76`)
+* **Next Task**: Decompile and verify Marin Beach cinematic subsystem (`code/marin_beach.asm`, `01:61F0`-`01:67ED`)
 * **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
 
 ---
@@ -457,6 +457,20 @@
 | `GameplayWorldLoad6Handler` | VERIFIED | PASS | PASS | Initializes inventory bar, turns on window display, initiates fade-in and soundtrack (`01:4507`) |
 | `CreateMinimapTilemap` | VERIFIED | PASS | PASS | Builds dynamic in-memory tilemap of dungeon minimap and label at wMinimapTilemap (`01:5511`) |
 | `func_001_5619` | VERIFIED | PASS | PASS | Minimap tilemap writer helper writing 4 bytes (hMultiPurpose0-3) to [hl] (`01:5619`) |
+| `PeachPictureState4Handler` | VERIFIED | PASS | PASS | Cutscene fade-in handler via func_1A39, initializes wD210 (`01:68AA`) |
+| `PeachPictureState5Handler` | VERIFIED | PASS | PASS | Cutscene picture interactive waiting loop on Eagle's Tower collapse or button press (`01:68C0`) |
+| `PeachPictureState7Handler` | VERIFIED | PASS | PASS | Tower collapse rumble vertical screen shaking animation step (`01:68E4`) |
+| `FaceShrineMuralEntryPoint` | VERIFIED | PASS | PASS | Dispatcher for Face Shrine Mural sequence stages 0-6 (`01:6AF8`) |
+| `FaceShrineMuralStage0Handler` | VERIFIED | PASS | PASS | Advances subtype, copies 0x80 palette bytes to bank 3 on CGB (`01:6B0A`) |
+| `FaceShrineMuralStage1Handler` | VERIFIED | PASS | PASS | Sets wC167, fades out via func_1A22, clears transition state, sets mural tileset (`01:6B2B`) |
+| `FaceShrineMuralStage2Handler` | VERIFIED | PASS | PASS | Loads mural BG map, hides window, resets scroll, sets wPaletteUnknownE (`01:6B52`) |
+| `FaceShrineMuralStage3Handler` | VERIFIED | PASS | PASS | Fades in via func_1A39, resets dialog timer counter wC3C4 (`01:6B6F`) |
+| `FaceShrineMuralStage4Handler` | VERIFIED | PASS | PASS | Counts delay in wC3C4, opens mural dialog 0xE7, advances subtype on wrap (`01:6B81`) |
+| `FaceShrineMuralStage5Handler` | VERIFIED | PASS | PASS | Waits for A/B/START button, plays validate jingle, calls func_001_68D9 (`01:6B9A`) |
+| `LoadSirenInstruments` | VERIFIED | PASS | PASS | Multi-stage background tile / map loader for inventory Siren Instruments (`01:6BB5`) |
+| `LoadInstrumentsBG` | VERIFIED | PASS | PASS | Draws 4 instruments into BG map at $9D00, using obtained picture or numbered placeholder (`01:6BEF`) |
+| `GetInstrumentNextBGAddress` | VERIFIED | PASS | PASS | Calculates next tilemap VRAM address for 2x2 instrument block (`01:6C69`) |
+| `LoadSirenInstrumentTiles` | VERIFIED | PASS | PASS | Copies $40 bytes of instrument tiles from ROM to $8D00, increments stage (`01:6C77`) |
 
 ---
 

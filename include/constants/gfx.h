@@ -145,6 +145,8 @@
 #define FontTiles                    0x5000
 
 /* Intro sequence graphic assets */
+#define BANK_SirenInstrumentsTiles   0x0C
+#define SirenInstrumentsTiles        0x4D00
 #define BANK_IntroRainTiles          0x01
 #define IntroRainTiles               0x6D4A
 
@@ -278,6 +280,7 @@
 #define TILEMAP_PEACH                         0x12
 #define TILEMAP_MARIN_BEACH                   0x13
 #define TILEMAP_SCHULE_PAINTING               0x23
+#define TILEMAP_FACE_SHRINE_MURAL             0x15
 #define TILEMAP_EAGLES_TOWER_COLLAPSE         0x24
 #define TILESET_WORLD_MAP                     0x0B
 #define TILESET_WORLD_MAP_TILEMAP             0x0E
