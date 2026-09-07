@@ -359,4 +359,40 @@ void func_002_4EDD(GBState *gb);
  */
 void LinkMotionRevolvingDoorHandler(GBState *gb);
 
+/* Bank 2 Swimming Velocity Tables */
+extern const int8_t Data_002_4EF0[16];
+extern const int8_t Data_002_4F00[16];
+extern const int8_t Data_002_4F10[16];
+extern const int8_t Data_002_4F20[16];
+
+/**
+ * Creates water splash transient VFX and plays water splash jingle (02:5928).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param y Y coordinate for water splash VFX.
+ */
+void func_002_5928(GBState *gb, uint8_t y);
+
+/**
+ * Handles Link's swimming and diving physics, movement, B diving toggle, and sunken items (02:4F30).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_map_transition Optional callback for map transition check.
+ * @param func_753a Optional callback for surface offset and shadow physics (02:753A).
+ * @param spawn_new_entity Optional callback to spawn entity (00:3B86).
+ * @param splash_vfx Optional callback to create splash VFX (02:5928).
+ */
+void LinkMotionSwimmingHandler(GBState *gb,
+                               void (*check_map_transition)(GBState *),
+                               void (*func_753a)(GBState *),
+                               uint16_t (*spawn_new_entity)(GBState *, uint8_t),
+                               void (*splash_vfx)(GBState *, uint8_t));
+
+/**
+ * Handles Link's unknown / hole falling motion state 0x0F (02:50A3).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void LinkMotionUnknownHandler(GBState *gb);
+
 #endif /* LADX_BANK2_BANK2_H */

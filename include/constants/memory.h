@@ -37,6 +37,7 @@
 #define wC50E                        0xC50E
 #define wRoomSwitchableObject        0xD6FA
 #define wShutterDoorsMask            0xC18A
+#define wC183                         0xC183
 #define wShutterDoorsMask2           0xC18B
 #define wRoomEventEffectExecuted 0xC18F
 #define wLoadedEntitySpritesheets 0xC193

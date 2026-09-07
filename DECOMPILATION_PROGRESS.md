@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 55.75%
-* **Number of Verified Functions**: 669
-* **Number of Decompiled Functions**: 492
-* **Number Remaining**: ~547 functions
-* **Current Subsystem**: ROM Bank 2 (Room Tile Modification, Tunic Palette Sync & Revolving Door, 02:4D97-02:4EEF)
-* **Current Task**: Bank 2 Room Tile Modification, Tunic Palette Sync & Revolving Door routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `label_002_4D97`, `func_002_4DFC`, `func_002_4E2C`, `func_002_4E48`, `func_002_4EDD`, `LinkMotionRevolvingDoorHandler`, and 2 lookup tables (`02:4D97`-`02:4EEF`)
-* **Next Task**: Decompile and verify Bank 2 Swimming & Diving Subsystem (`LinkMotionSwimmingHandler`, `02:4EF0`-`02:5100`+)
+* **Current Overall Progress**: 56.00%
+* **Number of Verified Functions**: 672
+* **Number of Decompiled Functions**: 495
+* **Number Remaining**: ~544 functions
+* **Current Subsystem**: ROM Bank 2 (Swimming, Diving & Hole Falling, 02:4EF0-02:50C9)
+* **Current Task**: Bank 2 Swimming, Diving, Water Splash & Unknown Motion Handler routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `func_002_5928`, `LinkMotionSwimmingHandler`, `LinkMotionUnknownHandler`, and velocity lookup tables `Data_002_4EF0`–`4F20` (`02:4EF0`-`02:50C9`, `02:5928`)
+* **Next Task**: Decompile and verify Bank 2 Pit Falling Subsystem (`LinkMotionFallingDownHandler`, `02:50D4`-`02:51BB`)
 * **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
@@ -19,6 +19,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `func_002_5928` | VERIFIED | PASS | PASS | Generates water splash transient VFX and triggers JINGLE_WATER_SPLASH (`02:5928`) |
+| `LinkMotionSwimmingHandler` | VERIFIED | PASS | PASS | Handles swimming/diving physics, A stroke speed boost, B dive toggle, and underwater heart/warp checks (`02:4F30`) |
+| `LinkMotionUnknownHandler` | VERIFIED | PASS | PASS | Unknown / falling motion state 0x0F: blocks input, integrates Z velocity, transitions map on threshold (`02:50A3`) |
 | `label_002_4D97` | VERIFIED | PASS | PASS | Replaces room object with 0xAE, queries GBC attributes via func_91D_jp_92E, emits 10-byte draw command (`02:4D97`) |
 | `func_002_4DFC` | VERIFIED | PASS | PASS | Copies 8 bytes of object palette 1 from WRAM bank 1 to WRAM bank 2 (`02:4DFC`) |
 | `func_002_4E2C` | VERIFIED | PASS | PASS | Loads 8 bytes from Data_002_4E1C into wObjPal8 and flags palette update (`02:4E2C`) |

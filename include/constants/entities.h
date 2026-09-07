@@ -34,6 +34,7 @@
 #define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
 #define ENTITY_DROPPABLE_HEART       0x2D
 #define ENTITY_DROPPABLE_RUPEE       0x2E
+#define ENTITY_HEART_PIECE           0x35
 #define ENTITY_BOW_WOW               0x6D
 #define ENTITY_WRECKING_BALL         0xA8
 #define ENTITY_MARIN_AT_THE_SHORE    0xC1
