@@ -1841,6 +1841,95 @@ void test_file_deletion_and_digits(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 10);
 }
 
+
+void test_file_deletion_interactive_and_erase(void) {
+    printf("[*] Running FileDeletion interactive & erase tests (01:4CFB-01:4F3A)...\n");
+    GBState gb;
+
+    /* Test 1: CopyQuitOkTilemap and CopyReturnToMenuTilemap */
+    gb_init(&gb);
+    CopyQuitOkTilemap(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xE4);
+    assert(gb_read(&gb, wDrawCommand + 2) == 0x0D);
+
+    gb_write(&gb, wDrawCommandsSize, 0);
+    CopyReturnToMenuTilemap(&gb);
+    assert(gb_read(&gb, wDrawCommandsSize) == 17);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 3) == 0x11);
+
+    /* Test 2: BlankSaveSlotNameDrawCommand */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 1);
+    BlankSaveSlotNameDrawCommand(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0x05);
+    assert(gb_read(&gb, wDrawCommand + 8) == 0x00);
+
+    /* Test 3: func_001_4F0C (QUIT/OK cursor arrow) */
+    gb_init(&gb);
+    gb_write(&gb, wCreditsScratch0, 0);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    gb_write(&gb, hFrameCounter, 0x00); /* visible */
+    func_001_4F0C(&gb);
+    assert(gb_read(&gb, wCreditsScratch0) == 1);
+    assert(gb_read(&gb, wOAMBuffer + 12) == 0x88);
+    assert(gb_read(&gb, wOAMBuffer + 13) == 0x6C); /* OK position */
+    assert(gb_read(&gb, wOAMBuffer + 14) == 0xBE);
+
+    /* Test 4: FileDeletionState10Handler navigation */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, hJoypadState, J_DOWN);
+    FileDeletionState10Handler(&gb);
+    assert(gb_read(&gb, wSaveSlot) == 1);
+
+    /* Slot 3 with A returns to file menu */
+    gb_write(&gb, wSaveSlot, 3);
+    gb_write(&gb, hJoypadState, J_A);
+    FileDeletionState10Handler(&gb);
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+
+    /* Slot 1 with A advances to confirmation */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 1);
+    gb_write(&gb, wGameplaySubtype, 10);
+    gb_write(&gb, hJoypadState, J_A);
+    FileDeletionState10Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 11);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99); /* Quit/Ok tilemap copied */
+
+    /* Test 5: FileDeletionState11Handler B cancels */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 11);
+    gb_write(&gb, hJoypadState, J_B);
+    FileDeletionState11Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 10);
+
+    /* Test 6: FileDeletionState11Handler A with OK erases SRAM */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, wCreditsScratch0, 1); /* OK chosen */
+    /* Fill SRAM slot 1 with non-zero dummy data */
+    for (uint16_t i = 0; i < 0x03A8; i++) {
+        gb_write(&gb, 0xA405 + i, 0xEE);
+    }
+    gb_write(&gb, hJoypadState, J_A);
+    FileDeletionState11Handler(&gb);
+    /* SRAM slot 1 must now be all 0x00 */
+    assert(gb_read(&gb, 0xA405) == 0);
+    assert(gb_read(&gb, 0xA405 + 0x03A7) == 0);
+    /* Returned to file select screen */
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+
+    /* Test 7: FileDeletionEntryPoint dispatcher */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FileDeletionEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1887,5 +1976,6 @@ void run_bank1_tests(void) {
     test_transition_to_file_menu_reload();
     test_file_creation_grid_and_entry();
     test_file_deletion_and_digits();
+    test_file_deletion_interactive_and_erase();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

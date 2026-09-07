@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 41.08%
-* **Number of Verified Functions**: 493
+* **Current Overall Progress**: 41.75%
+* **Number of Verified Functions**: 501
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~707 functions
-* **Current Subsystem**: Bank 1 - File Deletion & Heart/Death Display (`code/file_menus.asm`, `01:47FD`-`01:4F8A`)
-* **Current Task**: Bank 1 File Deletion and Heart/Name/Death display routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified 20 Bank 1 File Deletion and Heart/Name/Death display routines (`CopyDigitsToFileScreenBG`, `CopyDeathCountsToBG`, `DrawSaveSlot1Name`-`DrawSaveSlot3Name`, `DrawSaveSlot1MaxHearts`-`DrawSaveSlot3MaxHearts`, `FileSelectionPrepare2`-`3`, `FileDeletionState0Handler`-`9`) (`01:47FD`-`01:4F8A`)
-* **Next Task**: Decompile and verify Bank 1 File Deletion interactive handlers and Erase File confirmation (`FileDeletionState10Handler`, `FileDeletionState11Handler`, `FileDeletionEntryPoint`, `func_001_4EE5`, `func_001_4F0C`) (`code/file_menus.asm`, `01:4CFB`-`01:4F3A`)
-* **Last Update Timestamp**: 2026-09-07T03:30:00+03:00
+* **Number Remaining**: ~699 functions
+* **Current Subsystem**: Bank 1 - File Deletion Subsystem Complete (`code/file_menus.asm`, `01:4CFB`-`01:4F8A`)
+* **Current Task**: Bank 1 File Deletion subsystem 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 8 Bank 1 File Deletion interactive handlers and Erase File routines (`CopyQuitOkTilemap`, `CopyReturnToMenuTilemap`, `func_001_4EE5`, `BlankSaveSlotNameDrawCommand`, `func_001_4F0C`, `FileDeletionState10Handler`, `FileDeletionState11Handler`, `FileDeletionEntryPoint`) (`01:4CFB`-`01:4F3A`)
+* **Next Task**: Decompile and verify Bank 1 File Copy subsystem (`FileCopyEntryPoint`, `FileCopyState0Handler`-`FileCopyState11Handler`) (`code/file_menus.asm`, `01:4F8D`-`01:5130`)
+* **Last Update Timestamp**: 2026-09-07T03:45:00+03:00
 
 ---
 
@@ -406,6 +406,14 @@
 | `FileDeletionState7Handler` | VERIFIED | PASS | PASS | File deletion stage 7 copies death counts to BG (`01:4D88`) |
 | `FileDeletionState8Handler` | VERIFIED | PASS | PASS | File deletion stage 8 reloads GBC menu background (`01:4D39`) |
 | `FileDeletionState9Handler` | VERIFIED | PASS | PASS | File deletion stage 9 sets GBC palette data flag to 2 (`01:4D49`) |
+| `CopyQuitOkTilemap` | VERIFIED | PASS | PASS | Copies QUIT / OK draw command to wDrawCommand (`01:4E55`) |
+| `CopyReturnToMenuTilemap` | VERIFIED | PASS | PASS | Copies RETURN TO MENU draw command to wDrawCommand queue (`01:4EBB`) |
+| `func_001_4EE5` | VERIFIED | PASS | PASS | Draws name of the currently selected save slot (`01:4EE5`) |
+| `BlankSaveSlotNameDrawCommand` | VERIFIED | PASS | PASS | Blanks out save slot name with dark tiles for blinking effect (`01:4EEF`) |
+| `func_001_4F0C` | VERIFIED | PASS | PASS | Handles left/right toggle for QUIT/OK option and updates cursor arrow (`01:4F0C`) |
+| `FileDeletionState10Handler` | VERIFIED | PASS | PASS | Interactive slot selection for file deletion (`01:4E06`) |
+| `FileDeletionState11Handler` | VERIFIED | PASS | PASS | Interactive confirmation and SRAM erase execution (`01:4E6B`) |
+| `FileDeletionEntryPoint` | VERIFIED | PASS | PASS | State machine dispatcher for GAMEPLAY_FILE_DELETE (`01:4CFB`) |
 
 ---
 

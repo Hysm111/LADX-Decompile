@@ -153,7 +153,52 @@ void FileDeletionState7Handler(GBState *gb);
 void FileDeletionState8Handler(GBState *gb);
 void FileDeletionState9Handler(GBState *gb);
 
+extern const uint8_t Data_001_4DEE[24];
+extern const uint8_t FileMenuQuitOkTilemap[18];
+extern const uint8_t FileReturnToMenuTilemap[18];
+
+/**
+ * Copies "QUIT / OK" draw command to wDrawCommand (01:4E55).
+ */
+void CopyQuitOkTilemap(GBState *gb);
+
+/**
+ * Copies "RETURN TO MENU" draw command to wDrawCommand (01:4EBB).
+ */
+void CopyReturnToMenuTilemap(GBState *gb);
+
+/**
+ * Draws the save slot name corresponding to wSaveSlot (01:4EE5).
+ */
+void func_001_4EE5(GBState *gb);
+
+/**
+ * Blank out the save slot name by writing DIALOG_BG_TILE_DARK from Data_001_4DEE (01:4EEF).
+ */
+void BlankSaveSlotNameDrawCommand(GBState *gb);
+
+/**
+ * Handles left/right toggle for QUIT/OK option and updates cursor sprite (01:4F0C).
+ */
+void func_001_4F0C(GBState *gb);
+
+/**
+ * Interactive slot selection handler for file deletion (01:4E06).
+ */
+void FileDeletionState10Handler(GBState *gb);
+
+/**
+ * Interactive confirmation handler for erasing selected save file (01:4E6B).
+ */
+void FileDeletionState11Handler(GBState *gb);
+
+/**
+ * Main entry point and state machine dispatcher for GAMEPLAY_FILE_DELETE (01:4CFB).
+ */
+void FileDeletionEntryPoint(GBState *gb);
+
 #endif /* LADX_BANK1_FILE_MENU_H */
+
 
 
 
