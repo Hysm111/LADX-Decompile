@@ -71,6 +71,7 @@
 #define wWarp0MapCategory       0xD401
 #define wWarpStructs            0xD401
 #define wWarpPositions          0xD416
+#define wWarp0PositionTileIndex 0xD416
 #define wD464                   0xD464
 #define wD474                   0xD474
 #define wD478                   0xD478
@@ -118,7 +119,7 @@
 #define wScreenShakeHorizontal                0xC155
 #define wEntitiesPosXSignTable                0xC220
 #define wEntitiesPosYSignTable                0xC230
-#define wEntitiesPhysicsFlagsTable            0xC120
+#define wEntitiesPhysicsFlagsTable            0xC340
 #define wEntitiesPosXTable                    0xC200
 #define wEntitiesPosYTable                    0xC210
 #define wEntitiesSpeedXTable                  0xC240
@@ -394,3 +395,8 @@
 #define wC5A2                                 0xC5A2
 #define wLCDControl                           0xD6FD
 #define wC182                                 0xC182
+#define wC1B0                                 0xC1B0
+#define wWarp0Map                             0xD402
+#define wWarp0Room                            0xD403
+#define wWarp0DestinationX                    0xD404
+#define wWarp0DestinationY                    0xD405

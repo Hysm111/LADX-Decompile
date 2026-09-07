@@ -318,3 +318,231 @@ check_clear_c1b1:
     }
     label_001_5B3F(gb);
 }
+
+static const uint8_t Data_001_5BAD[128] = {
+    0xF8, 0xF8, 0xF2, 0x04, 0xF8, 0x00, 0xF4, 0x04, 0xF8, 0x08, 0xF4, 0x24, 0xF8, 0x10, 0xF2, 0x24,
+    0x08, 0xF8, 0xF2, 0x44, 0x08, 0x00, 0xF4, 0x44, 0x08, 0x08, 0xF4, 0x64, 0x08, 0x10, 0xF2, 0x64,
+    0xFA, 0xFA, 0xF2, 0x04, 0xFA, 0x02, 0xF4, 0x04, 0xFA, 0x06, 0xF4, 0x24, 0xFA, 0x0E, 0xF2, 0x24,
+    0x06, 0xFA, 0xF2, 0x44, 0x06, 0x02, 0xF4, 0x44, 0x06, 0x06, 0xF4, 0x64, 0x06, 0x0E, 0xF2, 0x64,
+    0xFC, 0xFC, 0xF2, 0x04, 0xFC, 0x04, 0xF4, 0x04, 0xFC, 0x04, 0xF4, 0x24, 0xFC, 0x0C, 0xF2, 0x24,
+    0x04, 0xFC, 0xF2, 0x44, 0x04, 0x04, 0xF4, 0x44, 0x04, 0x04, 0xF4, 0x64, 0x04, 0x0C, 0xF2, 0x64,
+    0xFE, 0xFE, 0xF2, 0x04, 0xFE, 0x04, 0xF4, 0x04, 0xFE, 0x04, 0xF4, 0x24, 0xFE, 0x0A, 0xF2, 0x24,
+    0x02, 0xFE, 0xF2, 0x44, 0x02, 0x04, 0xF4, 0x44, 0x02, 0x04, 0xF4, 0x64, 0x02, 0x0A, 0xF2, 0x64
+};
+
+static const uint8_t Data_001_5C2D[20] = {
+    0x20, 0x01, 0x22, 0x01,
+    0x24, 0x06, 0x26, 0x06,
+    0x28, 0x07, 0x2A, 0x07,
+    0x2C, 0x05, 0x2E, 0x05,
+    0x2C, 0x05, 0x2E, 0x05
+};
+
+static const uint8_t Data_001_5C41[4] = {0x28, 0x78, 0x28, 0x78};
+static const uint8_t Data_001_5C45[4] = {0x28, 0x28, 0x78, 0x78};
+
+void func_001_5C55(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t a = 0;
+    uint8_t c1b3 = gb_read(gb, wC1B3);
+    if (c1b3 != 0) {
+        c1b3--;
+        gb_write(gb, wC1B3, c1b3);
+        a = (uint8_t)(~c1b3);
+        a = (uint8_t)((a >> 2) & 0x03);
+    } else {
+        uint8_t c1b2 = gb_read(gb, wC1B2);
+        if (c1b2 != 0) {
+            c1b2--;
+            gb_write(gb, wC1B2, c1b2);
+            a = (uint8_t)((c1b2 >> 2) & 0x03);
+        } else {
+            uint8_t c1b1 = gb_read(gb, wC1B1);
+            if (c1b1 == 0) {
+                return;
+            }
+            a = 0;
+        }
+    }
+
+    gb_write(gb, wC1B0, a);
+    gb_write(gb, hActiveEntitySpriteVariant, a);
+    gb_write(gb, wOAMNextAvailableSlot, 0);
+    gb_write(gb, wEntitiesPhysicsFlagsTable, 8);
+    gb_write(gb, wActiveEntityIndex, 0);
+    gb_write(gb, hActiveEntityFlipAttribute, 0);
+
+    uint8_t room = gb_read(gb, wC1B4);
+    uint8_t e = (room >= 0x70) ? 2 : 0;
+    if ((room & 0x0F) < 8) {
+        e++;
+    }
+
+    gb_write(gb, hActiveEntityPosX, Data_001_5C41[e]);
+    gb_write(gb, hActiveEntityVisualPosY, Data_001_5C45[e]);
+
+    uint8_t frame_offset = (uint8_t)((a << 5) & 0xE0);
+    gb_write(gb, wOAMNextAvailableSlot, 8);
+    gb_write(gb, hActiveEntityTilesOffset, 0);
+    RenderActiveEntitySpritesRect(gb, Data_001_5BAD + frame_offset, 8, NULL);
+
+    if (a != 0) {
+        return;
+    }
+
+    uint8_t c1b1 = gb_read(gb, wC1B1);
+    if (c1b1 == 0 || c1b1 > 0x80) {
+        return;
+    }
+    uint8_t variant = (uint8_t)(c1b1 - 1);
+    gb_write(gb, hActiveEntitySpriteVariant, variant);
+
+    uint8_t visual_y = gb_read(gb, hActiveEntityVisualPosY);
+    uint8_t pos_x = gb_read(gb, hActiveEntityPosX);
+    uint16_t de = wDynamicOAMBuffer;
+
+    gb_write(gb, de + 0, visual_y);
+    gb_write(gb, de + 1, pos_x);
+    gb_write(gb, de + 2, Data_001_5C2D[variant * 4 + 0]);
+    gb_write(gb, de + 3, Data_001_5C2D[variant * 4 + 1]);
+
+    gb_write(gb, de + 4, visual_y);
+    gb_write(gb, de + 5, (uint8_t)(pos_x + 8));
+    gb_write(gb, de + 6, Data_001_5C2D[variant * 4 + 2]);
+    gb_write(gb, de + 7, Data_001_5C2D[variant * 4 + 3]);
+}
+
+void func_001_5C49(GBState *gb) {
+    if (!gb) return;
+    uint8_t saved_physics = gb_read(gb, wEntitiesPhysicsFlagsTable);
+    func_001_5C55(gb);
+    gb_write(gb, wEntitiesPhysicsFlagsTable, saved_physics);
+}
+
+void WorldMapInteractiveHandler(GBState *gb) {
+    if (!gb) return;
+
+    /* Debug tool 3: Start button triggers credits */
+    if (gb_read(gb, ROM_DebugTool3) != 0) {
+        if ((gb_read(gb, hJoypadState) & J_START) != 0) {
+            gb_write(gb, wGameplaySubtype, 0);
+            gb_write(gb, wGameplayType, GAMEPLAY_CREDITS);
+            return;
+        }
+    }
+
+    if (gb_read(gb, wDialogState) == 0) {
+        if ((gb_read(gb, hJoypadState) & J_A) != 0) {
+            uint8_t room = gb_read(gb, wDBB4);
+            uint8_t special_val = MapSpecialLocationNamesTable[room];
+            uint8_t dialog_id = 0;
+
+            if (special_val != 0) {
+                if ((special_val & 0xF0) != 0) {
+                    dialog_id = MapSpecialLocationNamesLookupTable[special_val];
+                } else if (gb_read(gb, wC5A2) == 0) {
+                    uint8_t status = gb_read(gb, (uint16_t)(wOverworldRoomStatus + room));
+                    if ((status & OW_ROOM_STATUS_OWL_TALKED) != 0) {
+                        dialog_id = MapSpecialLocationNamesLookupTable[special_val];
+                    }
+                }
+            }
+
+            if (dialog_id == 0) {
+                if (room == 0x24 || room == 0x34) {
+                    dialog_id = 0x76; /* Dialog076: Goponga Swamp */
+                } else {
+                    uint8_t e = (uint8_t)((room >> 1) & 0x07);
+                    uint8_t row = (uint8_t)((room >> 2) & 0x38);
+                    dialog_id = MapLocationNamesTable[row | e];
+                }
+            }
+
+            OpenDialogInTable0(gb, dialog_id);
+
+            if (gb_read(gb, wDialogIndex) == 0xA7 || room == 0x37) {
+                gb_write(gb, wDialogIndexHi, 1);
+            }
+
+            uint8_t d_state = (room >= 0x70) ? 0x01 : 0x81;
+            gb_write(gb, wDialogState, d_state);
+            return;
+        }
+
+        /* Debug tool 1: B + Select warp */
+        if (gb_read(gb, ROM_DebugTool1) != 0) {
+            if ((gb_read(gb, hPressedButtonsMask) & (J_SELECT | J_B)) == (J_SELECT | J_B)) {
+                gb_write(gb, wGameplayType, GAMEPLAY_WORLD);
+                ApplyMapFadeOutTransitionWithNoise(gb);
+                gb_write(gb, wWarp0MapCategory, 0);
+                gb_write(gb, wWarp0Map, 0);
+                uint8_t room = gb_read(gb, wDBB4);
+                gb_write(gb, wWarp0Room, room);
+                gb_write(gb, wWarp0DestinationX, 0x48);
+                gb_write(gb, wWarp0DestinationY, 0x52);
+                uint8_t link_x = gb_read(gb, hLinkPositionX);
+                uint8_t swapped_x = (uint8_t)(((link_x << 4) | (link_x >> 4)) & 0x0F);
+                uint8_t link_y = (uint8_t)((gb_read(gb, hLinkPositionY) - 8) & 0xF0);
+                gb_write(gb, wWarp0PositionTileIndex, (uint8_t)(link_y | swapped_x));
+                gb_write(gb, wGameplaySubtype, 7);
+                return;
+            }
+        }
+
+        uint8_t close_mask = J_SELECT;
+        if (gb_read(gb, ROM_DebugTool1) == 0) {
+            close_mask = J_SELECT | J_B;
+        }
+
+        if ((gb_read(gb, hJoypadState) & close_mask) != 0) {
+            gb_write(gb, wTransitionSequenceCounter, 0);
+            gb_write(gb, wC16C, 0);
+            gb_write(gb, wPaletteUnknownE, 1);
+            IncrementGameplaySubtype(gb);
+        }
+    }
+
+    func_001_58A8(gb);
+    func_001_5A71(gb);
+    func_001_5C49(gb);
+}
+
+void WorldMapEntryPoint(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, wOAMNextAvailableSlot, 0);
+
+    uint8_t subtype = gb_read(gb, wGameplaySubtype);
+    if (subtype != 5) {
+        gb_write(gb, hPressedButtonsMask, 0);
+        gb_write(gb, hJoypadState, 0);
+        subtype = gb_read(gb, wGameplaySubtype);
+    }
+
+    switch (subtype) {
+        case 0:
+            WorldMapState0Handler(gb);
+            break;
+        case 1:
+            WorldMapState1Handler(gb);
+            break;
+        case 2:
+            WorldMapState2Handler(gb);
+            break;
+        case 3:
+            WorldMapState3Handler(gb);
+            break;
+        case 4:
+            WorldMapState4Handler(gb);
+            break;
+        case 5:
+            WorldMapInteractiveHandler(gb);
+            break;
+        case 6:
+            FileSaveFadeOut(gb);
+            break;
+        default:
+            break;
+    }
+}

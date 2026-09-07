@@ -78,5 +78,27 @@ void func_001_5A71(GBState *gb);
  */
 void label_001_5B3F(GBState *gb);
 
+
+/**
+ * Animate and render corner magnifying box/icon for special map locations (01:5C55).
+ */
+void func_001_5C55(GBState *gb);
+
+/**
+ * Preserve wEntitiesPhysicsFlagsTable across func_001_5C55 (01:5C49).
+ */
+void func_001_5C49(GBState *gb);
+
+/**
+ * World map interactive handler for cursor movement, location dialogs, and exit (01:571C).
+ */
+void WorldMapInteractiveHandler(GBState *gb);
+
+/**
+ * World map master entry point dispatching states 0-6 (01:5626).
+ */
+void WorldMapEntryPoint(GBState *gb);
+
 #endif /* LADX_BANK1_WORLD_MAP_H */
+
 

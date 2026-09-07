@@ -1139,6 +1139,77 @@ void test_func_001_5A71(void) {
     assert(gb_read(&gb, wC182) == 0x15); /* loops back to 0x15 */
 }
 
+
+void test_func_001_5C49_and_5C55(void) {
+    printf("[*] Running func_001_5C49 and func_001_5C55 tests (01:5C49, 01:5C55)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Test 1: Preservation of wEntitiesPhysicsFlagsTable */
+    gb_write(&gb, wEntitiesPhysicsFlagsTable, 0x42);
+    gb_write(&gb, wC1B1, 2); /* Dungeon icon */
+    gb_write(&gb, wC1B2, 0);
+    gb_write(&gb, wC1B3, 0);
+    gb_write(&gb, wC1B4, 0x12); /* Room (1, 2) -> Top-right corner (X=0x78, Y=0x28) */
+
+    func_001_5C49(&gb);
+    assert(gb_read(&gb, wEntitiesPhysicsFlagsTable) == 0x42);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x78);
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x28);
+
+    /* Check written OAM sprite tiles for dungeon icon (variant 1: tiles 0x24, 0x26) */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 2) == 0x24);
+    assert(gb_read(&gb, wDynamicOAMBuffer + 6) == 0x26);
+
+    /* Test 2: Room (8, 9) -> Bottom-left corner (X=0x28, Y=0x78) */
+    gb_init(&gb);
+    gb_write(&gb, wC1B1, 1); /* Owl icon */
+    gb_write(&gb, wC1B4, 0x89);
+    func_001_5C49(&gb);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x28);
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x78);
+}
+
+void test_world_map_interactive_and_entry_point(void) {
+    printf("[*] Running WorldMapInteractiveHandler and WorldMapEntryPoint tests (01:571C, 01:5626)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Test 1a: Interactive handler with A button on Bottle Grotto (room 0x24) -> opens dialog 0x57 */
+    gb_write(&gb, wDBB4, 0x24);
+    gb_write(&gb, hJoypadState, J_A);
+    WorldMapInteractiveHandler(&gb);
+    assert(gb_read(&gb, wDialogIndex) == 0x57);
+    assert(gb_read(&gb, wDialogState) == 0x81); /* room < 0x70 -> 0x81 */
+
+    /* Test 1b: Interactive handler with A button on Goponga Swamp (room 0x34) -> opens dialog 0x76 */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x34);
+    gb_write(&gb, hJoypadState, J_A);
+    WorldMapInteractiveHandler(&gb);
+    assert(gb_read(&gb, wDialogIndex) == 0x76);
+    assert(gb_read(&gb, wDialogState) == 0x81);
+
+    /* Test 2: Interactive handler with B button -> exits map (advances subtype) */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 5);
+    gb_write(&gb, hJoypadState, J_B);
+    WorldMapInteractiveHandler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+    assert(gb_read(&gb, wPaletteUnknownE) == 1);
+
+    /* Test 3: WorldMapEntryPoint when subtype != 5 clears inputs */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    gb_write(&gb, hJoypadState, J_B);
+    gb_write(&gb, hPressedButtonsMask, J_B);
+    WorldMapEntryPoint(&gb);
+    assert(gb_read(&gb, hJoypadState) == 0);
+    assert(gb_read(&gb, hPressedButtonsMask) == 0);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_WORLD_MAP);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1174,5 +1245,7 @@ void run_bank1_tests(void) {
     test_move_select_and_jingle();
     test_label_001_5B3F();
     test_func_001_5A71();
+    test_func_001_5C49_and_5C55();
+    test_world_map_interactive_and_entry_point();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

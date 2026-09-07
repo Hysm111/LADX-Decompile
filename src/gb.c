@@ -68,7 +68,7 @@ const uint8_t *gb_get_const_ptr(const GBState *gb, uint16_t addr) {
 
 uint8_t gb_read(const GBState *gb, uint16_t addr) {
     const uint8_t *ptr = gb_get_const_ptr(gb, addr);
-    return ptr ? *ptr : 0xFF;
+    return ptr ? *ptr : 0;
 }
 
 void gb_write(GBState *gb, uint16_t addr, uint8_t val) {

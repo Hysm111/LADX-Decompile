@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 37.33%
-* **Number of Verified Functions**: 448
-* **Number of Decompiled Functions**: 448
-* **Number Remaining**: ~752 functions
-* **Current Subsystem**: Bank 1 - World Map Cursor Navigation & OAM (`code/bank1.asm`, `01:5A71`-`01:5B3F`, `01:6BA8`-`01:6BAE`)
-* **Current Task**: Bank 1 World Map Cursor Movement & OAM Brackets completed (100% verified)
-* **Last Completed Task**: Decompiled and verified 4 Bank 1 world map cursor movement and selection routines (`playMoveSelectionJingle`, `MoveSelect`, `func_001_5A71`, `label_001_5B3F`) (`01:6BA8`-`01:6BAE`, `01:5A71`-`01:5B3F`)
-* **Next Task**: Decompile and verify Bank 1 World Map marker animation and interactive dispatch routines (`func_001_5C49`, `func_001_5C55`, `WorldMapInteractiveHandler`, `WorldMapEntryPoint`) (`code/world_map.asm`, `01:5626`, `01:571C`-`01:5821`, `01:5C49`+)
-* **Last Update Timestamp**: 2026-09-07T01:45:00+03:00
+* **Current Overall Progress**: 37.67%
+* **Number of Verified Functions**: 452
+* **Number of Decompiled Functions**: 452
+* **Number Remaining**: ~748 functions
+* **Current Subsystem**: Bank 1 - World Map Subsystem Completed (`code/world_map.asm`, `01:5626`-`01:5821`, `01:5C49`-`01:5D13`)
+* **Current Task**: Bank 1 World Map Subsystem 100% completed & verified
+* **Last Completed Task**: Decompiled and verified 4 Bank 1 world map marker animation and interactive dispatch routines (`func_001_5C49`, `func_001_5C55`, `WorldMapInteractiveHandler`, `WorldMapEntryPoint`) (`01:5C49`, `01:5C55`, `01:571C`, `01:5626`)
+* **Next Task**: Decompile and verify Bank 1 Save Slot Hearts rendering and Save/Load routines (`BuildSaveSlotHeartsDrawCommand`, `SaveGameSlot`, `LoadGameSlot`) (`code/bank1.asm`, `01:5D14`-`01:5E66`)
+* **Last Update Timestamp**: 2026-09-07T02:00:00+03:00
 
 ---
 
@@ -361,6 +361,10 @@
 | `MoveSelect` | VERIFIED | PASS | PASS | Checks up/down D-pad input and plays selection jingle (`01:6BA8`) |
 | `func_001_5A71` | VERIFIED | PASS | PASS | Handles world map cursor movement, auto-repeat timer, and fog-of-war constraints (`01:5A71`) |
 | `label_001_5B3F` | VERIFIED | PASS | PASS | Computes map grid screen coordinates and renders cursor brackets and flashing arrows to OAM (`01:5B3F`) |
+| `func_001_5C55` | VERIFIED | PASS | PASS | Animates and renders corner magnifying box and special icon to OAM (`01:5C55`) |
+| `func_001_5C49` | VERIFIED | PASS | PASS | Preserves wEntitiesPhysicsFlagsTable across func_001_5C55 (`01:5C49`) |
+| `WorldMapInteractiveHandler` | VERIFIED | PASS | PASS | Handles world map interactive mode, location dialogs, SELECT/B exit, and warps (`01:571C`) |
+| `WorldMapEntryPoint` | VERIFIED | PASS | PASS | Master entry point dispatching world map states 0-6 via jump table (`01:5626`) |
 
 ---
 
