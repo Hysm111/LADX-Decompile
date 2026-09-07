@@ -26,6 +26,36 @@ extern const uint8_t Data_001_7CE9[8];
 extern const uint8_t Data_001_7CF1[8];
 extern const uint8_t IntroBGVerticalOffsetTable[8];
 
+/* Bank 1 Intro Cutscene Part 2 tables */
+extern const uint8_t Data_001_7128[16];
+extern const uint8_t Data_001_7138[16];
+extern const uint8_t Data_001_7148[12];
+extern const uint8_t TitleTileMap1[19];
+extern const uint8_t TitleTileMap2[19];
+extern const uint8_t TitleTileMap3[19];
+extern const uint8_t TitleTileMap4[19];
+extern const uint8_t TitleTileMap5[19];
+extern const uint8_t TitleTileMap6[19];
+extern const uint8_t TitleTileMap7[19];
+extern const uint8_t *const TitleTileMap[7];
+extern const uint8_t TitleAttrMap1[19];
+extern const uint8_t TitleAttrMap2[19];
+extern const uint8_t TitleAttrMap3[19];
+extern const uint8_t TitleAttrMap4[19];
+extern const uint8_t TitleAttrMap5[19];
+extern const uint8_t TitleAttrMap6[19];
+extern const uint8_t TitleAttrMap7[19];
+extern const uint8_t *const TitleAttrMap[7];
+extern const uint8_t TitleScreenCopyrightDrawCommand[18];
+extern const uint8_t CopyrightAttrmap[18];
+extern const uint8_t Data_001_73C0[8];
+extern const uint8_t Data_001_73C8[8];
+extern const uint8_t DXTilesDMG[72];
+extern const uint8_t DXTilesGBC[72];
+extern const uint8_t Data_001_7898[4];
+extern const uint8_t Data_001_789C[4];
+extern const uint8_t DXFadeInPalette[128];
+
 /* Core Intro handlers */
 void IntroHandlerEntryPoint(GBState *gb);
 void RenderIntroFrame(GBState *gb);
@@ -46,6 +76,25 @@ void func_001_762B(GBState *gb, uint16_t bc);
 void func_001_7D01(GBState *gb);
 void func_001_7D46(GBState *gb);
 void func_001_7D4E(GBState *gb);
+
+/* Part 2 handlers */
+void IntroStage5Handler(GBState *gb);
+void IntroStage6Handler(GBState *gb);
+void IntroBeachHandler(GBState *gb);
+void func_001_71C7(GBState *gb);
+void IntroStage8Handler(GBState *gb);
+void func_001_7338(GBState *gb);
+void TitleScreenSfxHandler(GBState *gb);
+void IntroStageAHandler(GBState *gb);
+void func_001_73B1(GBState *gb);
+void TitleScreenHandler(GBState *gb);
+void IntroStageCHandler(GBState *gb);
+void IntroStageDHandler(GBState *gb);
+void func_001_79AE(GBState *gb, uint8_t a);
+void func_001_79C2(GBState *gb, uint8_t a);
+void func_001_7920(GBState *gb);
+void func_001_7D9C(GBState *gb);
+void func_001_7DCF(GBState *gb);
 
 #ifdef __cplusplus
 }

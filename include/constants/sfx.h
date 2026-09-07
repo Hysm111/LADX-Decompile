@@ -47,3 +47,4 @@
 #define WAVE_SFX_LIFT_UP                0x02
 #define NOISE_SFX_SEA_WAVES         0x0F
 #define JINGLE_SEAGULL              0x21
+#define NOISE_SFX_PING              0x19

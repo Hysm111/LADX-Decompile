@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 49.92%
-* **Number of Verified Functions**: 599
+* **Current Overall Progress**: 51.33%
+* **Number of Verified Functions**: 616
 * **Number of Decompiled Functions**: 471
-* **Number Remaining**: ~601 functions
-* **Current Subsystem**: Bank 1 - Intro Cutscene & Title Screen Subsystem Part 1 (`code/intro.asm`, 19 functions VERIFIED)
-* **Current Task**: Bank 1 Intro Cutscene Part 1 decompiled and verified; World Handler test suite mock ROM fixed
-* **Last Completed Task**: Decompiled and verified 19 Bank 1 Intro routines (`IntroHandlerEntryPoint`, `RenderIntroFrame`, `IntroSceneStage0Handler`, `IntroSceneStage1Handler`, `IntroSceneStage2Handler`, `IntroShipOnSeaHandler`, `RenderLightning`, `IntroLinkFaceHandler`, `LoadTileMapZero_trampoline`, `ResetIntroTimers`, `RenderRain`, `IntroLinkScream`, `RenderIntroEntities`, `RenderIntroEntity`, `RenderIntroShip`, `func_001_762B`, `func_001_7D01`, `func_001_7D46`, `func_001_7D4E`) (`01:6E19`-`01:7117`, `01:7466`-`01:764E`, `01:7D01`-`01:7D9B`) and resolved mock ROM requirement in World Handler tests
-* **Next Task**: Decompile and verify Bank 1 Intro Cutscene Part 2 (`IntroStage5Handler` through `TitleScreenHandler`, `01:7118`-`01:7465`)
-* **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
+* **Number Remaining**: ~584 functions
+* **Current Subsystem**: Bank 1 - Intro Cutscene & Title Screen Subsystem Part 2 (`code/intro.asm`, 36 functions VERIFIED)
+* **Current Task**: Bank 1 Intro Cutscene Part 2 decompiled and verified
+* **Last Completed Task**: Decompiled and verified 17 Bank 1 Intro & Title Screen routines (`IntroStage5Handler`, `IntroStage6Handler`, `IntroBeachHandler`, `func_001_71C7`, `IntroStage8Handler`, `func_001_7338`, `TitleScreenSfxHandler`, `IntroStageAHandler`, `func_001_73B1`, `TitleScreenHandler`, `IntroStageCHandler`, `IntroStageDHandler`, `func_001_79AE`, `func_001_79C2`, `func_001_7920`, `func_001_7D9C`, `func_001_7DCF`) (`01:7118`-`01:7465`, `01:7920`-`01:7A10`, `01:7D9C`-`01:7E00`)
+* **Next Task**: Decompile and verify Bank 1 Intro Cutscene Part 3 (Intro Entities: Marin, Inert Link, Sparkle, func_7C60, func_001_7CCB, 01:764F-01:7807, 01:7A11-01:7CE0) completing code/intro.asm
+* **Last Update Timestamp**: 2026-09-07T22:20:00+03:00
 
 ---
 
@@ -19,6 +19,23 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `IntroStage5Handler` | VERIFIED | PASS | PASS | Intro stage 5: sets beach BG map, palette flag, and advances subtype (`01:711A`) |
+| `IntroStage6Handler` | VERIFIED | PASS | PASS | Intro stage 6: sea waves sfx, fade timer, palette updates, beach entity setup (`01:7158`) |
+| `IntroBeachHandler` | VERIFIED | PASS | PASS | Intro stage 7: renders beach entities (`01:71C3`) |
+| `func_001_71C7` | VERIFIED | PASS | PASS | Intro periodic sea waves audio trigger (`01:71C7`) |
+| `IntroStage8Handler` | VERIFIED | PASS | PASS | Intro stage 8: streams title screen tilemap & attrmap slices into VRAM buffers (`01:7272`) |
+| `func_001_7338` | VERIFIED | PASS | PASS | Title screen attribute map slice transfer to wDrawCommandVRAM1 (`01:7338`) |
+| `TitleScreenSfxHandler` | VERIFIED | PASS | PASS | Intro stage 9: checks wC17E and plays NOISE_SFX_PING (`01:7355`) |
+| `IntroStageAHandler` | VERIFIED | PASS | PASS | Intro stage 10: loads copyright draw command and initializes title screen timers (`01:7376`) |
+| `func_001_73B1` | VERIFIED | PASS | PASS | Copies copyright attribute map command to wDrawCommandVRAM1 (`01:73B1`) |
+| `TitleScreenHandler` | VERIFIED | PASS | PASS | Intro stage 11: title screen animation, sparkle spawner, countdown to game loop (`01:73D0`) |
+| `IntroStageCHandler` | VERIFIED | PASS | PASS | Intro stage 12: executes fade transition and triggers save load (`01:743A`) |
+| `IntroStageDHandler` | VERIFIED | PASS | PASS | Intro stage 13: resets scroll and enters title screen after game over / cancel (`01:7448`) |
+| `func_001_79AE` | VERIFIED | PASS | PASS | Loads DMG title screen object palettes from Data_001_7898/Data_001_789C (`01:79AE`) |
+| `func_001_79C2` | VERIFIED | PASS | PASS | Copies DXFadeInPalette chunk to wObjPal6 and configures partial copy registers (`01:79C2`) |
+| `func_001_7920` | VERIFIED | PASS | PASS | Title screen DX logo fade-in and sprite renderer (`01:7920`) |
+| `func_001_7D9C` | VERIFIED | PASS | PASS | Beach scene horizontal parallax scroll offset calculator (`01:7D9C`) |
+| `func_001_7DCF` | VERIFIED | PASS | PASS | Beach scene slow horizontal parallax scroll offset calculator (`01:7DCF`) |
 | `IntroHandlerEntryPoint` | VERIFIED | PASS | PASS | Intro scene and title screen master dispatcher & input handler (`01:6E1D`) |
 | `RenderIntroFrame` | VERIFIED | PASS | PASS | Intro frame renderer & lightning palette effect coordinator (`01:6EB1`) |
 | `IntroSceneStage0Handler` | VERIFIED | PASS | PASS | Intro stage 0: initializes video registers, seed, and clear tilemap (`01:6EF8`) |
