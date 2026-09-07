@@ -36,6 +36,7 @@
 #define rRAMB            0x4000
 #define CART_SRAM_ENABLE 0x0A
 #define CART_SRAM_DISABLE 0x00
+#define ROM_DebugTool2   0x0004
 
 /* Hardware I/O registers */
 #define rP1              0xFF00

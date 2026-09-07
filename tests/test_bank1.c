@@ -419,6 +419,128 @@ void test_open_dungeon_name_dialog(void) {
     assert(gb_read(&gb, wDialogIndex) == 0x56 + 2);
 }
 
+
+void test_load_tileset_0f_and_attributes(void) {
+    printf("[*] Running LoadTileset0F & func_001_6D11 tests (01:6CE3, 01:6D11)...\n");
+    GBState gb;
+
+    /* 1. DMG mode: fills checkerboard in bank 0, does not touch bank 1 attributes */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 0);
+    LoadTileset0F(&gb);
+
+    /* Row 0: alternating AE, AF */
+    assert(gb_read(&gb, 0x9800) == 0xAE);
+    assert(gb_read(&gb, 0x9801) == 0xAF);
+    assert(gb_read(&gb, 0x9802) == 0xAE);
+    assert(gb_read(&gb, 0x9813) == 0xAF); /* col 19 */
+    assert(gb_read(&gb, 0x9814) == 0x00); /* col 20 not touched */
+    assert(gb_read(&gb, 0x981F) == 0x00); /* col 31 not touched */
+
+    /* Row 1: alternating AF, AE (inverted due to bit 5) */
+    assert(gb_read(&gb, 0x9820) == 0xAF);
+    assert(gb_read(&gb, 0x9821) == 0xAE);
+    assert(gb_read(&gb, 0x9833) == 0xAE); /* col 19 */
+    assert(gb_read(&gb, 0x9834) == 0x00); /* col 20 not touched */
+
+    /* 2. GBC mode with GAMEPLAY_WORLD */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wGameplayType, GAMEPLAY_WORLD);
+    LoadTileset0F(&gb);
+
+    assert(gb_read(&gb, rVBK) == 0); /* bank restored */
+    /* Check VRAM bank 1 attributes */
+    gb_write(&gb, rVBK, 1);
+    for (int i = 0; i < 0x400; i++) {
+        assert(gb_read(&gb, 0x9800 + i) == 0x05);
+    }
+    gb_write(&gb, rVBK, 0);
+
+    /* 3. GBC mode with other gameplay type */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wGameplayType, 0);
+    func_001_6D11(&gb);
+    gb_write(&gb, rVBK, 1);
+    for (int i = 0; i < 0x400; i++) {
+        assert(gb_read(&gb, 0x9800 + i) == 0x06);
+    }
+}
+
+void test_write_dma_code_to_hram(void) {
+    printf("[*] Running WriteDMACodeToHRAM tests (01:6D32)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    WriteDMACodeToHRAM(&gb);
+
+    static const uint8_t expected[10] = {
+        0x3E, 0xC0, 0xE0, 0x46, 0x3E, 0x28, 0x3D, 0x20, 0xFD, 0xC9
+    };
+    for (int i = 0; i < 10; i++) {
+        assert(gb_read(&gb, hDMARoutine + i) == expected[i]);
+    }
+}
+
+void test_update_minimap_entrance_arrow(void) {
+    printf("[*] Running UpdateMinimapEntranceArrowAndReturn tests (01:6DEA)...\n");
+    GBState gb;
+
+    /* 1. ROM_DebugTool2 enabled -> returns */
+    gb_init(&gb);
+    uint8_t dummy_rom[0x4000];
+    memset(dummy_rom, 0, sizeof(dummy_rom));
+    dummy_rom[ROM_DebugTool2] = 1;
+    gb_attach_rom(&gb, dummy_rom, sizeof(dummy_rom));
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE) == 0);
+
+    /* 2. Outdoors (wIsIndoor == 0) -> returns */
+    dummy_rom[ROM_DebugTool2] = 0;
+    gb_write(&gb, wIsIndoor, 0);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE) == 0);
+
+    /* 3. Non-dungeon map (hMapId >= 8) -> returns */
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, hMapId, 8);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE) == 0);
+
+    /* 4. Tail Cave (hMapId = 0) normal */
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hIsSideScrolling, 0);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE) == 0xA3);
+
+    /* 5. Tail Cave side-scrolling -> writes 0x7F */
+    gb_write(&gb, hIsSideScrolling, 1);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE) == 0x7F);
+
+    /* 6. Color Dungeon (hMapId = 0xFF) */
+    gb_write(&gb, hMapId, MAP_COLOR_DUNGEON);
+    gb_write(&gb, hIsSideScrolling, 0);
+    UpdateMinimapEntranceArrowAndReturn(&gb);
+    assert(gb_read(&gb, vBGMap1 + 0x20B + MINIMAP_ARROW_COLOR_DUNGEON) == 0xA3);
+}
+
+void test_increment_gameplay_subtype(void) {
+    printf("[*] Running IncrementGameplaySubtype tests (01:44D6)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wGameplaySubtype, 5);
+    IncrementGameplaySubtype(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+
+    IncrementGameplaySubtypeAndReturn(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 7);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -429,5 +551,9 @@ void run_bank1_tests(void) {
     test_func_001_6162();
     test_load_counter_animated_tiles();
     test_open_dungeon_name_dialog();
+    test_load_tileset_0f_and_attributes();
+    test_write_dma_code_to_hram();
+    test_update_minimap_entrance_arrow();
+    test_increment_gameplay_subtype();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

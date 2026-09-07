@@ -366,3 +366,4 @@
 #define wOBJ1Palette                            0xDB99
 #define hButtonsInactiveDelay                   0xFFB5
 #define wBGPalette                              0xDB97
+#define hDMARoutine                             0xFFC0

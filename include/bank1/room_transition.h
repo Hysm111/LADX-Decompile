@@ -99,6 +99,56 @@ void LoadCounterAnimatedTiles(GBState *gb);
  */
 void OpenDungeonNameDialog(GBState *gb);
 
+
+/**
+ * LoadTileset0F (01:6CE3)
+ * Fills the visible 20 columns of vBGMap0 ($9800) with a checkerboard tile pattern ($AE/$AF).
+ * If running on Game Boy Color (hIsGBC != 0), calls func_001_6D11 to initialize BG attributes.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void LoadTileset0F(GBState *gb);
+
+/**
+ * func_001_6D11 (01:6D11)
+ * Fills vBGMap0 attributes in VRAM Bank 1 with 0x05 (if GAMEPLAY_WORLD) or 0x06 (otherwise).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_001_6D11(GBState *gb);
+
+/**
+ * WriteDMACodeToHRAM (01:6D32)
+ * Copies the 10-byte OAM DMA routine machine code from ROM to HRAM at hDMARoutine ($FFC0).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void WriteDMACodeToHRAM(GBState *gb);
+
+/**
+ * UpdateMinimapEntranceArrowAndReturn (01:6DEA)
+ * Draws dungeon entrance indicator arrow tile ($A3) or hides it ($7F) on minimap vBGMap1.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void UpdateMinimapEntranceArrowAndReturn(GBState *gb);
+
+/**
+ * IncrementGameplaySubtype (01:44D6)
+ * Increments wGameplaySubtype by 1.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void IncrementGameplaySubtype(GBState *gb);
+
+/**
+ * IncrementGameplaySubtypeAndReturn (01:44D6)
+ * Alias to IncrementGameplaySubtype.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void IncrementGameplaySubtypeAndReturn(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

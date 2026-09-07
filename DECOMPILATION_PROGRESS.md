@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 34.58%
-* **Number of Verified Functions**: 415
-* **Number of Decompiled Functions**: 415
-* **Number Remaining**: ~785 functions
-* **Current Subsystem**: Bank 1 - Room Transition & World Initialization (`code/bank1.asm`, `01:5E67`-`01:6202`)
-* **Current Task**: Bank 1 Room Transition & World Initialization block completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 room transition, NPC following & initialization routines (`SynchronizeDungeonsItemFlags`, `CreateFollowingNpcEntity`, `func_001_6162`, `LoadCounterAnimatedTiles`, `OpenDungeonNameDialog`) (`01:5E67`-`01:6202`)
-* **Next Task**: Decompile and verify Bank 1 Marin Beach sequence handlers (`code/marin_beach.asm`)
+* **Current Overall Progress**: 35.00%
+* **Number of Verified Functions**: 420
+* **Number of Decompiled Functions**: 420
+* **Number Remaining**: ~780 functions
+* **Current Subsystem**: Bank 1 - World, DMA & Minimap Preparation (`code/bank1.asm`, `01:44D6`-`01:6E18`)
+* **Current Task**: Bank 1 World, DMA & Minimap Preparation block completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 1 routines (`LoadTileset0F`, `func_001_6D11`, `WriteDMACodeToHRAM`, `UpdateMinimapEntranceArrowAndReturn`, `IncrementGameplaySubtype`) (`01:44D6`-`01:6E18`)
+* **Next Task**: Decompile and verify Bank 1 Peach Picture / Eagle's Tower cutscene handlers (`code/bank1.asm`, `01:67F2`-`01:6950`)
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

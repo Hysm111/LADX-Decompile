@@ -359,3 +359,86 @@ void OpenDungeonNameDialog(GBState *gb) {
     uint8_t dialog_id = (uint8_t)(gb_read(gb, hMapId) + 0x56);
     OpenDialogInTable0(gb, dialog_id);
 }
+
+static const uint8_t DMARoutineBytes[10] = {
+    0x3E, 0xC0, 0xE0, 0x46, 0x3E, 0x28, 0x3D, 0x20, 0xFD, 0xC9
+};
+
+static const uint16_t MinimapEntrancePosition[16] = {
+    vBGMap1 + 0x20B + MINIMAP_ARROW_TAIL_CAVE,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_BOTTLE_GROTTO,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_KEY_CAVERN,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_ANGLERS_TUNNEL,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_CATFISHS_MAW,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_FACE_SHRINE,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_EAGLES_TOWER,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_TURTLE_ROCK,
+    0, 0, 0, 0, 0, 0, 0,
+    vBGMap1 + 0x20B + MINIMAP_ARROW_COLOR_DUNGEON
+};
+
+void func_001_6D11(GBState *gb) {
+    if (!gb) return;
+    uint8_t d = (gb_read(gb, wGameplayType) == GAMEPLAY_WORLD) ? 0x05 : 0x06;
+    gb_write(gb, rVBK, 1);
+    for (uint16_t i = 0; i < 0x400; i++) {
+        gb_write(gb, (uint16_t)(vBGMap0 + i), d);
+    }
+    gb_write(gb, rVBK, 0);
+}
+
+void LoadTileset0F(GBState *gb) {
+    if (!gb) return;
+    for (uint16_t i = 0; i < 0x400; i++) {
+        uint16_t addr = (uint16_t)(vBGMap0 + i);
+        uint8_t l = (uint8_t)(addr & 0xFF);
+        uint8_t e = (l & 0x20) ? 1 : 0;
+        uint8_t d = 0xAE;
+        if ((l & 0x01) ^ e) {
+            d++;
+        }
+        if ((l & 0x1F) < 0x14) {
+            gb_write(gb, addr, d);
+        }
+    }
+    if (gb_read(gb, hIsGBC) != 0) {
+        func_001_6D11(gb);
+    }
+}
+
+void WriteDMACodeToHRAM(GBState *gb) {
+    if (!gb) return;
+    for (uint8_t i = 0; i < 10; i++) {
+        gb_write(gb, (uint16_t)(hDMARoutine + i), DMARoutineBytes[i]);
+    }
+}
+
+void UpdateMinimapEntranceArrowAndReturn(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, ROM_DebugTool2) != 0) return;
+    if (gb_read(gb, wIsIndoor) == 0) return;
+
+    uint8_t map_id = gb_read(gb, hMapId);
+    if (map_id == MAP_COLOR_DUNGEON) {
+        map_id = 0x0F;
+    } else {
+        if (map_id >= 0x08) return;
+    }
+
+    uint16_t target_addr = MinimapEntrancePosition[map_id];
+    gb_write(gb, target_addr, 0xA3);
+
+    if (gb_read(gb, hIsSideScrolling) != 0) {
+        gb_write(gb, target_addr, 0x7F);
+    }
+}
+
+void IncrementGameplaySubtype(GBState *gb) {
+    if (!gb) return;
+    uint8_t val = gb_read(gb, wGameplaySubtype);
+    gb_write(gb, wGameplaySubtype, (uint8_t)(val + 1));
+}
+
+void IncrementGameplaySubtypeAndReturn(GBState *gb) {
+    IncrementGameplaySubtype(gb);
+}
