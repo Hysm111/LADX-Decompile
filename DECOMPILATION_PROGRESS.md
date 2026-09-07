@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 48.33%
-* **Number of Verified Functions**: 580
-* **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~620 functions
-* **Current Subsystem**: Bank 1 - Marin Beach Cinematic Subsystem (`code/marin_beach.asm`, 100% VERIFIED)
-* **Current Task**: Bank 1 Marin Beach Cinematic Subsystem 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 25 Bank 1 Marin Beach routines (`MarinBeachEntryPoint`, `MarinBeachPrepare0`..`Prepare3`, `MarinBeachScroll1`..`Scroll2`, `MarinBeachScrollStop`, `MarinBeachDialog1`..`Dialog4`, `MarinBeachPause1`..`Pause2`, `MarinBeachAreYouListening`, `OpenMarinBeachDialog`, `func_001_64FF`, `func_001_651E`, `func_001_658B`, `func_001_65AE`, `func_001_65DD`, `func_001_6673`, `func_001_66FD`, `func_001_67A8`, `func_001_67B5`) (`01:61F0`-`01:67ED`)
-* **Next Task**: Decompile and verify Intro cutscene sequence (`code/intro.asm`, `01:6D50`-`01:7FFF`)
+* **Current Overall Progress**: 49.92%
+* **Number of Verified Functions**: 599
+* **Number of Decompiled Functions**: 471
+* **Number Remaining**: ~601 functions
+* **Current Subsystem**: Bank 1 - Intro Cutscene & Title Screen Subsystem Part 1 (`code/intro.asm`, 19 functions VERIFIED)
+* **Current Task**: Bank 1 Intro Cutscene Part 1 decompiled and verified; World Handler test suite mock ROM fixed
+* **Last Completed Task**: Decompiled and verified 19 Bank 1 Intro routines (`IntroHandlerEntryPoint`, `RenderIntroFrame`, `IntroSceneStage0Handler`, `IntroSceneStage1Handler`, `IntroSceneStage2Handler`, `IntroShipOnSeaHandler`, `RenderLightning`, `IntroLinkFaceHandler`, `LoadTileMapZero_trampoline`, `ResetIntroTimers`, `RenderRain`, `IntroLinkScream`, `RenderIntroEntities`, `RenderIntroEntity`, `RenderIntroShip`, `func_001_762B`, `func_001_7D01`, `func_001_7D46`, `func_001_7D4E`) (`01:6E19`-`01:7117`, `01:7466`-`01:764E`, `01:7D01`-`01:7D9B`) and resolved mock ROM requirement in World Handler tests
+* **Next Task**: Decompile and verify Bank 1 Intro Cutscene Part 2 (`IntroStage5Handler` through `TitleScreenHandler`, `01:7118`-`01:7465`)
 * **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
 
 ---
@@ -19,6 +19,25 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `IntroHandlerEntryPoint` | VERIFIED | PASS | PASS | Intro scene and title screen master dispatcher & input handler (`01:6E1D`) |
+| `RenderIntroFrame` | VERIFIED | PASS | PASS | Intro frame renderer & lightning palette effect coordinator (`01:6EB1`) |
+| `IntroSceneStage0Handler` | VERIFIED | PASS | PASS | Intro stage 0: initializes video registers, seed, and clear tilemap (`01:6EF8`) |
+| `IntroSceneStage1Handler` | VERIFIED | PASS | PASS | Intro stage 1: requests intro tileset (`01:6F2A`) |
+| `IntroSceneStage2Handler` | VERIFIED | PASS | PASS | Intro stage 2: configures palettes, interrupts, and ship entity (`01:6F36`) |
+| `IntroShipOnSeaHandler` | VERIFIED | PASS | PASS | Intro stage 3: handles ship voyage across sea and triggers lightning (`01:6FA5`) |
+| `RenderLightning` | VERIFIED | PASS | PASS | Renders lightning bolt sprites in intro scene (`01:7087`) |
+| `IntroLinkFaceHandler` | VERIFIED | PASS | PASS | Intro stage 4: handles Link face closeup cutscene and screaming animation (`01:70B2`) |
+| `LoadTileMapZero_trampoline` | VERIFIED | PASS | PASS | Farcall trampoline to LoadTileMapZero in bank 0 (`01:7108`) |
+| `ResetIntroTimers` | VERIFIED | PASS | PASS | Resets intro timers and scratch counters (`01:739D`) |
+| `RenderRain` | VERIFIED | PASS | PASS | Computes and submits rain sprite entries to OAM buffer (`01:7466`) |
+| `IntroLinkScream` | VERIFIED | PASS | PASS | Submits draw command for Link open-mouthed screaming tile (`01:74C7`) |
+| `RenderIntroEntities` | VERIFIED | PASS | PASS | Iterates active intro entities in slots 0-3 and renders them (`01:74D6`) |
+| `RenderIntroEntity` | VERIFIED | PASS | PASS | Dispatches rendering for individual intro entity types (`01:7510`) |
+| `RenderIntroShip` | VERIFIED | PASS | PASS | Renders ship entity with vertical heave oscillation on waves (`01:7568`) |
+| `func_001_762B` | VERIFIED | PASS | PASS | Intro entity OAM builder copying tile definition array to OAM buffer (`01:762B`) |
+| `func_001_7D01` | VERIFIED | PASS | PASS | Parallax wave horizontal scroll offset section calculator (`01:7D01`) |
+| `func_001_7D46` | VERIFIED | PASS | PASS | Bank 1 trampoline to func_BB5 (`01:7D46`) |
+| `func_001_7D4E` | VERIFIED | PASS | PASS | Intro wave animated tile VRAM transfer scheduler (`01:7D4E`) |
 | `ClearBytes` | VERIFIED | PASS | PASS | Foundational byte-clearing routine (`00:29DF`) |
 | `ClearWRAMBytes` | VERIFIED | PASS | PASS | Clears BC bytes of WRAM starting from $C000 (`00:29DC`) |
 | `ClearHRAMBytesAndWRAM` | VERIFIED | PASS | PASS | Clears BC bytes in HRAM ($FF90) and all WRAM ($C000-$DEFF) (`00:29D3`) |

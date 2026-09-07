@@ -37,6 +37,7 @@ set(LADX_CORE_SOURCES
     src/bank1/face_shrine_mural.c
     src/bank1/siren_instruments.c
     src/bank1/marin_beach.c
+    src/bank1/intro.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})

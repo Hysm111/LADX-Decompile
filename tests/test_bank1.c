@@ -7,6 +7,11 @@
 #include "bank1/face_shrine_mural.h"
 #include "bank1/siren_instruments.h"
 #include "bank1/marin_beach.h"
+#include "bank1/intro.h"
+
+#ifndef ROM_OFFSET
+#define ROM_OFFSET(bank, addr) (((size_t)(bank) * 0x4000) + ((size_t)(addr) - 0x4000))
+#endif
 #include "constants/vfx.h"
 #include "bank1/world_map.h"
 #include "constants/joypad.h"
@@ -18,6 +23,7 @@
 #include "constants/dialog.h"
 #include "constants/entities.h"
 #include "constants/rooms.h"
+#include "constants/tilesets.h"
 #include "constants/maps.h"
 #include "constants/sfx.h"
 #include "constants/link.h"
@@ -2248,6 +2254,12 @@ void test_world_handler_subsystem(void) {
     printf("[*] Running World Handler subsystem tests (01:4371-01:454F, 01:5511-01:5625)...\n");
     GBState gb;
 
+    static uint8_t mock_world_rom[0x4000 * 0x25] = {0};
+    mock_world_rom[ROM_OFFSET(BANK_OverworldRoomsFirstHalf, OverworldRoomPointers)] = 0x50;
+    mock_world_rom[ROM_OFFSET(BANK_OverworldRoomsFirstHalf, OverworldRoomPointers + 1)] = 0x40;
+    mock_world_rom[ROM_OFFSET(BANK_OverworldRoomsFirstHalf, 0x4050)] = ROOM_END;
+    mock_world_rom[ROM_OFFSET(0x20, OverworldTilesetsTable_Addr)] = W_TILESET_KEEP;
+
     /* Test 1: GameplayWorldLoad0Handler overworld */
     gb_init(&gb);
     gb_write(&gb, wIsIndoor, 0);
@@ -2283,6 +2295,7 @@ void test_world_handler_subsystem(void) {
 
     /* Test 5: GameplayWorldLoadRoomHandler */
     gb_init(&gb);
+    gb_attach_rom(&gb, mock_world_rom, sizeof(mock_world_rom));
     gb_write(&gb, wMapEntrancePositionX, 0x30);
     gb_write(&gb, wMapEntrancePositionY, 0x40);
     gb_write(&gb, wMapEntrancePositionZ, 0x05);
@@ -2297,6 +2310,7 @@ void test_world_handler_subsystem(void) {
 
     /* Test 6: GameplayWorldSelectTilesetHandler */
     gb_init(&gb);
+    gb_attach_rom(&gb, mock_world_rom, sizeof(mock_world_rom));
     GameplayWorldSelectTilesetHandler(&gb);
     assert(gb_read(&gb, hWorldTileset) == 0x0F);
     assert(gb_read(&gb, wTilesetToLoad) == TILESET_ROOM_SPECIFIC);
@@ -2340,6 +2354,7 @@ void test_world_handler_subsystem(void) {
 
     /* Test 11: WorldHandlerEntryPoint dispatcher */
     gb_init(&gb);
+    gb_attach_rom(&gb, mock_world_rom, sizeof(mock_world_rom));
     gb_write(&gb, wGameplaySubtype, 2);
     WorldHandlerEntryPoint(&gb);
     assert(gb_read(&gb, wTilesetToLoad) == TILESET_ROOM_SPECIFIC);
@@ -2634,6 +2649,201 @@ void test_marin_beach_subsystem(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 3);
 }
 
+
+static void test_intro_subsystem(void) {
+    printf("[*] Running Intro cinematic & title subsystem tests (01:6E19-01:7117, 01:7466-01:764E, 01:7D01-01:7D9B)...\n");
+    GBState gb;
+
+    /* Test 1: IntroHandlerEntryPoint buttons inactive delay */
+    gb_init(&gb);
+    gb_write(&gb, hButtonsInactiveDelay, 5);
+    gb_write(&gb, wGameplaySubtype, 1);
+    IntroHandlerEntryPoint(&gb);
+    assert(gb_read(&gb, hButtonsInactiveDelay) == 4);
+    assert(gb_read(&gb, wGameplaySubtype) == 2); /* RenderIntroFrame stepped subtype */
+
+    /* Test 2: IntroHandlerEntryPoint Start button pressed on Title Screen */
+    gb_init(&gb);
+    gb_write(&gb, hButtonsInactiveDelay, 0);
+    gb_write(&gb, hJoypadState, J_START);
+    gb_write(&gb, wGameplaySubtype, GAMEPLAY_INTRO_TITLE);
+    IntroHandlerEntryPoint(&gb);
+    /* TransitionToFileMenu sets wGameplayType to GAMEPLAY_FILE_SELECT (1) */
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+
+    /* Test 3: IntroHandlerEntryPoint Start button pressed before Title Screen (DMG mode) */
+    gb_init(&gb);
+    gb_write(&gb, hButtonsInactiveDelay, 0);
+    gb_write(&gb, hJoypadState, J_START);
+    gb_write(&gb, wGameplaySubtype, 0);
+    gb_write(&gb, hIsGBC, 0);
+    IntroHandlerEntryPoint(&gb);
+    assert(gb_read(&gb, hButtonsInactiveDelay) == 40);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_TITLE);
+    assert(gb_read(&gb, wOBJ0Palette) == Data_001_789B);
+    assert(gb_read(&gb, wOBJ1Palette) == Data_001_789F);
+    assert(gb_read(&gb, wD013) == 4);
+    assert(gb_read(&gb, wGameplaySubtype) == 0x0D);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0) == 0);
+    assert(gb_read(&gb, wEntitiesStatusTable + 4) == 0);
+    assert(gb_read(&gb, rBGP) == 0);
+    assert(gb_read(&gb, wMusicTrackToPlay) == MUSIC_TITLE_SCREEN_NO_INTRO);
+    assert(gb_read(&gb, rIE) == IEF_VBLANK);
+    assert(gb_read(&gb, rLYC) == 0x4F);
+
+    /* Test 4: IntroHandlerEntryPoint Start button pressed (CGB mode) */
+    gb_init(&gb);
+    gb_write(&gb, hButtonsInactiveDelay, 0);
+    gb_write(&gb, hJoypadState, J_START);
+    gb_write(&gb, wGameplaySubtype, 0);
+    gb_write(&gb, hIsGBC, 1);
+    IntroHandlerEntryPoint(&gb);
+    assert(gb_read(&gb, wD013) == 8);
+    assert(gb_read(&gb, wPaletteUnknownE) == 0);
+
+    /* Test 5: RenderIntroFrame lightning palette modulation */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, GAMEPLAY_INTRO_SEA);
+    gb_write(&gb, wIntroLightningVisibleCountdown, 4);
+    RenderIntroFrame(&gb);
+    assert(gb_read(&gb, wIntroLightningVisibleCountdown) == 3);
+    /* (3 >> 1) & 3 = 1 -> IntroSeaPaletteTable[1] == 0xC2 */
+    assert(gb_read(&gb, wBGPalette) == IntroSeaPaletteTable[1]);
+
+    /* Test 6: IntroSceneStage0Handler */
+    gb_init(&gb);
+    gb_write(&gb, rLCDC, 0xFF);
+    gb_write(&gb, wGameplaySubtype, 0);
+    IntroSceneStage0Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_CLEAR_TILEMAP);
+    assert(gb_read(&gb, hFrameCounter) == 0);
+    assert(gb_read(&gb, wRandomSeed) == 0xA2);
+    assert((gb_read(&gb, rLCDC) & LCDCF_WINON) == 0);
+    assert(gb_read(&gb, wD016) == 0xB4);
+    assert(gb_read(&gb, wD017) == 0x00);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+
+    /* Test 7: IntroSceneStage1Handler */
+    gb_write(&gb, wPaletteUnknownE, 5);
+    IntroSceneStage1Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_INTRO);
+    assert(gb_read(&gb, wPaletteUnknownE) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+
+    /* Test 8: IntroSceneStage2Handler (CGB) */
+    gb_write(&gb, hIsGBC, 1);
+    IntroSceneStage2Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_INTRO_SEA_CGB);
+    assert(gb_read(&gb, wOBJ0Palette) == 0x1C);
+    assert(gb_read(&gb, wOBJ1Palette) == 0xE0);
+    assert(gb_read(&gb, rIE) == (IEF_STAT | IEF_VBLANK));
+    assert(gb_read(&gb, wEntitiesStatusTable + 2) == 0x05);
+    assert(gb_read(&gb, wEntitiesPosXTable + 2) == 0xC0);
+    assert(gb_read(&gb, wEntitiesPosYTable + 2) == 0x4E);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    /* Test 9: IntroShipOnSeaHandler ship reaching position 0x50 */
+    gb_init(&gb);
+    gb_write(&gb, wIntroSubTimer, 0);
+    gb_write(&gb, wEntitiesPosXTable + 2, 0x50);
+    IntroShipOnSeaHandler(&gb);
+    assert(gb_read(&gb, rBGP) == 0xFF);
+    assert(gb_read(&gb, wGameplaySubtype) == GAMEPLAY_INTRO_LINK_FACE);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_INTRO_LINK_FACE);
+    assert(gb_read(&gb, rIE) == IEF_VBLANK);
+    assert(gb_read(&gb, hBaseScrollX) == 0);
+
+    /* Test 10: IntroShipOnSeaHandler scrolling & lightning trigger */
+    gb_init(&gb);
+    gb_write(&gb, wIntroSubTimer, 0);
+    gb_write(&gb, wEntitiesPosXTable + 2, 0x90);
+    gb_write(&gb, hBaseScrollX, 0x0F);
+    gb_write(&gb, hFrameCounter, 0); /* (0 & 7) == 0 */
+    gb_write(&gb, wEntitiesStatusTable + 1, 0); /* slot 1 available for lightning */
+    IntroShipOnSeaHandler(&gb);
+    assert(gb_read(&gb, hBaseScrollX) == 0x10);
+    /* scroll_x == 0x10 -> c = 0 -> Data_001_7081[0] = 4, Data_001_707B[0] = 0x28 */
+    assert(gb_read(&gb, wEntitiesStatusTable + 1) == 4);
+    assert(gb_read(&gb, wEntitiesPosXTable + 1) == 0x28);
+    assert(gb_read(&gb, wEntitiesPosYTable + 1) == 0x30);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 1) == 0x20);
+    assert(gb_read(&gb, wIntroLightningVisibleCountdown) == 0x1C);
+
+    /* Test 11: IntroShipOnSeaHandler subtimer sequence to lightning */
+    gb_init(&gb);
+    gb_write(&gb, wIntroSubTimer, 0x18 + (8 << 3) - 1); /* subtimer increment reaches idx 8 */
+    IntroShipOnSeaHandler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == GAMEPLAY_INTRO_LIGHTNING);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_TITLE);
+    assert(gb_read(&gb, wIntroTimer) == 0xFF);
+    assert(gb_read(&gb, wScrollXOffsetForSection + 1) == 0x92);
+
+    /* Test 12: IntroLinkFaceHandler scream and wrap around */
+    gb_init(&gb);
+    gb_write(&gb, wIntroTimer, 127);
+    IntroLinkFaceHandler(&gb);
+    assert(gb_read(&gb, wIntroTimer) == 128);
+    assert(gb_read(&gb, wDrawCommand) == 0x99); /* scream command loaded */
+
+    gb_write(&gb, wIntroTimer, 199);
+    gb_write(&gb, hIsGBC, 0);
+    IntroLinkFaceHandler(&gb);
+    assert(gb_read(&gb, wIntroTimer) == 0x00);
+    assert(gb_read(&gb, wGameplaySubtype) == GAMEPLAY_INTRO_SEA);
+    assert(gb_read(&gb, wIntroSubTimer) == 1);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_INTRO_SEA_DMG);
+    assert(gb_read(&gb, rBGP) == 0xFF);
+
+    /* Test 13: LoadTileMapZero_trampoline */
+    gb_init(&gb);
+    LoadTileMapZero_trampoline(&gb);
+    assert(gb_read(&gb, wFarcallBank) == 0x00);
+    assert(gb_read(&gb, wFarcallAdressHigh) == 0x04);
+    assert(gb_read(&gb, wFarcallAdressLow) == 0x3A);
+
+    /* Test 14: ResetIntroTimers */
+    gb_init(&gb);
+    ResetIntroTimers(&gb);
+    assert(gb_read(&gb, wIntroTimer) == 0xA0);
+    assert(gb_read(&gb, wIntroSubTimer) == 0x00);
+    assert(gb_read(&gb, wD003) == 0xFF);
+
+    /* Test 15: RenderRain */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, GAMEPLAY_INTRO_SEA);
+    RenderRain(&gb);
+    /* Rain entries written starting at wDynamicOAMBuffer + 0x1C (0xC04C) */
+    assert(gb_read(&gb, wDynamicOAMBuffer + 0x1C) != 0);
+
+    /* Test 16: RenderIntroShip and heave */
+    gb_init(&gb);
+    gb_write(&gb, wIntroSubTimer, 0);
+    gb_write(&gb, hFrameCounter, 0);
+    gb_write(&gb, hActiveEntityVisualPosY, 0x40);
+    gb_write(&gb, hActiveEntityPosX, 0x60);
+    RenderIntroShip(&gb);
+    /* Heave added: index ((0 + 0xD0) >> 4) & 7 = 5 -> ShipHeaveTable[5] = 1 -> visual_y = 0x41 */
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x41);
+    assert(gb_read(&gb, wOAMBuffer + 0) == 0x41);
+    assert(gb_read(&gb, wOAMBuffer + 1) == 0x60);
+
+    /* Test 17: Parallax wave scrolling func_001_7D01 and wave tile transfer func_001_7D4E */
+    gb_init(&gb);
+    gb_write(&gb, hFrameCounter, 0);
+    gb_write(&gb, wD004, 0x20);
+    func_001_7D01(&gb);
+    assert(gb_read(&gb, wScrollXOffsetForSection + 0) == 1);
+    assert(gb_read(&gb, wScrollXOffsetForSection + 1) == 1);
+    assert(gb_read(&gb, wScrollXOffsetForSection + 2) == 1);
+    assert(gb_read(&gb, wScrollXOffsetForSection + 3) == 1);
+    assert(gb_read(&gb, wD004) == 0x48);
+
+    gb_write(&gb, hFrameCounter, 0x10);
+    gb_write(&gb, wD00F, 0);
+    func_001_7D4E(&gb);
+    assert(gb_read(&gb, wD009) == 0x89);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -2688,5 +2898,6 @@ void run_bank1_tests(void) {
     test_face_shrine_mural_subsystem();
     test_siren_instruments_subsystem();
     test_marin_beach_subsystem();
+    test_intro_subsystem();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

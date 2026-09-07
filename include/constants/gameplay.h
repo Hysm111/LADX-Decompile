@@ -37,6 +37,9 @@
 /* Values for wGameplaySubtype */
 #define GAMEPLAY_INTRO_SEA              0x03
 #define GAMEPLAY_INTRO_LINK_FACE        0x04
+#define GAMEPLAY_INTRO_LIGHTNING        0x05
+#define GAMEPLAY_INTRO_BEACH            0x07
+#define GAMEPLAY_INTRO_TITLE            0x0B
 #define GAMEPLAY_WORLD_LOAD_2           0x02
 #define GAMEPLAY_WORLD_INTERACTIVE      0x07
 
@@ -110,3 +113,9 @@
 #define ITEM_USAGE_READING_TEXT         0x02
 #define ROOM_INDOOR_B_MARIN_HOUSE       0xA3
 #define UNKNOWN_ROOM_FA                 0xFA
+
+/* Intro entity types */
+#define ENTITY_INTRO_SHIP               0x05
+#define ENTITY_INTRO_MARIN              0x06
+#define ENTITY_INTRO_INERT_LINK         0x07
+#define ENTITY_INTRO_SPARKLE            0x08

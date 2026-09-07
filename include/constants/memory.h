@@ -329,6 +329,16 @@
 #define wC13C                           0xC13C
 #define wCreditsScratch0                0xD000
 #define wIsFileSelectionArrowShifted    0xD000
+#define wIntroLightningVisibleCountdown       0xD000
+#define wScrollXOffsetForSection              0xC100
+#define wC17E                                 0xC17E
+#define wIntroBGYOffset                       0xC106
+#define wD003                                 0xD003
+#define wD004                                 0xD004
+#define wD00F                                 0xD00F
+#define wD013                                 0xD013
+#define wD016                                 0xD016
+#define wD017                                 0xD017
 #define wIntroTimer                     0xD001
 #define wIntroSubTimer                  0xD002
 #define wD006                           0xD006

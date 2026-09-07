@@ -105,6 +105,7 @@
 /* rIE flags */
 #define IEF_VBLANK       0x01
 #define IEF_LCDC         0x02
+#define IEF_STAT         0x02
 #define IEF_TIMER        0x04
 #define IEF_SERIAL       0x08
 #define IEF_HILO         0x10
