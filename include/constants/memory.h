@@ -400,3 +400,12 @@
 #define wWarp0Room                            0xD403
 #define wWarp0DestinationX                    0xD404
 #define wWarp0DestinationY                    0xD405
+#define hMultiPurpose4                        0xFFDB
+#define wHealth                               0xDB5A
+#define wMaxHearts                            0xDB5B
+#define wPhotos1                              0xDC0C
+#define wPhotos2                              0xDC0D
+#define wDrawCommandsSize                     0xD600
+#define wSaveSlotNames                        0xDB80
+#define wSaveSlot                             0xDBA6
+#define wSaveFilesCount                       0xDBA7

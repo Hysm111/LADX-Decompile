@@ -1,3 +1,4 @@
+#include "bank1/save.h"
 #include "bank1/world_map.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
@@ -1210,6 +1211,122 @@ void test_world_map_interactive_and_entry_point(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 3);
 }
 
+
+void test_build_save_slot_hearts_draw_command(void) {
+    printf("[*] Running BuildSaveSlotHeartsDrawCommand tests (01:5D53)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Test 1: Slot 0, 3 full hearts (health = 24), max hearts = 5 */
+    gb_write(&gb, wDrawCommandsSize, 0);
+    gb_write(&gb, hMultiPurpose4, 0); /* Slot 0 */
+    gb_write(&gb, hMultiPurpose2, 24); /* Health = 3 full hearts */
+    gb_write(&gb, hMultiPurpose3, 5);  /* Max health = 5 containers */
+
+    BuildSaveSlotHeartsDrawCommand(&gb);
+    assert(gb_read(&gb, wDrawCommandsSize) == 0x14);
+
+    /* Row 1 header */
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xCB);
+    assert(gb_read(&gb, wDrawCommand + 2) == 0x06);
+
+    /* Verify 5 hearts drawn with tile 0xAE */
+    for (int i = 0; i < 5; i++) {
+        assert(gb_read(&gb, wDrawCommand + 3 + i) == 0xAE);
+    }
+    /* Remaining 2 tiles in row 1 are empty (0x7E) */
+    assert(gb_read(&gb, wDrawCommand + 3 + 5) == 0x7E);
+    assert(gb_read(&gb, wDrawCommand + 3 + 6) == 0x7E);
+
+    /* Test 2: Slot 1, 10 hearts (spans row 1 and row 2) */
+    gb_init(&gb);
+    gb_write(&gb, wDrawCommandsSize, 0);
+    gb_write(&gb, hMultiPurpose4, 1); /* Slot 1 */
+    gb_write(&gb, hMultiPurpose2, 80); /* 10 hearts */
+    gb_write(&gb, hMultiPurpose3, 10);
+
+    BuildSaveSlotHeartsDrawCommand(&gb);
+    /* Row 1 destination */
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0x2B);
+    /* All 7 tiles in row 1 are hearts (0xAE) */
+    for (int i = 0; i < 7; i++) {
+        assert(gb_read(&gb, wDrawCommand + 3 + i) == 0xAE);
+    }
+    /* Row 2 destination header (offset 10..12) */
+    assert(gb_read(&gb, wDrawCommand + 10) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 11) == 0x4B);
+    assert(gb_read(&gb, wDrawCommand + 12) == 0x06);
+    /* 3 hearts in row 2 */
+    for (int i = 0; i < 3; i++) {
+        assert(gb_read(&gb, wDrawCommand + 13 + i) == 0xAE);
+    }
+    /* Remaining 4 tiles in row 2 are 0x7E */
+    for (int i = 3; i < 7; i++) {
+        assert(gb_read(&gb, wDrawCommand + 13 + i) == 0x7E);
+    }
+}
+
+void test_func_5DC0_and_save_game_to_file(void) {
+    printf("[*] Running func_5DC0 and SaveGameToFile tests (01:5DC0, 01:5DE6)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Test 1: func_5DC0 with no names */
+    func_5DC0(&gb);
+    assert(gb_read(&gb, wSaveFilesCount) == 0);
+
+    /* Slot 0 populated: 'L', 'I', 'N', 'K', 0 */
+    gb_write(&gb, wSaveSlotNames + 0, 'L');
+    func_5DC0(&gb);
+    assert(gb_read(&gb, wSaveFilesCount) == 1);
+
+    /* Slot 2 populated: slot 2 starts at index 10 */
+    gb_write(&gb, wSaveSlotNames + 10, 'Z');
+    func_5DC0(&gb);
+    assert(gb_read(&gb, wSaveFilesCount) == 5); /* 1 | 4 */
+
+    /* Slot 1 populated: slot 1 starts at index 5 */
+    gb_write(&gb, wSaveSlotNames + 5, 'M');
+    func_5DC0(&gb);
+    assert(gb_read(&gb, wSaveFilesCount) == 7); /* 1 | 2 | 4 */
+
+    /* Test 2: SaveGameToFile */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 0);
+    gb_write(&gb, wHealth, 0); /* 0 health should reset to starting health */
+    gb_write(&gb, wMaxHearts, 6); /* MaxHeartsToStartingHealthTable[6] == 40 */
+    gb_write(&gb, wOverworldRoomStatus + 0x10, 0x55);
+    gb_write(&gb, wColorDungeonItemFlags + 1, 0xAA);
+    gb_write(&gb, wColorDungeonRoomStatus + 2, 0x77);
+    gb_write(&gb, wTunicType, 2);
+    gb_write(&gb, wPhotos1, 0x11);
+    gb_write(&gb, wPhotos2, 0x22);
+
+    SaveGameToFile(&gb);
+    assert(gb_read(&gb, wHealth) == 40);
+
+    /* Verify SRAM destination 0xA105 (SaveGame1.main) */
+    assert(gb_read(&gb, 0xA105 + 0x10) == 0x55);
+    /* DX1 offset: 0xA105 + 0x380 = 0xA485 */
+    assert(gb_read(&gb, 0xA485 + 1) == 0xAA);
+    /* DX2 offset: 0xA485 + 5 = 0xA48A */
+    assert(gb_read(&gb, 0xA48A + 2) == 0x77);
+    /* DX3 offset: 0xA48A + 0x20 = 0xA4AA */
+    assert(gb_read(&gb, 0xA4AA + 0) == 2);    /* wTunicType */
+    assert(gb_read(&gb, 0xA4AA + 1) == 0x11); /* wPhotos1 */
+    assert(gb_read(&gb, 0xA4AA + 2) == 0x22); /* wPhotos2 */
+
+    /* Test 3: Save slot 1 (dest: 0xA4B2) */
+    gb_init(&gb);
+    gb_write(&gb, wSaveSlot, 1);
+    gb_write(&gb, wHealth, 20);
+    gb_write(&gb, wOverworldRoomStatus + 0x05, 0x99);
+    SaveGameToFile(&gb);
+    assert(gb_read(&gb, 0xA4B2 + 0x05) == 0x99);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1247,5 +1364,7 @@ void run_bank1_tests(void) {
     test_func_001_5A71();
     test_func_001_5C49_and_5C55();
     test_world_map_interactive_and_entry_point();
+    test_build_save_slot_hearts_draw_command();
+    test_func_5DC0_and_save_game_to_file();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 37.67%
-* **Number of Verified Functions**: 452
+* **Current Overall Progress**: 37.92%
+* **Number of Verified Functions**: 455
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~748 functions
-* **Current Subsystem**: Bank 1 - World Map Subsystem Completed (`code/world_map.asm`, `01:5626`-`01:5821`, `01:5C49`-`01:5D13`)
-* **Current Task**: Bank 1 World Map Subsystem 100% completed & verified
-* **Last Completed Task**: Decompiled and verified 4 Bank 1 world map marker animation and interactive dispatch routines (`func_001_5C49`, `func_001_5C55`, `WorldMapInteractiveHandler`, `WorldMapEntryPoint`) (`01:5C49`, `01:5C55`, `01:571C`, `01:5626`)
-* **Next Task**: Decompile and verify Bank 1 Save Slot Hearts rendering and Save/Load routines (`BuildSaveSlotHeartsDrawCommand`, `SaveGameSlot`, `LoadGameSlot`) (`code/bank1.asm`, `01:5D14`-`01:5E66`)
-* **Last Update Timestamp**: 2026-09-07T02:00:00+03:00
+* **Number Remaining**: ~745 functions
+* **Current Subsystem**: Bank 1 - Save Game & Save Slot Hearts (`code/bank1.asm`, `01:5D14`-`01:5E66`)
+* **Current Task**: Bank 1 Save Game & Save Slot Hearts routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified 3 Bank 1 save slot hearts and file save routines (`BuildSaveSlotHeartsDrawCommand`, `func_5DC0`, `SaveGameToFile`) (`01:5D53`, `01:5DC0`, `01:5DE6`)
+* **Next Task**: Decompile and verify Bank 1 Load Game & Save Slot Selection routines (`LoadSavedFile`, `LoadGameFromFile`) (`code/bank1.asm`, `01:52A4`-`01:5380`)
+* **Last Update Timestamp**: 2026-09-07T02:15:00+03:00
 
 ---
 
@@ -365,6 +365,9 @@
 | `func_001_5C49` | VERIFIED | PASS | PASS | Preserves wEntitiesPhysicsFlagsTable across func_001_5C55 (`01:5C49`) |
 | `WorldMapInteractiveHandler` | VERIFIED | PASS | PASS | Handles world map interactive mode, location dialogs, SELECT/B exit, and warps (`01:571C`) |
 | `WorldMapEntryPoint` | VERIFIED | PASS | PASS | Master entry point dispatching world map states 0-6 via jump table (`01:5626`) |
+| `BuildSaveSlotHeartsDrawCommand` | VERIFIED | PASS | PASS | Builds wDrawCommand for file select hearts display across 2 rows (`01:5D53`) |
+| `func_5DC0` | VERIFIED | PASS | PASS | Scans 15 characters of wSaveSlotNames to set wSaveFilesCount bitfield (`01:5DC0`) |
+| `SaveGameToFile` | VERIFIED | PASS | PASS | Saves game data (Main 0x380, DX1 0x05, DX2 0x20, DX3 0x03) to SRAM (`01:5DE6`) |
 
 ---
 
