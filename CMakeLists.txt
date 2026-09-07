@@ -38,6 +38,8 @@ set(LADX_CORE_SOURCES
     src/bank1/siren_instruments.c
     src/bank1/marin_beach.c
     src/bank1/intro.c
+    src/bank2/audio.c
+    src/bank2/bank2.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -63,6 +65,7 @@ add_executable(ladx_tests
     tests/test_check_items_to_use.c
     tests/test_animated_tiles.c
     tests/test_bank1.c
+    tests/test_bank2.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

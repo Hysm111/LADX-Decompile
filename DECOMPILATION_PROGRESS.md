@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 52.67%
-* **Number of Verified Functions**: 632
-* **Number of Decompiled Functions**: 471
-* **Number Remaining**: ~568 functions
-* **Current Subsystem**: Bank 1 - Complete (Bank 0 & Bank 1 are 100% VERIFIED! 52 functions in `code/intro.asm`)
-* **Current Task**: Bank 1 Intro Cutscene Part 3 decompiled and verified; Bank 1 100% COMPLETE
-* **Last Completed Task**: Decompiled and verified 16 Bank 1 Intro entity routines (`RenderIntroMarin`, `IntroMarinState0`..`4`, `RenderIntroSparkle`, `func_001_7A11`, `func_001_7A16`, `RenderIntroInertLink`, `InertLinkState0Handler`..`3`, `func_7C60`, `func_001_7CCB`) (`01:764F`-`01:7807`, `01:7A11`-`01:7CE0`), completing code/intro.asm and ROM Bank 1 to 100%
-* **Next Task**: Decompile and verify Bank 2 Audio Track Selector (`code/audio/select_music_track.asm`, 02:4000-02:41CF)
+* **Current Overall Progress**: 53.00%
+* **Number of Verified Functions**: 636
+* **Number of Decompiled Functions**: 475
+* **Number Remaining**: ~564 functions
+* **Current Subsystem**: ROM Bank 2 (Audio Track Selector & Item Helpers, 02:4000-02:4286)
+* **Current Task**: Bank 2 Audio Track Selector & Item Helpers decompiled and verified
+* **Last Completed Task**: Decompiled and verified Bank 2 Audio Track Selector & Item Helpers: SelectMusicTrackAfterTransition, SpawnChestWithItem, UseOcarina, FireHookshot, and lookup tables (`02:4000`-`02:4286`)
+* **Next Task**: Decompile and verify Bank 2 Link Motion Default & Movement Physics (`LinkMotionDefault`, `02:4287`+)
 * **Last Update Timestamp**: 2026-09-07T22:55:00+03:00
 
 ---
@@ -19,6 +19,10 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `SelectMusicTrackAfterTransition` | VERIFIED | PASS | PASS | Audio selector after screen transition, handles swordless, boss defeat, dungeons, 2D underground, power-up precedence (`02:4146`) |
+| `SpawnChestWithItem` | VERIFIED | PASS | PASS | Spawns chest entity with item at intersected object coordinates and sets variant from hMultiPurpose8 (`02:41D0`) |
+| `UseOcarina` | VERIFIED | PASS | PASS | Link ocarina action handler, verifies air/hookshot state, resets positions, selects ballad/mambo/frog/offkey SFX (`02:41FC`) |
+| `FireHookshot` | VERIFIED | PASS | PASS | Fires hookshot chain projectile, assigns lifetime countdown 0x2A and directional speed vector (`02:4254`) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

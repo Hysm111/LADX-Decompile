@@ -24,28 +24,28 @@
 
 #define EntityHandlersTable      0x4000
 
-#define ENTITY_ARROW                0x00
-#define ENTITY_BOOMERANG            0x01
-#define ENTITY_BOMB                 0x02
-#define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
-#define ENTITY_SWORD_BEAM           0xDF
-
-#define ENTITY_LIFTABLE_ROCK        0x05
-#define ENTITY_DROPPABLE_HEART      0x2D
-#define ENTITY_DROPPABLE_RUPEE      0x2E
-
+#define ENTITY_ARROW                 0x00
+#define ENTITY_BOOMERANG             0x01
+#define ENTITY_BOMB                  0x02
+#define ENTITY_HOOKSHOT_CHAIN        0x03
 #define ENTITY_MAGIC_ROD_FIREBALL    0x04
-#endif /* LADX_CONSTANTS_ENTITIES_H */
-
-#define ENTITY_WRECKING_BALL                    0xA8
-#define ENTITIES_END                            0xFF
+#define ENTITY_LIFTABLE_ROCK         0x05
+#define ENTITY_CHEST_WITH_ITEM       0x07
+#define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
+#define ENTITY_DROPPABLE_HEART       0x2D
+#define ENTITY_DROPPABLE_RUPEE       0x2E
+#define ENTITY_BOW_WOW               0x6D
+#define ENTITY_WRECKING_BALL         0xA8
+#define ENTITY_MARIN_AT_THE_SHORE    0xC1
+#define ENTITY_GHOST                 0xD4
+#define ENTITY_ROOSTER               0xD5
+#define ENTITY_SWORD_BEAM            0xDF
+#define ENTITIES_END                 0xFF
 
 #define BANK_OverworldEntitiesPointersTable     0x16
 #define OverworldEntitiesPointersTable          0x4000
 #define IndoorsAEntitiesPointersTable           0x4200
 #define IndoorsBEntitiesPointersTable           0x4400
 #define ColorDungeonEntitiesPointersTable       0x4600
-#define ENTITY_BOW_WOW                 0x6D
-#define ENTITY_MARIN_AT_THE_SHORE      0xC1
-#define ENTITY_GHOST                   0xD4
-#define ENTITY_ROOSTER                 0xD5
+
+#endif /* LADX_CONSTANTS_ENTITIES_H */

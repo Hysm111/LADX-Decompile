@@ -190,6 +190,8 @@
 #define hAnimatedTilesGroup          0xFFA4
 #define hMusicFadeOutTimer           0xFFA8
 #define hMusicFadeInTimer            0xFFAB
+#define hDefaultMusicTrack           0xFFB0
+#define hNextMusicTrackToFadeInto    0xFFB1
 #define hContinueMusicAfterWarp      0xFFBC
 #define hNextDefaultMusicTrack       0xFFBF
 #define hPressedButtonsMask          0xFFCB
@@ -251,7 +253,6 @@
 #define ROOM_INDOOR_B_MANBO            0xFD
 #define UNKNOWN_ROOM_12                0x12
 
-#endif /* LADX_CONSTANTS_MEMORY_H */
 
 #define wIsGelClingingToLink            0xC117
 #define wSwordAnimationState            0xC137
@@ -531,3 +532,12 @@
 #define wC570                                 0xC570
 #define wC590                                 0xC590
 #define wD200                                 0xD200
+#define wC166                                 0xC166
+#define wLinkPlayingOcarinaCountdown          0xC166
+#define wC1CF                                 0xC1CF
+#define wC5A4                                 0xC5A4
+#define wC5A5                                 0xC5A5
+#define wBossDefeated                         0xD46C
+#define wSelectedSongIndex                    0xDB4A
+
+#endif /* LADX_CONSTANTS_MEMORY_H */
