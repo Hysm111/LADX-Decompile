@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 35.42%
-* **Number of Verified Functions**: 425
-* **Number of Decompiled Functions**: 425
-* **Number Remaining**: ~775 functions
-* **Current Subsystem**: Bank 1 - Inventory Bar & Cutscene Dispatchers (`code/bank1.asm`, `01:5888`-`01:6873`)
-* **Current Task**: Bank 1 Inventory Bar & Cutscene Dispatchers block completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 routines (`func_001_5888`, `InitializeInventoryBar`, `func_001_58A8`, `PeachPictureState2Handler`, `PeachPictureState3Handler`) (`01:5888`-`01:6873`)
-* **Next Task**: Decompile and verify Bank 1 Peach Picture rendering & screen shake handlers (`code/bank1.asm`, `01:68AA`-`01:6AF7`)
+* **Current Overall Progress**: 35.83%
+* **Number of Verified Functions**: 430
+* **Number of Decompiled Functions**: 430
+* **Number Remaining**: ~770 functions
+* **Current Subsystem**: Bank 1 - Cutscenes & Screen Shake Handling (`code/bank1.asm`, `01:68AA`-`01:6A7C`)
+* **Current Task**: Bank 1 Cutscenes & Screen Shake Handling block completed
+* **Last Completed Task**: Decompiled and verified 5 Bank 1 cutscene and screen shake routines (`func_001_695B`, `func_6A7C`, `PeachPictureState4Handler`, `PeachPictureState5Handler`, `PeachPictureState7Handler`) (`01:68AA`-`01:6A7C`)
+* **Next Task**: Decompile and verify Bank 1 Eagle's Tower collapse finale & Peach Picture states 8-A (`code/bank1.asm`, `01:6908`-`01:6828`)
 * **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
 
 ---

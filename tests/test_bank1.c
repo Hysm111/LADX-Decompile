@@ -1,3 +1,5 @@
+#include "constants/joypad.h"
+#include "constants/sfx.h"
 #include "bank1/room_transition.h"
 #include "constants/gfx.h"
 #include "constants/hardware.h"
@@ -681,6 +683,120 @@ void test_peach_picture_state_3(void) {
     assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_PEACH);
 }
 
+
+void test_func_001_695B(void) {
+    printf("[*] Running func_001_695B tests (01:695B)...\n");
+    GBState gb;
+
+    /* 1. wD215 == 0 -> returns, shake is 0 */
+    gb_init(&gb);
+    gb_write(&gb, wScreenShakeVertical, 5);
+    gb_write(&gb, wD215, 0);
+    func_001_695B(&gb);
+    assert(gb_read(&gb, wScreenShakeVertical) == 0);
+    assert(gb_read(&gb, wD215) == 0);
+
+    /* 2. wD215 == 5 -> decrements to 4, (4 & 4) != 0 -> shake is 0x00 */
+    gb_write(&gb, wD215, 5);
+    func_001_695B(&gb);
+    assert(gb_read(&gb, wD215) == 4);
+    assert(gb_read(&gb, wScreenShakeVertical) == 0x00);
+
+    /* 3. wD215 == 4 -> decrements to 3, (3 & 4) == 0 -> shake is 0xFE */
+    func_001_695B(&gb);
+    assert(gb_read(&gb, wD215) == 3);
+    assert(gb_read(&gb, wScreenShakeVertical) == 0xFE);
+}
+
+void test_func_6A7C(void) {
+    printf("[*] Running func_6A7C tests (01:6A7C)...\n");
+    GBState gb;
+
+    /* 1. Not Eagles Tower -> early return */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, hActiveEntityPosX, 0x12);
+    func_6A7C(&gb);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x12);
+
+    /* 2. Eagles Tower */
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    gb_write(&gb, wD214, 0);
+    gb_write(&gb, wD211, 0x10);
+    gb_write(&gb, wD213, 0);
+    gb_write(&gb, wScreenShakeVertical, 0);
+    func_6A7C(&gb);
+    assert(gb_read(&gb, hActiveEntityPosX) == 0x48);
+    assert(gb_read(&gb, hActiveEntityVisualPosY) == 0x30);
+    assert(gb_read(&gb, wOAMNextAvailableSlot) == 0);
+}
+
+void test_peach_picture_state_4(void) {
+    printf("[*] Running PeachPictureState4Handler tests (01:68AA)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* When wTransitionSequenceCounter != 4 */
+    gb_write(&gb, wGameplaySubtype, 4);
+    gb_write(&gb, wTransitionSequenceCounter, 2);
+    PeachPictureState4Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* When wTransitionSequenceCounter == 4 */
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    PeachPictureState4Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+    assert(gb_read(&gb, wD210) == 0x80);
+}
+
+void test_peach_picture_state_5_and_68D9(void) {
+    printf("[*] Running PeachPictureState5Handler & func_001_68D9 tests (01:68C0, 01:68D9)...\n");
+    GBState gb;
+
+    /* 1. Eagles Tower -> immediately sets subtype 7 */
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    gb_write(&gb, wGameplaySubtype, 5);
+    PeachPictureState5Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 7);
+
+    /* 2. Other map, no button pressed -> does not advance */
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, wGameplaySubtype, 5);
+    gb_write(&gb, hJoypadState, 0);
+    PeachPictureState5Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+
+    /* 3. Button A pressed -> sets jingle and calls func_001_68D9 */
+    gb_write(&gb, hJoypadState, J_A);
+    PeachPictureState5Handler(&gb);
+    assert(gb_read(&gb, hJingle) == JINGLE_VALIDATE);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+    assert(gb_read(&gb, wTransitionSequenceCounter) == 0);
+    assert(gb_read(&gb, wC16C) == 0);
+}
+
+void test_peach_picture_state_7(void) {
+    printf("[*] Running PeachPictureState7Handler tests (01:68E4)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. wD210 > 1 -> decrements, updates shake */
+    gb_write(&gb, wGameplaySubtype, 7);
+    gb_write(&gb, wD210, 5);
+    PeachPictureState7Handler(&gb);
+    assert(gb_read(&gb, wD210) == 4);
+    assert(gb_read(&gb, wScreenShakeVertical) == 0xFE);
+    assert(gb_read(&gb, wGameplaySubtype) == 7);
+
+    /* 2. wD210 == 1 -> reaches 0, resets shake, sets wD210=0x20, advances to state 8 */
+    gb_write(&gb, wD210, 1);
+    PeachPictureState7Handler(&gb);
+    assert(gb_read(&gb, wScreenShakeVertical) == 0);
+    assert(gb_read(&gb, wD210) == 0x20);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -700,5 +816,10 @@ void run_bank1_tests(void) {
     test_func_001_58A8();
     test_peach_picture_state_2();
     test_peach_picture_state_3();
+    test_func_001_695B();
+    test_func_6A7C();
+    test_peach_picture_state_4();
+    test_peach_picture_state_5_and_68D9();
+    test_peach_picture_state_7();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

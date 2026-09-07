@@ -374,3 +374,10 @@
 #define wD210                                 0xD210
 #define wSubscreenScrollIncrement             0xC150
 #define wTilesetToLoad                        0xD6FE
+#define wScreenShakeHorizontal                0xC155
+#define wScreenShakeVertical                  0xC156
+#define wD211                                 0xD211
+#define wD212                                 0xD212
+#define wD213                                 0xD213
+#define wD214                                 0xD214
+#define wD215                                 0xD215

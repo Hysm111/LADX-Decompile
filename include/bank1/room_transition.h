@@ -190,6 +190,55 @@ void PeachPictureState2Handler(GBState *gb);
  */
 void PeachPictureState3Handler(GBState *gb);
 
+
+/**
+ * func_001_695B (01:695B)
+ * Vertical screen shake updater based on wD215 counter.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_001_695B(GBState *gb);
+
+/**
+ * func_6A7C (01:6A7C)
+ * Sprite renderer for Eagle's Tower collapse sequence.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_6A7C(GBState *gb);
+
+/**
+ * PeachPictureState4Handler (01:68AA)
+ * Fade-in handler for picture cutscenes.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState4Handler(GBState *gb);
+
+/**
+ * PeachPictureState5Handler (01:68C0)
+ * Wait for button press / Eagle's tower jump handler for picture cutscenes.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState5Handler(GBState *gb);
+
+/**
+ * func_001_68D9 (01:68D9)
+ * Advances gameplay subtype and clears transition sequence counters.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void func_001_68D9(GBState *gb);
+
+/**
+ * PeachPictureState7Handler (01:68E4)
+ * Eagle's Tower collapse rumble timer and screen shake updater.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState7Handler(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

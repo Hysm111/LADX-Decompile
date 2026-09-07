@@ -1,8 +1,12 @@
 #include "bank1/room_transition.h"
+#include "home/entities.h"
+#include "home/link.h"
 #include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/dialog.h"
+#include "constants/joypad.h"
+#include "constants/sfx.h"
 
 #define OAM_COUNT 40
 #define SIZEOF_OAM_ATTRS 4
@@ -523,4 +527,197 @@ void PeachPictureState3Handler(GBState *gb) {
     }
     gb_write(gb, wPaletteUnknownE, 0x01);
     IncrementGameplaySubtype(gb);
+}
+
+static const uint8_t Data_001_6976[6] = {
+    0x14, 0x14, 0x10, 0x10, 0x0C, 0x0C
+};
+
+static const uint8_t Data_001_697C[6] = {
+    0x17, 0x17, 0x13, 0x13, 0x0F, 0x0F
+};
+
+static const uint8_t Data_6982[] = {
+    0x00, 0x00, 0xCC, 0x10,
+    0x00, 0x08, 0xCE, 0x10,
+    0x00, 0x10, 0xDC, 0x10,
+    0x00, 0x18, 0xCC, 0x30,
+    0x10, 0x00, 0xDE, 0x10,
+    0x10, 0x08, 0xE0, 0x10,
+    0x10, 0x10, 0xE2, 0x10,
+    0x10, 0x18, 0xDE, 0x30,
+    0x20, 0x00, 0xE4, 0x10,
+    0x20, 0x08, 0xE6, 0x10,
+    0x20, 0x10, 0xE8, 0x10,
+    0x20, 0x18, 0xE4, 0x30,
+    0x30, 0x00, 0xDE, 0x10,
+    0x30, 0x08, 0xE0, 0x10,
+    0x30, 0x10, 0xE0, 0x30,
+    0x30, 0x18, 0xDE, 0x30,
+    0x40, 0x00, 0xDE, 0x10,
+    0x40, 0x08, 0xE0, 0x10,
+    0x40, 0x10, 0xE0, 0x30,
+    0x40, 0x18, 0xDE, 0x30
+};
+
+static const uint8_t Data_69D2[] = {
+    0x00, 0x10, 0xDC, 0x16,
+    0x10, 0x10, 0xE2, 0x16,
+    0x20, 0x10, 0xE8, 0x16,
+    0x00, 0x00, 0xCC, 0x15,
+    0x00, 0x08, 0xCE, 0x15,
+    0x00, 0x10, 0xCE, 0x35,
+    0x00, 0x18, 0xCC, 0x35,
+    0x10, 0x00, 0xDE, 0x15,
+    0x10, 0x08, 0xE0, 0x15,
+    0x10, 0x10, 0xE0, 0x35,
+    0x10, 0x18, 0xDE, 0x35,
+    0x20, 0x00, 0xE4, 0x15,
+    0x20, 0x08, 0xE6, 0x15,
+    0x20, 0x10, 0xE6, 0x35,
+    0x20, 0x18, 0xE4, 0x35,
+    0x30, 0x00, 0xDE, 0x15,
+    0x30, 0x08, 0xE0, 0x15,
+    0x30, 0x10, 0xE0, 0x35,
+    0x30, 0x18, 0xDE, 0x35,
+    0x40, 0x00, 0xDE, 0x15,
+    0x40, 0x08, 0xE0, 0x15,
+    0x40, 0x10, 0xE0, 0x35,
+    0x40, 0x18, 0xDE, 0x35
+};
+
+static const uint8_t Data_6A2E[] = {
+    0x48, 0x08, 0xF0, 0x07,
+    0x48, 0x10, 0xF2, 0x07,
+    0x48, 0x18, 0xF4, 0x07,
+    0x48, 0x20, 0xF4, 0x27,
+    0x48, 0x28, 0xF2, 0x27,
+    0x48, 0x30, 0xF0, 0x27
+};
+
+static const uint8_t Data_6A46[] = {
+    0x48, 0x08, 0xF6, 0x07,
+    0x48, 0x10, 0xF8, 0x07,
+    0x48, 0x18, 0xFA, 0x07,
+    0x48, 0x20, 0xFA, 0x27,
+    0x48, 0x28, 0xF8, 0x27,
+    0x48, 0x30, 0xF6, 0x27
+};
+
+static const uint8_t Data_6A5E[] = {
+    0x48, 0x08, 0xFC, 0x07,
+    0x48, 0x10, 0xFE, 0x07,
+    0x48, 0x18, 0xEE, 0x07,
+    0x48, 0x20, 0xEE, 0x27,
+    0x48, 0x28, 0xFE, 0x27,
+    0x48, 0x30, 0xFC, 0x27
+};
+
+static const uint8_t *const Data_6A76[3] = {
+    Data_6A2E,
+    Data_6A46,
+    Data_6A5E
+};
+
+void func_001_695B(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wScreenShakeVertical, 0);
+    uint8_t d215 = gb_read(gb, wD215);
+    if (d215 == 0) return;
+    d215--;
+    gb_write(gb, wD215, d215);
+    uint8_t e = (d215 & 0x04) ? 0x00 : 0xFE;
+    gb_write(gb, wScreenShakeVertical, e);
+}
+
+void func_6A7C(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hMapId) != MAP_EAGLES_TOWER) return;
+
+    gb_write(gb, hActiveEntitySpriteVariant, 0);
+    gb_write(gb, hActiveEntityFlipAttribute, 0);
+    gb_write(gb, hActiveEntityTilesOffset, 0);
+    gb_write(gb, hActiveEntityPosX, 0x38);
+
+    uint8_t shake = gb_read(gb, wScreenShakeVertical);
+    gb_write(gb, hActiveEntityVisualPosY, (uint8_t)(0x20 - shake));
+
+    uint8_t d214 = gb_read(gb, wD214);
+    if (d214 != 0) {
+        d214--;
+        gb_write(gb, wD214, d214);
+
+        uint8_t d212 = gb_read(gb, wD212);
+        if ((gb_read(gb, hFrameCounter) & 0x07) == 0) {
+            d212++;
+            if (d212 >= 3) {
+                d212 = 0;
+            }
+        }
+        gb_write(gb, wD212, d212);
+
+        const uint8_t *list = Data_6A76[d212 % 3];
+        RenderActiveEntitySpritesRectUsingAllOAM(gb, list, 6, NULL);
+    }
+
+    gb_write(gb, hActiveEntityPosX, 0x48);
+    uint8_t d211 = gb_read(gb, wD211);
+    gb_write(gb, hActiveEntityVisualPosY, (uint8_t)(d211 + 0x20 - shake));
+
+    uint8_t d213 = gb_read(gb, wD213);
+    uint8_t is_gbc = (gb_read(gb, hIsGBC) != 0);
+    const uint8_t *counts = is_gbc ? Data_001_697C : Data_001_6976;
+    uint8_t c = (d213 < 6) ? counts[d213] : counts[0];
+
+    gb_write(gb, wOAMNextAvailableSlot, 0);
+    const uint8_t *rect = is_gbc ? Data_69D2 : Data_6982;
+    RenderActiveEntitySpritesRect(gb, rect, c, NULL);
+}
+
+void PeachPictureState4Handler(GBState *gb) {
+    if (!gb) return;
+    func_6A7C(gb);
+    func_1A39(gb, NULL, NULL);
+    if (gb_read(gb, wTransitionSequenceCounter) == 4) {
+        IncrementGameplaySubtype(gb);
+        gb_write(gb, wD210, 0x80);
+    }
+}
+
+void func_001_68D9(GBState *gb) {
+    if (!gb) return;
+    IncrementGameplaySubtype(gb);
+    gb_write(gb, wTransitionSequenceCounter, 0);
+    gb_write(gb, wC16C, 0);
+}
+
+void PeachPictureState5Handler(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hMapId) == MAP_EAGLES_TOWER) {
+        func_6A7C(gb);
+        gb_write(gb, wGameplaySubtype, 7);
+        return;
+    }
+
+    uint8_t joy = gb_read(gb, hJoypadState);
+    if ((joy & (J_A | J_B | J_START)) != 0) {
+        gb_write(gb, hJingle, JINGLE_VALIDATE);
+        func_001_68D9(gb);
+    }
+}
+
+void PeachPictureState7Handler(GBState *gb) {
+    if (!gb) return;
+    func_6A7C(gb);
+    uint8_t d210 = gb_read(gb, wD210);
+    d210--;
+    gb_write(gb, wD210, d210);
+    if (d210 == 0) {
+        gb_write(gb, wScreenShakeVertical, 0);
+        gb_write(gb, wD210, 0x20);
+        IncrementGameplaySubtype(gb);
+    } else {
+        uint8_t e = (d210 & 0x04) ? 0xFE : 0x00;
+        gb_write(gb, wScreenShakeVertical, e);
+    }
 }
