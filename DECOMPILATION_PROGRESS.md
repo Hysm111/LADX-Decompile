@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 41.75%
-* **Number of Verified Functions**: 501
+* **Current Overall Progress**: 43.00%
+* **Number of Verified Functions**: 516
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~699 functions
-* **Current Subsystem**: Bank 1 - File Deletion Subsystem Complete (`code/file_menus.asm`, `01:4CFB`-`01:4F8A`)
-* **Current Task**: Bank 1 File Deletion subsystem 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 8 Bank 1 File Deletion interactive handlers and Erase File routines (`CopyQuitOkTilemap`, `CopyReturnToMenuTilemap`, `func_001_4EE5`, `BlankSaveSlotNameDrawCommand`, `func_001_4F0C`, `FileDeletionState10Handler`, `FileDeletionState11Handler`, `FileDeletionEntryPoint`) (`01:4CFB`-`01:4F3A`)
-* **Next Task**: Decompile and verify Bank 1 File Copy subsystem (`FileCopyEntryPoint`, `FileCopyState0Handler`-`FileCopyState11Handler`) (`code/file_menus.asm`, `01:4F8D`-`01:5130`)
-* **Last Update Timestamp**: 2026-09-07T03:45:00+03:00
+* **Number Remaining**: ~684 functions
+* **Current Subsystem**: Bank 1 - File Menus Complete (`code/file_menus.asm`, 100% VERIFIED)
+* **Current Task**: Entire Bank 1 File Menus subsystem (`code/file_menus.asm`) 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 15 Bank 1 File Copy routines and complete subsystem (`FileCopyEntryPoint`, `FileCopyState2Handler`-`AHandler`, `func_001_5094`, `func_001_5175`, `func_001_51CE`, `label_001_514F`, `label_001_526F`, `func_001_512C`) (`01:4F8C`-`01:5292`)
+* **Next Task**: Decompile and verify Bank 1 remaining World Handler & Game Over routines (`code/game_over.asm`, `01:4000`-`01:44D5`)
+* **Last Update Timestamp**: 2026-09-07T04:00:00+03:00
 
 ---
 
@@ -414,6 +414,21 @@
 | `FileDeletionState10Handler` | VERIFIED | PASS | PASS | Interactive slot selection for file deletion (`01:4E06`) |
 | `FileDeletionState11Handler` | VERIFIED | PASS | PASS | Interactive confirmation and SRAM erase execution (`01:4E6B`) |
 | `FileDeletionEntryPoint` | VERIFIED | PASS | PASS | State machine dispatcher for GAMEPLAY_FILE_DELETE (`01:4CFB`) |
+| `FileCopyState2Handler` | VERIFIED | PASS | PASS | Initializes tileset and slot indices for file copy (`01:4FA6`) |
+| `FileCopyState3Handler` | VERIFIED | PASS | PASS | Configures file copy background tilemap (`01:4FBB`) |
+| `FileCopyState4Handler` | VERIFIED | PASS | PASS | Draws left-column save slot names for copy source (`01:4FC3`) |
+| `FileCopyState5Handler` | VERIFIED | PASS | PASS | Draws right-column save slot names for copy destination (`01:4FE1`) |
+| `RenderFairyFlappingAtOAM` | VERIFIED | PASS | PASS | Renders flapping fairy cursor sprite at specified OAM position (`01:5067`) |
+| `func_001_5094` | VERIFIED | PASS | PASS | Renders fixed arrow pointing to selected source save file (`01:5094`) |
+| `FileCopyState8Handler` | VERIFIED | PASS | PASS | Interactive selection loop for source save file (`01:4FFF`) |
+| `func_001_5175` | VERIFIED | PASS | PASS | Renders fairy pointer sprite at destination slot (`01:5175`) |
+| `func_001_51CE` | VERIFIED | PASS | PASS | Renders fixed arrow pointing to destination save file (`01:51CE`) |
+| `label_001_514F` | VERIFIED | PASS | PASS | Restores source save slot name on left column (`01:514F`) |
+| `label_001_526F` | VERIFIED | PASS | PASS | Restores destination save slot name on right column (`01:526F`) |
+| `func_001_512C` | VERIFIED | PASS | PASS | Blinks source save slot name using Data_001_50AF (`01:512C`) |
+| `FileCopyState9Handler` | VERIFIED | PASS | PASS | Interactive selection loop for destination save file (`01:50DF`) |
+| `FileCopyStateAHandler` | VERIFIED | PASS | PASS | Confirmation of file copy and SRAM copy execution (`01:51E9`) |
+| `FileCopyEntryPoint` | VERIFIED | PASS | PASS | State machine dispatcher for GAMEPLAY_FILE_COPY (`01:4F8C`) |
 
 ---
 

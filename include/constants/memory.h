@@ -322,6 +322,8 @@
 #define wC135                           0xC135
 #define wC13C                           0xC13C
 #define wCreditsScratch0                0xD000
+#define wIntroTimer                     0xD001
+#define wIntroSubTimer                  0xD002
 #define wD006                           0xD006
 #define wD007                           0xD007
 #define wD008                           0xD008

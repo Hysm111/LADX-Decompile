@@ -1913,13 +1913,13 @@ void test_file_deletion_interactive_and_erase(void) {
     gb_write(&gb, wCreditsScratch0, 1); /* OK chosen */
     /* Fill SRAM slot 1 with non-zero dummy data */
     for (uint16_t i = 0; i < 0x03A8; i++) {
-        gb_write(&gb, 0xA405 + i, 0xEE);
+        gb_write(&gb, 0xA105 + i, 0xEE);
     }
     gb_write(&gb, hJoypadState, J_A);
     FileDeletionState11Handler(&gb);
     /* SRAM slot 1 must now be all 0x00 */
-    assert(gb_read(&gb, 0xA405) == 0);
-    assert(gb_read(&gb, 0xA405 + 0x03A7) == 0);
+    assert(gb_read(&gb, 0xA105) == 0);
+    assert(gb_read(&gb, 0xA105 + 0x03A7) == 0);
     /* Returned to file select screen */
     assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
 
@@ -1927,6 +1927,115 @@ void test_file_deletion_interactive_and_erase(void) {
     gb_init(&gb);
     gb_write(&gb, wGameplaySubtype, 2);
     FileDeletionEntryPoint(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
+
+void test_file_copy_subsystem(void) {
+    printf("[*] Running FileCopy complete subsystem tests (01:4F8C-01:5292)...\n");
+    GBState gb;
+
+    /* Test 1: FileCopyState2Handler through State5Handler */
+    gb_init(&gb);
+    FileCopyState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_FILL_TILEMAP);
+    assert(gb_read(&gb, wIntroTimer) == 0);
+    assert(gb_read(&gb, wIntroSubTimer) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+
+    FileCopyState3Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_MENU_FILE_COPY);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+
+    FileCopyState4Handler(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xC4);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    gb_write(&gb, wDrawCommandsSize, 0);
+    FileCopyState5Handler(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xCD);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    /* Test 2: Arrow positioning */
+    gb_init(&gb);
+    gb_write(&gb, wIntroTimer, 1);
+    func_001_5094(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 0) == (uint8_t)(Data_001_48E4[1] + 5));
+    assert(gb_read(&gb, wOAMBuffer + 1) == 0x14);
+    assert(gb_read(&gb, wOAMBuffer + 2) == 0xBE);
+
+    gb_write(&gb, wIntroSubTimer, 2);
+    func_001_51CE(&gb);
+    assert(gb_read(&gb, wOAMBuffer + 8) == (uint8_t)(Data_001_48E4[2] + 5));
+    assert(gb_read(&gb, wOAMBuffer + 9) == 0x5C);
+    assert(gb_read(&gb, wOAMBuffer + 10) == 0xBE);
+
+    /* Test 3: FileCopyState8Handler empty vs non-empty slot */
+    gb_init(&gb);
+    gb_write(&gb, wIntroTimer, 0);
+    gb_write(&gb, wGameplaySubtype, 8);
+    /* Slot 1 empty (all zeroes) */
+    gb_write(&gb, hJoypadState, J_A);
+    FileCopyState8Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 8); /* does not advance */
+
+    /* Slot 1 with valid name */
+    gb_write(&gb, wSaveSlot1Name, 'L');
+    gb_write(&gb, hJoypadState, J_A);
+    FileCopyState8Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 9); /* advances to destination select */
+
+    /* Test 4: FileCopyState9Handler navigation and cancel */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 9);
+    gb_write(&gb, wIntroSubTimer, 0);
+    gb_write(&gb, hJoypadState, J_DOWN);
+    FileCopyState9Handler(&gb);
+    assert(gb_read(&gb, wIntroSubTimer) == 1);
+
+    /* B button cancels back to 8 */
+    gb_write(&gb, hJoypadState, J_B);
+    FileCopyState9Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+
+    /* A button advances to confirmation (10) */
+    gb_write(&gb, wGameplaySubtype, 9);
+    gb_write(&gb, wIntroSubTimer, 1);
+    gb_write(&gb, hJoypadState, J_A);
+    FileCopyState9Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 10);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x99); /* Quit/Ok tilemap copied */
+
+    /* Test 5: FileCopyStateAHandler B cancels back to 9 */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 10);
+    gb_write(&gb, hJoypadState, J_B);
+    FileCopyStateAHandler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 9);
+
+    /* Test 6: FileCopyStateAHandler executes copy in SRAM */
+    gb_init(&gb);
+    gb_write(&gb, wIntroTimer, 0);    /* src: slot 0 (0xA100) */
+    gb_write(&gb, wIntroSubTimer, 1); /* dst: slot 1 (0xA4AD) */
+    gb_write(&gb, wCreditsScratch0, 1); /* OK selected */
+    /* Write test pattern in slot 0 */
+    for (uint16_t i = 0; i < 0x03AD; i++) {
+        gb_write(&gb, 0xA100 + i, (uint8_t)(i & 0xFF));
+    }
+    gb_write(&gb, hJoypadState, J_A);
+    FileCopyStateAHandler(&gb);
+    /* Destination slot 1 must now contain identical pattern */
+    for (uint16_t i = 0; i < 0x03AD; i++) {
+        assert(gb_read(&gb, 0xA4AD + i) == (uint8_t)(i & 0xFF));
+    }
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_FILE_SELECT);
+
+    /* Test 7: FileCopyEntryPoint dispatcher */
+    gb_init(&gb);
+    gb_write(&gb, wGameplaySubtype, 2);
+    FileCopyEntryPoint(&gb);
     assert(gb_read(&gb, wGameplaySubtype) == 3);
 }
 
@@ -1977,5 +2086,6 @@ void run_bank1_tests(void) {
     test_file_creation_grid_and_entry();
     test_file_deletion_and_digits();
     test_file_deletion_interactive_and_erase();
+    test_file_copy_subsystem();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

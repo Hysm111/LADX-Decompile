@@ -285,5 +285,6 @@
 #define TILESET_FILL_TILEMAP                  0x08
 #define TILEMAP_MENU_FILE_CREATION            0x05
 #define TILEMAP_MENU_FILE_ERASE       0x06
+#define TILEMAP_MENU_FILE_COPY        0x0C
 
 #endif /* LADX_CONSTANTS_GFX_H */

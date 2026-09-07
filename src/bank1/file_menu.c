@@ -853,8 +853,7 @@ void FileDeletionState11Handler(GBState *gb) {
         uint8_t slot = gb_read(gb, wSaveSlot);
         if (slot >= 3) slot = 0;
 
-        static const uint16_t save_bases[3] = { 0xA405, 0xA7B2, 0xAB5F };
-        uint16_t base = save_bases[slot];
+        uint16_t base = SaveGameTable[slot];
         EnableSRAM(gb);
         for (uint16_t i = 0; i < 0x03A8; i++) {
             gb_write(gb, (uint16_t)(base + i), 0x00);
@@ -892,6 +891,325 @@ void FileDeletionEntryPoint(GBState *gb) {
         case 9:  FileDeletionState9Handler(gb); break;
         case 10: FileDeletionState10Handler(gb); break;
         case 11: FileDeletionState11Handler(gb); break;
+        default: break;
+    }
+}
+
+const uint16_t Data_001_49FE[3] = {
+    0xA100, 0xA4AD, 0xA85A
+};
+
+const uint8_t Data_001_50AF[24] = {
+    0x98, 0xA4, 0x44, 0x7E, 0x98, 0xC4, 0x44, 0x7E,
+    0x99, 0x04, 0x44, 0x7E, 0x99, 0x24, 0x44, 0x7E,
+    0x99, 0x64, 0x44, 0x7E, 0x99, 0x84, 0x44, 0x7E
+};
+
+const uint8_t Data_001_50C7[24] = {
+    0x98, 0xAD, 0x44, 0x7E, 0x98, 0xCD, 0x44, 0x7E,
+    0x99, 0x0D, 0x44, 0x7E, 0x99, 0x2D, 0x44, 0x7E,
+    0x99, 0x6D, 0x44, 0x7E, 0x99, 0x8D, 0x44, 0x7E
+};
+
+void FileCopyState2Handler(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wTilesetToLoad, TILESET_FILL_TILEMAP);
+    gb_write(gb, wSaveSlot, 0);
+    gb_write(gb, wCreditsScratch0, 0);
+    gb_write(gb, wIntroTimer, 0);
+    gb_write(gb, wIntroSubTimer, 0);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileCopyState3Handler(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wBGMapToLoad, TILEMAP_MENU_FILE_COPY);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileCopyState4Handler(GBState *gb) {
+    if (!gb) return;
+    DrawSaveSlotName(gb, 0x98C4, wSaveSlot1Name);
+    DrawSaveSlotName(gb, 0x9924, wSaveSlot2Name);
+    DrawSaveSlotName(gb, 0x9984, wSaveSlot3Name);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileCopyState5Handler(GBState *gb) {
+    if (!gb) return;
+    DrawSaveSlotName(gb, 0x98CD, wSaveSlot1Name);
+    DrawSaveSlotName(gb, 0x992D, wSaveSlot2Name);
+    DrawSaveSlotName(gb, 0x998D, wSaveSlot3Name);
+    IncrementGameplaySubtype(gb);
+}
+
+void RenderFairyFlappingAtOAM(GBState *gb, uint16_t oam_offset, uint8_t y, uint8_t x_left) {
+    if (!gb) return;
+
+    uint8_t frame = gb_read(gb, hFrameCounter);
+    if (frame & 0x08) {
+        gb_write(gb, oam_offset + 0, y);
+        gb_write(gb, oam_offset + 1, x_left);
+        gb_write(gb, oam_offset + 2, 0x00);
+        gb_write(gb, oam_offset + 3, 0x00);
+
+        gb_write(gb, oam_offset + 4, y);
+        gb_write(gb, oam_offset + 5, (uint8_t)(x_left + 8));
+        gb_write(gb, oam_offset + 6, 0x02);
+        gb_write(gb, oam_offset + 7, 0x00);
+    } else {
+        gb_write(gb, oam_offset + 0, y);
+        gb_write(gb, oam_offset + 1, x_left);
+        gb_write(gb, oam_offset + 2, 0x02);
+        gb_write(gb, oam_offset + 3, 0x20); /* X-flip */
+
+        gb_write(gb, oam_offset + 4, y);
+        gb_write(gb, oam_offset + 5, (uint8_t)(x_left + 8));
+        gb_write(gb, oam_offset + 6, 0x00);
+        gb_write(gb, oam_offset + 7, 0x20); /* X-flip */
+    }
+}
+
+void func_001_5094(GBState *gb) {
+    if (!gb) return;
+    uint8_t timer = gb_read(gb, wIntroTimer);
+    if (timer >= 4) timer = 0;
+    uint8_t y = (uint8_t)(Data_001_48E4[timer] + 5);
+
+    gb_write(gb, wOAMBuffer + 0, y);
+    gb_write(gb, wOAMBuffer + 1, 0x14);
+    gb_write(gb, wOAMBuffer + 2, 0xBE);
+    gb_write(gb, wOAMBuffer + 3, 0x00);
+}
+
+void func_001_5175(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+    if (subtimer >= 4) subtimer = 0;
+    uint8_t y = Data_001_48E4[subtimer];
+
+    if (subtimer == 3) {
+        RenderFairyFlappingAtOAM(gb, wOAMBuffer + 8, y, 0x10);
+    } else {
+        RenderFairyFlappingAtOAM(gb, wOAMBuffer + 8, y, 0x58);
+    }
+}
+
+void func_001_51CE(GBState *gb) {
+    if (!gb) return;
+    uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+    if (subtimer >= 4) subtimer = 0;
+    uint8_t y = (uint8_t)(Data_001_48E4[subtimer] + 5);
+
+    gb_write(gb, wOAMBuffer + 8, y);
+    gb_write(gb, wOAMBuffer + 9, 0x5C);
+    gb_write(gb, wOAMBuffer + 10, 0xBE);
+    gb_write(gb, wOAMBuffer + 11, 0x00);
+}
+
+void label_001_514F(GBState *gb) {
+    if (!gb) return;
+    uint8_t timer = gb_read(gb, wIntroTimer);
+    switch (timer) {
+        case 0:  DrawSaveSlotName(gb, 0x98C4, wSaveSlot1Name); break;
+        case 1:  DrawSaveSlotName(gb, 0x9924, wSaveSlot2Name); break;
+        case 2:  DrawSaveSlotName(gb, 0x9984, wSaveSlot3Name); break;
+        default: break;
+    }
+}
+
+void label_001_526F(GBState *gb) {
+    if (!gb) return;
+    uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+    switch (subtimer) {
+        case 0:  DrawSaveSlotName(gb, 0x98CD, wSaveSlot1Name); break;
+        case 1:  DrawSaveSlotName(gb, 0x992D, wSaveSlot2Name); break;
+        case 2:  DrawSaveSlotName(gb, 0x998D, wSaveSlot3Name); break;
+        default: break;
+    }
+}
+
+void func_001_512C(GBState *gb) {
+    if (!gb) return;
+
+    if (gb_read(gb, hFrameCounter) & 0x10) {
+        uint8_t timer = gb_read(gb, wIntroTimer);
+        if (timer >= 3) timer = 0;
+        const uint8_t *src = &Data_001_50AF[timer * 8];
+        for (uint8_t i = 0; i < 8; i++) {
+            gb_write(gb, (uint16_t)(wDrawCommand + i), src[i]);
+        }
+        gb_write(gb, wDrawCommand + 8, 0x00);
+    } else {
+        label_001_514F(gb);
+    }
+}
+
+void FileCopyState8Handler(GBState *gb) {
+    if (!gb) return;
+
+    MoveSelect(gb);
+
+    uint8_t joypad = gb_read(gb, hJoypadState);
+    if (joypad & J_DOWN) {
+        uint8_t timer = (gb_read(gb, wIntroTimer) + 1) & 0x03;
+        gb_write(gb, wIntroTimer, timer);
+    } else if (joypad & J_UP) {
+        uint8_t timer = (gb_read(gb, wIntroTimer) - 1) & 0x03;
+        gb_write(gb, wIntroTimer, timer);
+    }
+
+    if (joypad & (J_A | J_START)) {
+        uint8_t timer = gb_read(gb, wIntroTimer);
+        if (timer == 3) {
+            label_001_4555(gb);
+            return;
+        }
+
+        /* Check if selected source slot has a name */
+        uint16_t name_addr = (timer == 0) ? wSaveSlot1Name :
+                             (timer == 1) ? wSaveSlot2Name : wSaveSlot3Name;
+        uint8_t sum = 0;
+        for (uint8_t i = 0; i < 5; i++) {
+            sum += gb_read(gb, (uint16_t)(name_addr + i));
+        }
+
+        if (sum != 0) {
+            IncrementGameplaySubtype(gb);
+            PlayValidationJingle(gb);
+        }
+    }
+
+    /* Render fairy sprite flapping at source slot */
+    uint8_t timer = gb_read(gb, wIntroTimer);
+    if (timer >= 4) timer = 0;
+    RenderFairyFlappingAtOAM(gb, wOAMBuffer, Data_001_48E4[timer], 0x10);
+}
+
+void FileCopyState9Handler(GBState *gb) {
+    if (!gb) return;
+
+    MoveSelect(gb);
+
+    uint8_t joypad = gb_read(gb, hJoypadState);
+    if (joypad & J_DOWN) {
+        uint8_t subtimer = (gb_read(gb, wIntroSubTimer) + 1) & 0x03;
+        gb_write(gb, wIntroSubTimer, subtimer);
+    } else if (joypad & J_UP) {
+        uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+        if (subtimer == 0) {
+            subtimer = 3;
+        } else {
+            subtimer--;
+        }
+        gb_write(gb, wIntroSubTimer, subtimer);
+    }
+
+    func_001_5094(gb);
+
+    if (joypad & J_B) {
+        uint8_t subtype = gb_read(gb, wGameplaySubtype);
+        if (subtype > 0) subtype--;
+        gb_write(gb, wGameplaySubtype, subtype);
+        label_001_514F(gb);
+        return;
+    }
+
+    if (joypad & (J_A | J_START)) {
+        uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+        if (subtimer == 3) {
+            label_001_4555(gb);
+            return;
+        }
+
+        PlayValidationJingle(gb);
+        IncrementGameplaySubtype(gb);
+        CopyQuitOkTilemap(gb);
+        return;
+    }
+
+    func_001_5175(gb);
+    func_001_512C(gb);
+}
+
+void FileCopyStateAHandler(GBState *gb) {
+    if (!gb) return;
+
+    func_001_5094(gb);
+    func_001_51CE(gb);
+    func_001_4F0C(gb);
+
+    uint8_t joypad = gb_read(gb, hJoypadState);
+    if (joypad & (J_A | J_START)) {
+        if (gb_read(gb, wCreditsScratch0) == 0) {
+            label_001_4555(gb);
+            return;
+        }
+
+        /* OK selected: copy save data */
+        PlayValidationJingle(gb);
+
+        uint8_t src_slot = gb_read(gb, wIntroTimer);
+        uint8_t dst_slot = gb_read(gb, wIntroSubTimer);
+        if (src_slot >= 3) src_slot = 0;
+        if (dst_slot >= 3) dst_slot = 0;
+
+        uint16_t src_addr = Data_001_49FE[src_slot];
+        uint16_t dst_addr = Data_001_49FE[dst_slot];
+
+        EnableSRAM(gb);
+        for (uint16_t i = 0; i < 0x03AD; i++) {
+            uint8_t val = gb_read(gb, (uint16_t)(src_addr + i));
+            gb_write(gb, (uint16_t)(dst_addr + i), val);
+        }
+
+        label_001_4555(gb);
+        return;
+    }
+
+    if (joypad & J_B) {
+        uint8_t subtype = gb_read(gb, wGameplaySubtype);
+        if (subtype > 0) subtype--;
+        gb_write(gb, wGameplaySubtype, subtype);
+        gb_write(gb, wCreditsScratch0, 0);
+        CopyReturnToMenuTilemap(gb);
+        label_001_526F(gb);
+        return;
+    }
+
+    func_001_512C(gb);
+
+    if (gb_read(gb, hFrameCounter) & 0x10) {
+        uint8_t subtimer = gb_read(gb, wIntroSubTimer);
+        if (subtimer >= 3) subtimer = 0;
+        const uint8_t *src = &Data_001_50C7[subtimer * 8];
+        /* Note: written to wDrawCommand + 9 in disassembly */
+        for (uint8_t i = 0; i < 8; i++) {
+            gb_write(gb, (uint16_t)(wDrawCommand + 9 + i), src[i]);
+        }
+        gb_write(gb, wDrawCommand + 9 + 8, 0x00);
+    } else {
+        label_001_526F(gb);
+    }
+}
+
+void FileCopyEntryPoint(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t subtype = gb_read(gb, wGameplaySubtype);
+    switch (subtype) {
+        case 0:  FileDeletionState0Handler(gb); break;
+        case 1:  FileDeletionState1Handler(gb); break;
+        case 2:  FileCopyState2Handler(gb); break;
+        case 3:  FileCopyState3Handler(gb); break;
+        case 4:  FileCopyState4Handler(gb); break;
+        case 5:  FileCopyState5Handler(gb); break;
+        case 6:  FileDeletionState8Handler(gb); break;
+        case 7:  FileDeletionState9Handler(gb); break;
+        case 8:  FileCopyState8Handler(gb); break;
+        case 9:  FileCopyState9Handler(gb); break;
+        case 10: FileCopyStateAHandler(gb); break;
         default: break;
     }
 }

@@ -197,7 +197,76 @@ void FileDeletionState11Handler(GBState *gb);
  */
 void FileDeletionEntryPoint(GBState *gb);
 
+extern const uint16_t SaveGameTable[3];
+extern const uint16_t Data_001_49FE[3];
+extern const uint8_t Data_001_50AF[24];
+extern const uint8_t Data_001_50C7[24];
+
+/**
+ * File copy state handlers 2 through 5 (01:4FA6-01:4FFC).
+ */
+void FileCopyState2Handler(GBState *gb);
+void FileCopyState3Handler(GBState *gb);
+void FileCopyState4Handler(GBState *gb);
+void FileCopyState5Handler(GBState *gb);
+
+/**
+ * Renders fairy sprite flapping at specified OAM buffer offset (01:5067).
+ */
+void RenderFairyFlappingAtOAM(GBState *gb, uint16_t oam_offset, uint8_t y, uint8_t x_left);
+
+/**
+ * File copy state 8: interactive source save file selection (01:4FFF).
+ */
+void FileCopyState8Handler(GBState *gb);
+
+/**
+ * Renders fixed arrow sprite pointing to source slot at wOAMBuffer (01:5094).
+ */
+void func_001_5094(GBState *gb);
+
+/**
+ * Renders fairy pointer at destination slot wIntroSubTimer (01:5175).
+ */
+void func_001_5175(GBState *gb);
+
+/**
+ * Renders fixed arrow sprite pointing to destination slot at wOAMBuffer+8 (01:51CE).
+ */
+void func_001_51CE(GBState *gb);
+
+/**
+ * Redraws source save slot name on left column (01:514F).
+ */
+void label_001_514F(GBState *gb);
+
+/**
+ * Redraws destination save slot name on right column (01:526F).
+ */
+void label_001_526F(GBState *gb);
+
+/**
+ * Blinks source slot name using Data_001_50AF (01:512C).
+ */
+void func_001_512C(GBState *gb);
+
+/**
+ * File copy state 9: interactive destination save file selection (01:50DF).
+ */
+void FileCopyState9Handler(GBState *gb);
+
+/**
+ * File copy state 10 (A): confirmation of file copy and SRAM copy (01:51E9).
+ */
+void FileCopyStateAHandler(GBState *gb);
+
+/**
+ * Master entry point dispatcher for GAMEPLAY_FILE_COPY (01:4F8C).
+ */
+void FileCopyEntryPoint(GBState *gb);
+
 #endif /* LADX_BANK1_FILE_MENU_H */
+
 
 
 
