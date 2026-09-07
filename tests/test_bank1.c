@@ -1747,6 +1747,100 @@ void test_file_creation_grid_and_entry(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 2);
 }
 
+
+void test_file_deletion_and_digits(void) {
+    printf("[*] Running FileDeletion and BCD death counts tests (01:47FD-01:4839, 01:4D1A-01:4F8A)...\n");
+    GBState gb;
+
+    /* Test 1: CopyDigitsToFileScreenBG */
+    gb_init(&gb);
+    gb_write(&gb, wDrawCommandsSize, 0);
+    /* high_b = 0x45 (tens=4, units=5), low_c = 0x03 (hundreds=3) */
+    CopyDigitsToFileScreenBG(&gb, 0x98E7, 0x45, 0x03);
+    assert(gb_read(&gb, wDrawCommandsSize) == 6);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xE7);
+    assert(gb_read(&gb, wDrawCommand + 2) == 0x02);
+    assert(gb_read(&gb, wDrawCommand + 3) == Data_001_4F3B[3]);
+    assert(gb_read(&gb, wDrawCommand + 4) == Data_001_4F3B[4]);
+    assert(gb_read(&gb, wDrawCommand + 5) == Data_001_4F3B[5]);
+    assert(gb_read(&gb, wDrawCommand + 6) == 0x00);
+
+    /* Test 2: CopyDeathCountsToBG */
+    gb_init(&gb);
+    gb_write(&gb, wSaveFilesCount, 0x05); /* files 1 and 3 active */
+    gb_write(&gb, wFile1DeathCountHigh, 0x00);
+    gb_write(&gb, wFile1DeathCountLow, 0x00);
+    gb_write(&gb, wFile3DeathCountHigh, 0x12);
+    gb_write(&gb, wFile3DeathCountLow, 0x00);
+    CopyDeathCountsToBG(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+    assert(gb_read(&gb, wDrawCommandsSize) == 12); /* 2 files * 6 bytes */
+
+    /* Test 3: DrawSaveSlot names 1, 2, 3 */
+    gb_init(&gb);
+    DrawSaveSlot1Name(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x98);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xC5);
+    DrawSaveSlot2Name(&gb);
+    assert(gb_read(&gb, wDrawCommand + 16 + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 16 + 1) == 0x25);
+    DrawSaveSlot3Name(&gb);
+    assert(gb_read(&gb, wDrawCommand + 32 + 0) == 0x99);
+    assert(gb_read(&gb, wDrawCommand + 32 + 1) == 0x85);
+
+    /* Test 4: DrawSaveSlot max hearts */
+    gb_init(&gb);
+    gb_write(&gb, wSaveFilesCount, 0x07);
+    gb_write(&gb, wFile1Health, 24);
+    gb_write(&gb, wFile1MaxHearts, 3);
+    DrawSaveSlot1MaxHearts(&gb);
+    assert(gb_read(&gb, hMultiPurpose4) == 0);
+    assert(gb_read(&gb, hMultiPurpose2) == 24);
+    assert(gb_read(&gb, hMultiPurpose3) == 3);
+
+    /* Test 5: FileDeletion state handlers */
+    gb_init(&gb);
+    gb_write(&gb, hIsGBC, 1);
+    FileDeletionState0Handler(&gb);
+    assert(gb_read(&gb, wPaletteDataFlags) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 1);
+
+    FileDeletionState1Handler(&gb);
+    assert(gb_read(&gb, wPaletteDataFlags) == 2);
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+
+    FileDeletionState2Handler(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_FILL_TILEMAP);
+    assert(gb_read(&gb, wSaveSlot) == 0);
+    assert(gb_read(&gb, wCreditsScratch0) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+
+    FileDeletionState3Handler(&gb);
+    assert(gb_read(&gb, wBGMapToLoad) == TILEMAP_MENU_FILE_ERASE);
+    assert(gb_read(&gb, wGameplaySubtype) == 4);
+
+    FileDeletionState4Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 5);
+
+    FileDeletionState5Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 6);
+
+    FileDeletionState6Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 7);
+
+    FileDeletionState7Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+
+    FileDeletionState8Handler(&gb);
+    assert(gb_read(&gb, wPaletteDataFlags) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 9);
+
+    FileDeletionState9Handler(&gb);
+    assert(gb_read(&gb, wPaletteDataFlags) == 2);
+    assert(gb_read(&gb, wGameplaySubtype) == 10);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1792,5 +1886,6 @@ void run_bank1_tests(void) {
     test_file_creation_init_and_sram();
     test_transition_to_file_menu_reload();
     test_file_creation_grid_and_entry();
+    test_file_deletion_and_digits();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

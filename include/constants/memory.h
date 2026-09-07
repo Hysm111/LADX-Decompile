@@ -95,6 +95,7 @@
 #define wDrawCommandVRAM1       0xDC91
 #define wAnimatedScrollingTilesStorage 0xDCC0
 #define wDDD8                   0xDDD8
+#define wPaletteDataFlags       0xDDD1
 #define wPaletteUnknownE        0xDDD5
 #define wFarcallBank            0xDE01
 #define wFarcallAdressHigh      0xDE02

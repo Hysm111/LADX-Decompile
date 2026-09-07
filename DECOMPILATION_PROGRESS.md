@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 39.42%
-* **Number of Verified Functions**: 473
+* **Current Overall Progress**: 41.08%
+* **Number of Verified Functions**: 493
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~727 functions
-* **Current Subsystem**: Bank 1 - File Creation & Name Entry Grid (`code/file_menus.asm`, `01:4852`-`01:4CFA`)
-* **Current Task**: Entire Bank 1 File Creation subsystem decompiled and verified
-* **Last Completed Task**: Decompiled and verified 6 Bank 1 File Creation routines (`DrawSaveSlotName`, `func_001_4CDA`, `func_001_4C8A`, `func_001_4BF5`, `FileCreationInteractiveHandler`, `FileCreationEntryPoint`) (`01:4852`, `01:4A07`-`01:4CFA`)
-* **Next Task**: Decompile and verify Bank 1 File Deletion subsystem (`FileDeletionEntryPoint`, `FileDeletionState0Handler`-`FileDeletionState4Handler`) (`code/file_menus.asm`, `01:4CFB`-`01:4E40`)
-* **Last Update Timestamp**: 2026-09-07T03:15:00+03:00
+* **Number Remaining**: ~707 functions
+* **Current Subsystem**: Bank 1 - File Deletion & Heart/Death Display (`code/file_menus.asm`, `01:47FD`-`01:4F8A`)
+* **Current Task**: Bank 1 File Deletion and Heart/Name/Death display routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified 20 Bank 1 File Deletion and Heart/Name/Death display routines (`CopyDigitsToFileScreenBG`, `CopyDeathCountsToBG`, `DrawSaveSlot1Name`-`DrawSaveSlot3Name`, `DrawSaveSlot1MaxHearts`-`DrawSaveSlot3MaxHearts`, `FileSelectionPrepare2`-`3`, `FileDeletionState0Handler`-`9`) (`01:47FD`-`01:4F8A`)
+* **Next Task**: Decompile and verify Bank 1 File Deletion interactive handlers and Erase File confirmation (`FileDeletionState10Handler`, `FileDeletionState11Handler`, `FileDeletionEntryPoint`, `func_001_4EE5`, `func_001_4F0C`) (`code/file_menus.asm`, `01:4CFB`-`01:4F3A`)
+* **Last Update Timestamp**: 2026-09-07T03:30:00+03:00
 
 ---
 
@@ -386,6 +386,26 @@
 | `func_001_4BF5` | VERIFIED | PASS | PASS | Navigates 16x4 character grid with repeat timing and updates cursor sprite (`01:4BF5`) |
 | `FileCreationInteractiveHandler` | VERIFIED | PASS | PASS | Interactive file creation handler, checks ZELDA easter egg, saves new file (`01:4A9B`) |
 | `FileCreationEntryPoint` | VERIFIED | PASS | PASS | Entry point jump table for file creation states 0, 1, and 2 (`01:4A07`) |
+| `CopyDigitsToFileScreenBG` | VERIFIED | PASS | PASS | Formulates draw command for 3 BCD digits for save screen (`01:4F45`) |
+| `CopyDeathCountsToBG` | VERIFIED | PASS | PASS | Copies 3-digit death counters for all active save files to BG map (`01:480C`) |
+| `DrawSaveSlot1Name` | VERIFIED | PASS | PASS | Draws save slot 1 name at BG map $98C5 (`01:4D8B`) |
+| `DrawSaveSlot2Name` | VERIFIED | PASS | PASS | Draws save slot 2 name at BG map $9925 (`01:4D94`) |
+| `DrawSaveSlot3Name` | VERIFIED | PASS | PASS | Draws save slot 3 name at BG map $9985 (`01:4D9D`) |
+| `DrawSaveSlot1MaxHearts` | VERIFIED | PASS | PASS | Prepares hearts draw command for save slot 1 (`01:4DA6`) |
+| `DrawSaveSlot2MaxHearts` | VERIFIED | PASS | PASS | Prepares hearts draw command for save slot 2 (`01:4DBE`) |
+| `DrawSaveSlot3MaxHearts` | VERIFIED | PASS | PASS | Prepares hearts draw command for save slot 3 (`01:4DD6`) |
+| `FileSelectionPrepare2` | VERIFIED | PASS | PASS | Draws hearts for save slots 1 and 2 during file selection prep (`01:47FD`) |
+| `FileSelectionPrepare3` | VERIFIED | PASS | PASS | Draws hearts for save slot 3 during file selection prep (`01:4806`) |
+| `FileDeletionState0Handler` | VERIFIED | PASS | PASS | File deletion stage 0 GBC menu BG clear and palette flag (`01:4D1A`) |
+| `FileDeletionState1Handler` | VERIFIED | PASS | PASS | File deletion stage 1 GBC palette data flag set to 2 (`01:4D2C`) |
+| `FileDeletionState2Handler` | VERIFIED | PASS | PASS | File deletion stage 2 sets tileset and resets slot state (`01:4D56`) |
+| `FileDeletionState3Handler` | VERIFIED | PASS | PASS | File deletion stage 3 sets erase menu background map (`01:4D65`) |
+| `FileDeletionState4Handler` | VERIFIED | PASS | PASS | File deletion stage 4 draws names for all 3 save slots (`01:4D6D`) |
+| `FileDeletionState5Handler` | VERIFIED | PASS | PASS | File deletion stage 5 draws hearts for save slots 1 and 2 (`01:4D79`) |
+| `FileDeletionState6Handler` | VERIFIED | PASS | PASS | File deletion stage 6 draws hearts for save slot 3 (`01:4D82`) |
+| `FileDeletionState7Handler` | VERIFIED | PASS | PASS | File deletion stage 7 copies death counts to BG (`01:4D88`) |
+| `FileDeletionState8Handler` | VERIFIED | PASS | PASS | File deletion stage 8 reloads GBC menu background (`01:4D39`) |
+| `FileDeletionState9Handler` | VERIFIED | PASS | PASS | File deletion stage 9 sets GBC palette data flag to 2 (`01:4D49`) |
 
 ---
 

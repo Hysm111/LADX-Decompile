@@ -549,3 +549,176 @@ void FileCreationEntryPoint(GBState *gb) {
             break;
     }
 }
+
+const uint8_t Data_001_4F3B[10] = {
+    0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9
+};
+
+void CopyDigitsToFileScreenBG(GBState *gb, uint16_t dest_bg, uint8_t high_b, uint8_t low_c) {
+    if (!gb) return;
+
+    uint8_t cmd_size = gb_read(gb, wDrawCommandsSize);
+    uint16_t hl = (uint16_t)(wDrawCommand + cmd_size);
+    gb_write(gb, wDrawCommandsSize, (uint8_t)(cmd_size + 6));
+
+    gb_write(gb, hl++, (uint8_t)(dest_bg >> 8));
+    gb_write(gb, hl++, (uint8_t)(dest_bg & 0xFF));
+    gb_write(gb, hl++, 0x02); /* length 2 -> 3 bytes */
+
+    /* digit 0 (hundreds): low_c & 0x0F */
+    uint8_t d0 = low_c & 0x0F;
+    if (d0 > 9) d0 = 9;
+    gb_write(gb, hl++, Data_001_4F3B[d0]);
+
+    /* digit 1 (tens): (high_b >> 4) & 0x0F */
+    uint8_t d1 = (high_b >> 4) & 0x0F;
+    if (d1 > 9) d1 = 9;
+    gb_write(gb, hl++, Data_001_4F3B[d1]);
+
+    /* digit 2 (units): high_b & 0x0F */
+    uint8_t d2 = high_b & 0x0F;
+    if (d2 > 9) d2 = 9;
+    gb_write(gb, hl++, Data_001_4F3B[d2]);
+
+    gb_write(gb, hl, 0x00);
+}
+
+void CopyDeathCountsToBG(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t count = gb_read(gb, wSaveFilesCount);
+    if (count & 0x01) {
+        CopyDigitsToFileScreenBG(gb, 0x98E7, gb_read(gb, wFile1DeathCountHigh), gb_read(gb, wFile1DeathCountLow));
+    }
+    if (count & 0x02) {
+        CopyDigitsToFileScreenBG(gb, 0x9947, gb_read(gb, wFile2DeathCountHigh), gb_read(gb, wFile2DeathCountLow));
+    }
+    if (count & 0x04) {
+        CopyDigitsToFileScreenBG(gb, 0x99A7, gb_read(gb, wFile3DeathCountHigh), gb_read(gb, wFile3DeathCountLow));
+    }
+
+    IncrementGameplaySubtype(gb);
+}
+
+void DrawSaveSlot1Name(GBState *gb) {
+    DrawSaveSlotName(gb, 0x98C5, wSaveSlot1Name);
+}
+
+void DrawSaveSlot2Name(GBState *gb) {
+    DrawSaveSlotName(gb, 0x9925, wSaveSlot2Name);
+}
+
+void DrawSaveSlot3Name(GBState *gb) {
+    DrawSaveSlotName(gb, 0x9985, wSaveSlot3Name);
+}
+
+void DrawSaveSlot1MaxHearts(GBState *gb) {
+    if (!gb) return;
+    if (!(gb_read(gb, wSaveFilesCount) & 0x01)) return;
+
+    gb_write(gb, hMultiPurpose4, 0);
+    gb_write(gb, hMultiPurpose2, gb_read(gb, wFile1Health));
+    gb_write(gb, hMultiPurpose3, gb_read(gb, wFile1MaxHearts));
+    BuildSaveSlotHeartsDrawCommand(gb);
+}
+
+void DrawSaveSlot2MaxHearts(GBState *gb) {
+    if (!gb) return;
+    if (!(gb_read(gb, wSaveFilesCount) & 0x02)) return;
+
+    gb_write(gb, hMultiPurpose4, 1);
+    gb_write(gb, hMultiPurpose2, gb_read(gb, wFile2Health));
+    gb_write(gb, hMultiPurpose3, gb_read(gb, wFile2MaxHearts));
+    BuildSaveSlotHeartsDrawCommand(gb);
+}
+
+void DrawSaveSlot3MaxHearts(GBState *gb) {
+    if (!gb) return;
+    if (!(gb_read(gb, wSaveFilesCount) & 0x04)) return;
+
+    gb_write(gb, hMultiPurpose4, 2);
+    gb_write(gb, hMultiPurpose2, gb_read(gb, wFile3Health));
+    gb_write(gb, hMultiPurpose3, gb_read(gb, wFile3MaxHearts));
+    BuildSaveSlotHeartsDrawCommand(gb);
+}
+
+void FileSelectionPrepare2(GBState *gb) {
+    FileDeletionState5Handler(gb);
+}
+
+void FileSelectionPrepare3(GBState *gb) {
+    FileDeletionState6Handler(gb);
+}
+
+void FileDeletionState0Handler(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hIsGBC)) {
+        ClearFileMenuBG_trampoline(gb, 1, NULL);
+        gb_write(gb, wPaletteDataFlags, 1);
+    }
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState1Handler(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hIsGBC)) {
+        gb_write(gb, wPaletteDataFlags, 2);
+    }
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState8Handler(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hIsGBC)) {
+        LoadFileMenuBG_trampoline(gb, NULL);
+        gb_write(gb, wPaletteDataFlags, 1);
+    }
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState9Handler(GBState *gb) {
+    if (!gb) return;
+    if (gb_read(gb, hIsGBC)) {
+        gb_write(gb, wPaletteDataFlags, 2);
+    }
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState2Handler(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wTilesetToLoad, TILESET_FILL_TILEMAP);
+    gb_write(gb, wSaveSlot, 0);
+    gb_write(gb, wCreditsScratch0, 0);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState3Handler(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wBGMapToLoad, TILEMAP_MENU_FILE_ERASE);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState4Handler(GBState *gb) {
+    if (!gb) return;
+    DrawSaveSlot1Name(gb);
+    DrawSaveSlot2Name(gb);
+    DrawSaveSlot3Name(gb);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState5Handler(GBState *gb) {
+    if (!gb) return;
+    DrawSaveSlot1MaxHearts(gb);
+    DrawSaveSlot2MaxHearts(gb);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState6Handler(GBState *gb) {
+    if (!gb) return;
+    DrawSaveSlot3MaxHearts(gb);
+    IncrementGameplaySubtype(gb);
+}
+
+void FileDeletionState7Handler(GBState *gb) {
+    CopyDeathCountsToBG(gb);
+}

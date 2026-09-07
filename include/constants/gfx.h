@@ -280,9 +280,10 @@
 #define TILESET_WORLD_MAP_TILEMAP             0x0E
 #define TILEMAP_WORLD_MAP                     0x08
 
-#endif /* LADX_CONSTANTS_GFX_H */
 
 #define TILEMAP_INVENTORY 0x02
-
 #define TILESET_FILL_TILEMAP                  0x08
 #define TILEMAP_MENU_FILE_CREATION            0x05
+#define TILEMAP_MENU_FILE_ERASE       0x06
+
+#endif /* LADX_CONSTANTS_GFX_H */

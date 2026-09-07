@@ -107,6 +107,53 @@ void FileCreationInteractiveHandler(GBState *gb);
  */
 void FileCreationEntryPoint(GBState *gb);
 
+extern const uint8_t Data_001_4F3B[10];
+
+/**
+ * Appends a 3-digit number draw command (BCD) to wDrawCommand queue (01:4F45).
+ */
+void CopyDigitsToFileScreenBG(GBState *gb, uint16_t dest_bg, uint8_t high_b, uint8_t low_c);
+
+/**
+ * Copies death counters for active save files into BG map (01:480C).
+ */
+void CopyDeathCountsToBG(GBState *gb);
+
+/**
+ * Draw save slot names for slots 1, 2, 3 (01:4D8B, 01:4D94, 01:4D9D).
+ */
+void DrawSaveSlot1Name(GBState *gb);
+void DrawSaveSlot2Name(GBState *gb);
+void DrawSaveSlot3Name(GBState *gb);
+
+/**
+ * Draw max hearts for save slots 1, 2, 3 (01:4DA6, 01:4DBE, 01:4DD6).
+ */
+void DrawSaveSlot1MaxHearts(GBState *gb);
+void DrawSaveSlot2MaxHearts(GBState *gb);
+void DrawSaveSlot3MaxHearts(GBState *gb);
+
+/**
+ * File selection menu preparation stages 2 and 3 (01:47FD, 01:4806).
+ */
+void FileSelectionPrepare2(GBState *gb);
+void FileSelectionPrepare3(GBState *gb);
+
+/**
+ * File deletion state handlers 0 through 9 (01:4D1A-01:4D88).
+ */
+void FileDeletionState0Handler(GBState *gb);
+void FileDeletionState1Handler(GBState *gb);
+void FileDeletionState2Handler(GBState *gb);
+void FileDeletionState3Handler(GBState *gb);
+void FileDeletionState4Handler(GBState *gb);
+void FileDeletionState5Handler(GBState *gb);
+void FileDeletionState6Handler(GBState *gb);
+void FileDeletionState7Handler(GBState *gb);
+void FileDeletionState8Handler(GBState *gb);
+void FileDeletionState9Handler(GBState *gb);
+
 #endif /* LADX_BANK1_FILE_MENU_H */
+
 
 
