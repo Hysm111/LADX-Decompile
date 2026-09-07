@@ -56,6 +56,14 @@ extern const uint8_t Data_001_7898[4];
 extern const uint8_t Data_001_789C[4];
 extern const uint8_t DXFadeInPalette[128];
 
+/* Bank 1 Intro Cutscene Part 3 tables */
+extern const uint8_t IntroMarinSpriteVariants[16];
+extern const uint8_t IntroSparkleSpriteVariants[32];
+extern const uint8_t Data_001_79EC[24];
+extern const uint8_t Data_001_79FD[24];
+extern const uint8_t InertLinkSpriteVariants[8];
+extern const uint8_t TitleScreenPostBeachTilemap[380];
+
 /* Core Intro handlers */
 void IntroHandlerEntryPoint(GBState *gb);
 void RenderIntroFrame(GBState *gb);
@@ -95,6 +103,24 @@ void func_001_79C2(GBState *gb, uint8_t a);
 void func_001_7920(GBState *gb);
 void func_001_7D9C(GBState *gb);
 void func_001_7DCF(GBState *gb);
+
+/* Part 3 handlers (Intro Entities: Marin, Inert Link, Sparkle) */
+void RenderIntroMarin(GBState *gb);
+void IntroMarinState0(GBState *gb);
+void IntroMarinState1(GBState *gb);
+void IntroMarinState2(GBState *gb);
+void IntroMarinState3(GBState *gb);
+void IntroMarinState4(GBState *gb);
+void RenderIntroSparkle(GBState *gb);
+void func_001_7A11(GBState *gb);
+void func_001_7A16(GBState *gb);
+void RenderIntroInertLink(GBState *gb);
+void InertLinkState0Handler(GBState *gb);
+void InertLinkState1Handler(GBState *gb);
+void InertLinkState2Handler(GBState *gb);
+void InertLinkState3Handler(GBState *gb);
+void func_7C60(GBState *gb);
+void func_001_7CCB(GBState *gb);
 
 #ifdef __cplusplus
 }

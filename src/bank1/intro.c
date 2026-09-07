@@ -555,15 +555,15 @@ void RenderIntroEntity(GBState *gb, uint16_t bc) {
         return;
     }
     if (status == ENTITY_INTRO_MARIN) {
-        /* Forward reference, handled in subsequent batch */
+        RenderIntroMarin(gb);
         return;
     }
     if (status == ENTITY_INTRO_INERT_LINK) {
-        /* Forward reference, handled in subsequent batch */
+        RenderIntroInertLink(gb);
         return;
     }
     if (status == ENTITY_INTRO_SPARKLE) {
-        /* Forward reference, handled in subsequent batch */
+        RenderIntroSparkle(gb);
         return;
     }
 
@@ -1156,4 +1156,436 @@ void func_001_7DCF(GBState *gb) {
         gb_write(gb, (uint16_t)(wScrollXOffsetForSection + 3), (uint8_t)(gb_read(gb, (uint16_t)(wScrollXOffsetForSection + 3)) + 1));
     }
     func_001_7D46(gb);
+}
+
+/* Bank 1 Intro Cutscene Part 3 tables & routines */
+
+const uint8_t IntroMarinSpriteVariants[16] = {
+    0x00, 0x03, 0x02, 0x03,
+    0x04, 0x03, 0x06, 0x03,
+    0x08, 0x03, 0x0A, 0x03,
+    0x0C, 0x03, 0x0E, 0x03
+};
+
+const uint8_t IntroSparkleSpriteVariants[32] = {
+    0x38, 0x00, 0x38, 0x20,
+    0x3A, 0x00, 0x3A, 0x20,
+    0x3A, 0x00, 0x3A, 0x20,
+    0x3C, 0x00, 0x3E, 0x00,
+    0x3C, 0x00, 0x3E, 0x00,
+    0x3A, 0x00, 0x3A, 0x20,
+    0x3A, 0x00, 0x3A, 0x20,
+    0x38, 0x00, 0x38, 0x20
+};
+
+const uint8_t Data_001_79EC[24] = {
+    0x98, 0x00, 0x43, 0x7D, 0x98, 0x20, 0x43, 0x7D,
+    0x98, 0x40, 0x43, 0x7D, 0x98, 0x60, 0x43, 0x7D,
+    0x00, 0x98, 0x04, 0x03, 0x7D, 0x7D, 0x4C, 0x4D
+};
+
+const uint8_t Data_001_79FD[24] = {
+    0x98, 0x04, 0x03, 0x7D, 0x7D, 0x4C, 0x4D, 0x98,
+    0x24, 0x43, 0x7D, 0x98, 0x44, 0x43, 0x7D, 0x98,
+    0x64, 0x43, 0x7D, 0x00, 0x21, 0xFD, 0x79, 0x18
+};
+
+const uint8_t InertLinkSpriteVariants[8] = {
+    0x10, 0x00, 0x12, 0x00,
+    0x14, 0x00, 0x16, 0x00
+};
+
+const uint8_t TitleScreenPostBeachTilemap[380] = {
+    0x7C, 0x7C, 0x44, 0x45, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x7D, 0x4C, 0x4D, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x7C, 0x7C, 0x44, 0x45, 0x7D, 0x2D, 0x2E, 0x2D, 0x2E, 0x2D, 0x2E, 0x7D, 0x4C, 0x4D, 0x7C, 0x7C, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x7C, 0x7C, 0x7C, 0x77, 0x46, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x4B, 0x79, 0x7C, 0x7C, 0x7C, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x7C, 0x77, 0x75, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x75, 0x78, 0x7C, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x77, 0x7A, 0x7A, 0x74, 0x73, 0x74, 0x5C, 0x5D, 0x5E, 0x5F, 0x73, 0x74, 0x73, 0x7A, 0x7E, 0x78, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x73, 0x75, 0x78, 0x77, 0x78, 0x79, 0x58, 0x59, 0x5A, 0x5B, 0x79, 0x79, 0x77, 0x75, 0x7E, 0x74, 0x7C, 0x7C,
+    0x7C, 0x7C, 0x7C, 0x73, 0x74, 0x76, 0x73, 0x7A, 0x54, 0x55, 0x56, 0x57, 0x7A, 0x74, 0x76, 0x73, 0x74, 0x7C, 0x7C, 0x7C,
+    0x77, 0x78, 0x7C, 0x79, 0x7C, 0x7C, 0x7C, 0x7C, 0x50, 0x51, 0x52, 0x53, 0x7C, 0x7C, 0x7C, 0x7C, 0x7C, 0x7C, 0x77, 0x78,
+    0x7E, 0x7E, 0x75, 0x7E, 0x78, 0x77, 0x75, 0x78, 0x79, 0x2B, 0x2C, 0x79, 0x79, 0x77, 0x75, 0x78, 0x77, 0x75, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E,
+    0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E, 0x7E
+};
+
+static void jr_001_7A19(GBState *gb, const uint8_t *src) {
+    for (int i = 0; i < 0x18; i++) {
+        gb_write(gb, (uint16_t)(wDrawCommand + i), src[i]);
+    }
+}
+
+void func_001_7A11(GBState *gb) {
+    if (!gb) return;
+    jr_001_7A19(gb, Data_001_79FD);
+}
+
+void func_001_7A16(GBState *gb) {
+    if (!gb) return;
+    jr_001_7A19(gb, Data_001_79EC);
+}
+
+void RenderIntroMarin(GBState *gb) {
+    if (!gb) return;
+
+    func_001_71C7(gb);
+    gb_write(gb, wEntitiesPhysicsFlagsTable, 0);
+    RenderActiveEntitySpritesPair(gb, IntroMarinSpriteVariants, NULL);
+    gb_write(gb, wOAMNextAvailableSlot, (uint8_t)(gb_read(gb, wOAMNextAvailableSlot) + 8));
+
+    uint8_t state = gb_read_hram(gb, hActiveEntityState);
+    switch (state) {
+        case 0:
+            IntroMarinState0(gb);
+            break;
+        case 1:
+            IntroMarinState1(gb);
+            break;
+        case 2:
+            IntroMarinState2(gb);
+            break;
+        case 3:
+            IntroMarinState3(gb);
+            break;
+        case 4:
+            IntroMarinState4(gb);
+            break;
+        default:
+            break;
+    }
+}
+
+void IntroMarinState0(GBState *gb) {
+    if (!gb) return;
+
+    func_001_7D9C(gb);
+    uint8_t variant = (uint8_t)((gb_read_hram(gb, hFrameCounter) >> 3) & 0x01);
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    SetEntitySpriteVariant(gb, active_idx, variant);
+
+    if (gb_read_hram(gb, hActiveEntityPosX) < 0x48) {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x40);
+        IncrementEntityState(gb, active_idx);
+    }
+
+    /* Every 4 frames, decrease the entity pos X by 1 */
+    uint8_t inertia = gb_read(gb, (uint16_t)(wEntitiesInertiaTable + active_idx));
+    inertia--;
+    if (inertia == 0) {
+        inertia = 4;
+        uint8_t pos_x = gb_read(gb, (uint16_t)(wEntitiesPosXTable + active_idx));
+        pos_x--;
+        gb_write(gb, (uint16_t)(wEntitiesPosXTable + active_idx), pos_x);
+    }
+    gb_write(gb, (uint16_t)(wEntitiesInertiaTable + active_idx), inertia);
+}
+
+void IntroMarinState1(GBState *gb) {
+    if (!gb) return;
+
+    func_001_7D46(gb);
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    SetEntitySpriteVariant(gb, active_idx, 1);
+
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    if (cd != 0) {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), (uint8_t)(cd - 1));
+        return;
+    }
+
+    IncrementEntityState(gb, active_idx);
+    gb_write(gb, (uint16_t)(wEntitiesStatusTable + 1), ENTITY_INTRO_INERT_LINK);
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + 1), 0xFE);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + 1), 0x6E);
+    gb_write(gb, (uint16_t)(wEntitiesStateTable + 1), 0x00);
+    gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + 1), 0x00);
+    gb_write_hram(gb, hFrameCounter, 0x00);
+}
+
+void IntroMarinState2(GBState *gb) {
+    if (!gb) return;
+
+    func_001_7D9C(gb);
+    uint8_t pos_x1 = (uint8_t)(gb_read(gb, (uint16_t)(wEntitiesPosXTable + 1)) - 1);
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + 1), pos_x1);
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    if ((gb_read_hram(gb, hFrameCounter) & 0x01) == 0) {
+        uint8_t scroll_x = (uint8_t)(gb_read_hram(gb, hBaseScrollX) + 1);
+        gb_write_hram(gb, hBaseScrollX, scroll_x);
+
+        if (scroll_x == 0x30) {
+            gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x40);
+            IncrementEntityState(gb, active_idx);
+        } else if (scroll_x == 0x20) {
+            func_001_7A16(gb);
+        } else if (scroll_x == 0x22) {
+            func_001_7A11(gb);
+        }
+    }
+
+    uint8_t variant = (uint8_t)((gb_read_hram(gb, hFrameCounter) >> 2) & 0x01);
+    SetEntitySpriteVariant(gb, active_idx, variant);
+}
+
+void IntroMarinState3(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    if (cd != 0) {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), (uint8_t)(cd - 1));
+        func_001_7D46(gb);
+        SetEntitySpriteVariant(gb, active_idx, 1);
+        return;
+    }
+
+    func_001_7DCF(gb);
+    uint8_t fc = gb_read_hram(gb, hFrameCounter);
+    if ((fc & 0x01) == 0) {
+        uint8_t pos_x1 = (uint8_t)(gb_read(gb, (uint16_t)(wEntitiesPosXTable + 1)) - 1);
+        gb_write(gb, (uint16_t)(wEntitiesPosXTable + 1), pos_x1);
+
+        if ((fc & 0x03) == 0) {
+            uint8_t scroll_x = (uint8_t)(gb_read_hram(gb, hBaseScrollX) + 1);
+            gb_write_hram(gb, hBaseScrollX, scroll_x);
+
+            if (scroll_x == 0x40) {
+                gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x50);
+            } else if (scroll_x == 0x3A) {
+                gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x30);
+            }
+
+            if (scroll_x == 0x56) {
+                gb_write_hram(gb, hBaseScrollX, 0xA0);
+                gb_write(gb, rSCX, 0xA0);
+                gb_write_hram(gb, rIE, IEF_VBLANK);
+                gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0xE0);
+                IncrementEntityState(gb, active_idx);
+            } else if (scroll_x == 0x20) {
+                func_001_7A16(gb);
+            } else if (scroll_x == 0x22) {
+                func_001_7A11(gb);
+            }
+        }
+    }
+
+    uint8_t variant = (uint8_t)((gb_read_hram(gb, hFrameCounter) >> 4) & 0x01);
+    SetEntitySpriteVariant(gb, active_idx, variant);
+}
+
+void IntroMarinState4(GBState *gb) {
+    if (!gb) return;
+
+    func_001_7D46(gb);
+    if ((gb_read_hram(gb, hFrameCounter) & 0x01) != 0) {
+        return;
+    }
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    SetEntitySpriteVariant(gb, active_idx, 2);
+    gb_write(gb, (uint16_t)(wEntitiesSpriteVariantTable + 1), 0);
+
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    if (cd != 0) {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), (uint8_t)(cd - 1));
+    }
+
+    /* Check cd before decrement */
+    if ((cd >= 0x90 && cd < 0xA0) ||
+        (cd >= 0x4A && cd < 0x50) ||
+        (cd >= 0x36 && cd < 0x3C)) {
+        SetEntitySpriteVariant(gb, active_idx, 3);
+        gb_write(gb, (uint16_t)(wEntitiesSpriteVariantTable + 1), 1);
+    }
+}
+
+void RenderIntroSparkle(GBState *gb) {
+    if (!gb) return;
+
+    gb_write(gb, wC3C1, 0);
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    cd--;
+    gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), cd);
+    if (cd == 0) {
+        gb_write(gb, (uint16_t)(wEntitiesStatusTable + active_idx), 0);
+        return;
+    }
+
+    uint8_t variant = (uint8_t)((cd >> 3) & 0x07);
+    gb_write_hram(gb, hActiveEntitySpriteVariant, variant);
+    gb_write(gb, wEntitiesPhysicsFlagsTable, 0);
+    RenderActiveEntitySpritesPair(gb, IntroSparkleSpriteVariants, NULL);
+    gb_write(gb, wOAMNextAvailableSlot, (uint8_t)(gb_read(gb, wOAMNextAvailableSlot) + 8));
+}
+
+void RenderIntroInertLink(GBState *gb) {
+    if (!gb) return;
+
+    if (gb_read_hram(gb, hActiveEntityPosX) < 0xF0) {
+        gb_write(gb, wEntitiesPhysicsFlagsTable, 0);
+        RenderActiveEntitySpritesPair(gb, InertLinkSpriteVariants, NULL);
+        gb_write(gb, wOAMNextAvailableSlot, (uint8_t)(gb_read(gb, wOAMNextAvailableSlot) + 8));
+    }
+
+    uint8_t state = gb_read_hram(gb, hActiveEntityState);
+    switch (state) {
+        case 0:
+            InertLinkState0Handler(gb);
+            break;
+        case 1:
+            InertLinkState1Handler(gb);
+            break;
+        case 2:
+            InertLinkState2Handler(gb);
+            break;
+        case 3:
+            InertLinkState3Handler(gb);
+            break;
+        default:
+            break;
+    }
+}
+
+void InertLinkState0Handler(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    cd--;
+    if (cd == 0) {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x90);
+        IncrementEntityState(gb, active_idx);
+    } else {
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), cd);
+    }
+}
+
+void InertLinkState1Handler(GBState *gb) {
+    if (!gb) return;
+
+    if ((gb_read_hram(gb, hFrameCounter) & 0x03) != 0) {
+        return;
+    }
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    cd--;
+    gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), cd);
+    if (cd == 0) {
+        IncrementEntityState(gb, active_idx);
+    }
+}
+
+void InertLinkState2Handler(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    if (gb_read(gb, wD00A) == 0x13) {
+        IncrementEntityState(gb, active_idx);
+        gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), 0x17);
+        gb_write_hram(gb, hVolumeRight, 0x07);
+        gb_write_hram(gb, hVolumeLeft, 0x70);
+        return;
+    }
+
+    uint8_t subscene = (uint8_t)(gb_read(gb, wCreditsSubscene) + 1);
+    gb_write(gb, wCreditsSubscene, subscene);
+    if ((subscene & 0x03) != 0) {
+        return;
+    }
+
+    uint8_t pos_y0 = gb_read(gb, (uint16_t)(wEntitiesPosYTable + 0));
+    if (pos_y0 < 0xA0) {
+        gb_write(gb, (uint16_t)(wEntitiesPosYTable + 0), (uint8_t)(pos_y0 + 1));
+    }
+
+    uint8_t pos_y1 = gb_read(gb, (uint16_t)(wEntitiesPosYTable + 1));
+    if (pos_y1 < 0xA0) {
+        gb_write(gb, (uint16_t)(wEntitiesPosYTable + 1), (uint8_t)(pos_y1 + 1));
+    }
+
+    uint8_t old_sy = gb_read_hram(gb, hBaseScrollY);
+    gb_write_hram(gb, hBaseScrollY, (uint8_t)(old_sy - 1));
+    if ((old_sy & 0x07) != 0) {
+        return;
+    }
+
+    func_7C60(gb);
+    if (gb_read(gb, wD00A) == 0x0B) {
+        gb_write(gb, wMusicTrackToPlay, MUSIC_TITLE_SCREEN);
+    }
+}
+
+void InertLinkState3Handler(GBState *gb) {
+    if (!gb) return;
+
+    if ((gb_read_hram(gb, hFrameCounter) & 0x03) != 0) {
+        return;
+    }
+
+    uint8_t active_idx = gb_read(gb, wActiveEntityIndex);
+    uint8_t cd = GetEntityTransitionCountdown(gb, active_idx);
+    cd--;
+    gb_write(gb, (uint16_t)(wEntitiesTransitionCountdownTable + active_idx), cd);
+    if (cd == 0) {
+        IncrementGameplaySubtype(gb);
+        gb_write(gb, wIntroSubTimer, 0);
+        gb_write(gb, wD003, 0);
+        gb_write(gb, wD004, 0);
+        gb_write(gb, (uint16_t)(wEntitiesStatusTable + 0), 0);
+        gb_write(gb, (uint16_t)(wEntitiesStatusTable + 1), 0);
+    }
+}
+
+void func_7C60(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t d00a = gb_read(gb, wD00A);
+    if (d00a == 0) {
+        gb_write(gb, wD00B, 0xF4);
+        gb_write(gb, wD00C, 0x9B);
+    }
+
+    uint16_t de = (uint16_t)(d00a * 20);
+    gb_write(gb, (uint16_t)(wDrawCommand + 0), gb_read(gb, wD00C));
+    gb_write(gb, (uint16_t)(wDrawCommand + 1), gb_read(gb, wD00B));
+    gb_write(gb, (uint16_t)(wDrawCommand + 2), 0x13);
+
+    for (int c = 0; c < 20; c++) {
+        gb_write(gb, (uint16_t)(wDrawCommand + 3 + c), TitleScreenPostBeachTilemap[de + c]);
+    }
+    gb_write(gb, (uint16_t)(wDrawCommand + 23), 0x00);
+
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        func_001_7CCB(gb);
+    }
+
+    gb_write(gb, wD00A, (uint8_t)(d00a + 1));
+    uint16_t addr = (uint16_t)(((uint16_t)gb_read(gb, wD00C) << 8) | gb_read(gb, wD00B));
+    addr -= 0x20;
+    gb_write(gb, wD00B, (uint8_t)(addr & 0xFF));
+    gb_write(gb, wD00C, (uint8_t)((addr >> 8) & 0xFF));
+}
+
+void func_001_7CCB(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t d00c = gb_read(gb, wD00C);
+    uint8_t d00b = (uint8_t)(gb_read(gb, wD00B) - 0x14);
+    gb_write(gb, (uint16_t)(wDrawCommandVRAM1 + 0), d00c);
+    gb_write(gb, (uint16_t)(wDrawCommandVRAM1 + 1), d00b);
+    gb_write(gb, (uint16_t)(wDrawCommandVRAM1 + 2), 0x5F);
+    gb_write(gb, (uint16_t)(wDrawCommandVRAM1 + 3), 0x03);
+    gb_write(gb, (uint16_t)(wDrawCommandVRAM1 + 4), 0x00);
 }

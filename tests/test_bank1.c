@@ -3062,6 +3062,195 @@ static void test_intro_subsystem(void) {
     gb_write(&gb, wGameplaySubtype, 13);
     RenderIntroFrame(&gb);
     assert(gb_read(&gb, wGameplaySubtype) == GAMEPLAY_INTRO_TITLE);
+
+    /* Test 35: func_001_7A11 & func_001_7A16 */
+    gb_init(&gb);
+    func_001_7A11(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == Data_001_79FD[0]);
+    assert(gb_read(&gb, wDrawCommand + 23) == Data_001_79FD[23]);
+
+    func_001_7A16(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == Data_001_79EC[0]);
+    assert(gb_read(&gb, wDrawCommand + 23) == Data_001_79EC[23]);
+
+    /* Test 36: IntroMarinState0 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wEntitiesInertiaTable + 0, 1);
+    gb_write(&gb, wEntitiesPosXTable + 0, 0x50);
+    gb_write_hram(&gb, hActiveEntityPosX, 0x50);
+    IntroMarinState0(&gb);
+    assert(gb_read(&gb, wEntitiesInertiaTable + 0) == 4);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0) == 0x4F);
+
+    gb_write_hram(&gb, hActiveEntityPosX, 0x40); /* < 0x48 */
+    IntroMarinState0(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 0x40);
+    assert(gb_read(&gb, wEntitiesStateTable + 0) == 1);
+
+    /* Test 37: IntroMarinState1 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 5);
+    IntroMarinState1(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 4);
+
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 0);
+    IntroMarinState1(&gb);
+    assert(gb_read(&gb, wEntitiesStateTable + 0) == 1);
+    assert(gb_read(&gb, wEntitiesStatusTable + 1) == ENTITY_INTRO_INERT_LINK);
+    assert(gb_read(&gb, wEntitiesPosXTable + 1) == 0xFE);
+    assert(gb_read(&gb, wEntitiesPosYTable + 1) == 0x6E);
+
+    /* Test 38: IntroMarinState2 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wEntitiesPosXTable + 1, 0x50);
+    gb_write_hram(&gb, hBaseScrollX, 0x1F);
+    gb_write_hram(&gb, hFrameCounter, 0x00); /* even */
+    IntroMarinState2(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 1) == 0x4F);
+    assert(gb_read_hram(&gb, hBaseScrollX) == 0x20);
+    assert(gb_read(&gb, wDrawCommand + 0) == Data_001_79EC[0]); /* func_001_7A16 triggered */
+
+    gb_write_hram(&gb, hBaseScrollX, 0x2F);
+    IntroMarinState2(&gb);
+    assert(gb_read_hram(&gb, hBaseScrollX) == 0x30);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 0x40);
+    assert(gb_read(&gb, wEntitiesStateTable + 0) == 1);
+
+    /* Test 39: IntroMarinState3 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 2);
+    IntroMarinState3(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 1);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0) == 1);
+
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 0);
+    gb_write_hram(&gb, hFrameCounter, 0x00);
+    gb_write_hram(&gb, hBaseScrollX, 0x55);
+    IntroMarinState3(&gb);
+    assert(gb_read_hram(&gb, hBaseScrollX) == 0xA0);
+    assert(gb_read(&gb, rSCX) == 0xA0);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 0xE0);
+    assert(gb_read(&gb, wEntitiesStateTable + 0) == 1);
+
+    /* Test 40: IntroMarinState4 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write_hram(&gb, hFrameCounter, 0x00);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 0x95);
+    IntroMarinState4(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0) == 0x94);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0) == 3);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 1) == 1);
+
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0, 0x60);
+    IntroMarinState4(&gb);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0) == 2);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 1) == 0);
+
+    /* Test 41: RenderIntroMarin */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write_hram(&gb, hActiveEntityState, 0);
+    gb_write(&gb, wOAMNextAvailableSlot, 0);
+    RenderIntroMarin(&gb);
+    assert(gb_read(&gb, wOAMNextAvailableSlot) == 8);
+
+    /* Test 42: RenderIntroSparkle */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write(&gb, wEntitiesStatusTable + 1, ENTITY_INTRO_SPARKLE);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 0x10);
+    RenderIntroSparkle(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 1) == 0x0F);
+    assert(gb_read_hram(&gb, hActiveEntitySpriteVariant) == 1);
+
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 1);
+    RenderIntroSparkle(&gb);
+    assert(gb_read(&gb, wEntitiesStatusTable + 1) == 0); /* destroyed */
+
+    /* Test 43: InertLinkState0Handler */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 1);
+    InertLinkState0Handler(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 1) == 0x90);
+    assert(gb_read(&gb, wEntitiesStateTable + 1) == 1);
+
+    /* Test 44: InertLinkState1Handler */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write_hram(&gb, hFrameCounter, 0);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 1);
+    InertLinkState1Handler(&gb);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 1) == 0);
+    assert(gb_read(&gb, wEntitiesStateTable + 1) == 1);
+
+    /* Test 45: InertLinkState2Handler */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write(&gb, wD00A, 0x13);
+    InertLinkState2Handler(&gb);
+    assert(gb_read(&gb, wEntitiesStateTable + 1) == 1);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 1) == 0x17);
+    assert(gb_read_hram(&gb, hVolumeRight) == 0x07);
+    assert(gb_read_hram(&gb, hVolumeLeft) == 0x70);
+
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write(&gb, wD00A, 0x0A);
+    gb_write(&gb, wCreditsSubscene, 0x03); /* + 1 = 4 -> & 3 == 0 */
+    gb_write_hram(&gb, hBaseScrollY, 0x10); /* & 7 == 0 */
+    InertLinkState2Handler(&gb);
+    assert(gb_read(&gb, wD00A) == 0x0B);
+    assert(gb_read(&gb, wMusicTrackToPlay) == MUSIC_TITLE_SCREEN);
+
+    /* Test 46: InertLinkState3Handler */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write_hram(&gb, hFrameCounter, 0);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 1);
+    gb_write(&gb, wGameplaySubtype, 7);
+    InertLinkState3Handler(&gb);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0) == 0);
+    assert(gb_read(&gb, wEntitiesStatusTable + 1) == 0);
+
+    /* Test 47: RenderIntroInertLink */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 1);
+    gb_write_hram(&gb, hActiveEntityPosX, 0x50);
+    gb_write_hram(&gb, hActiveEntityState, 0);
+    gb_write(&gb, wOAMNextAvailableSlot, 0);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 1, 5);
+    RenderIntroInertLink(&gb);
+    assert(gb_read(&gb, wOAMNextAvailableSlot) == 8);
+
+    /* Test 48: func_7C60 & func_001_7CCB */
+    gb_init(&gb);
+    gb_write(&gb, wD00A, 0);
+    gb_write(&gb, hIsGBC, 1);
+    func_7C60(&gb);
+    assert(gb_read(&gb, wDrawCommand + 0) == 0x9B);
+    assert(gb_read(&gb, wDrawCommand + 1) == 0xF4);
+    assert(gb_read(&gb, wDrawCommand + 2) == 0x13);
+    assert(gb_read(&gb, wDrawCommand + 3) == TitleScreenPostBeachTilemap[0]);
+    assert(gb_read(&gb, wDrawCommand + 23) == 0x00);
+    assert(gb_read(&gb, wDrawCommandVRAM1 + 0) == 0x9B);
+    assert(gb_read(&gb, wD00A) == 1);
+    assert(gb_read(&gb, wD00B) == 0xD4);
+    assert(gb_read(&gb, wD00C) == 0x9B);
+
+    /* Test 49: RenderIntroEntity dispatch */
+    gb_init(&gb);
+    gb_write(&gb, wEntitiesStatusTable + 0, ENTITY_INTRO_MARIN);
+    gb_write(&gb, wActiveEntityIndex, 0);
+    gb_write(&gb, wEntitiesInertiaTable + 0, 5);
+    RenderIntroEntity(&gb, 0);
+    assert(gb_read(&gb, wEntitiesInertiaTable + 0) == 4);
 }
 
 void run_bank1_tests(void) {

@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 51.33%
-* **Number of Verified Functions**: 616
+* **Current Overall Progress**: 52.67%
+* **Number of Verified Functions**: 632
 * **Number of Decompiled Functions**: 471
-* **Number Remaining**: ~584 functions
-* **Current Subsystem**: Bank 1 - Intro Cutscene & Title Screen Subsystem Part 2 (`code/intro.asm`, 36 functions VERIFIED)
-* **Current Task**: Bank 1 Intro Cutscene Part 2 decompiled and verified
-* **Last Completed Task**: Decompiled and verified 17 Bank 1 Intro & Title Screen routines (`IntroStage5Handler`, `IntroStage6Handler`, `IntroBeachHandler`, `func_001_71C7`, `IntroStage8Handler`, `func_001_7338`, `TitleScreenSfxHandler`, `IntroStageAHandler`, `func_001_73B1`, `TitleScreenHandler`, `IntroStageCHandler`, `IntroStageDHandler`, `func_001_79AE`, `func_001_79C2`, `func_001_7920`, `func_001_7D9C`, `func_001_7DCF`) (`01:7118`-`01:7465`, `01:7920`-`01:7A10`, `01:7D9C`-`01:7E00`)
-* **Next Task**: Decompile and verify Bank 1 Intro Cutscene Part 3 (Intro Entities: Marin, Inert Link, Sparkle, func_7C60, func_001_7CCB, 01:764F-01:7807, 01:7A11-01:7CE0) completing code/intro.asm
-* **Last Update Timestamp**: 2026-09-07T22:20:00+03:00
+* **Number Remaining**: ~568 functions
+* **Current Subsystem**: Bank 1 - Complete (Bank 0 & Bank 1 are 100% VERIFIED! 52 functions in `code/intro.asm`)
+* **Current Task**: Bank 1 Intro Cutscene Part 3 decompiled and verified; Bank 1 100% COMPLETE
+* **Last Completed Task**: Decompiled and verified 16 Bank 1 Intro entity routines (`RenderIntroMarin`, `IntroMarinState0`..`4`, `RenderIntroSparkle`, `func_001_7A11`, `func_001_7A16`, `RenderIntroInertLink`, `InertLinkState0Handler`..`3`, `func_7C60`, `func_001_7CCB`) (`01:764F`-`01:7807`, `01:7A11`-`01:7CE0`), completing code/intro.asm and ROM Bank 1 to 100%
+* **Next Task**: Decompile and verify Bank 2 Audio Track Selector (`code/audio/select_music_track.asm`, 02:4000-02:41CF)
+* **Last Update Timestamp**: 2026-09-07T22:55:00+03:00
 
 ---
 
@@ -19,6 +19,22 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
+| `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
+| `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |
+| `IntroMarinState2` | VERIFIED | PASS | PASS | Marin walks toward Link with camera horizontal scroll and beach draw commands (`01:76D6`) |
+| `IntroMarinState3` | VERIFIED | PASS | PASS | Marin approaches Link, scrolls to A0, and triggers VBlank interrupt switch (`01:7711`) |
+| `IntroMarinState4` | VERIFIED | PASS | PASS | Marin kneeling over Link and looking at Link with blinking/expression variants (`01:7781`) |
+| `RenderIntroSparkle` | VERIFIED | PASS | PASS | Title screen DX sparkle entity renderer and lifespan timer (`01:77DD`) |
+| `func_001_7A11` | VERIFIED | PASS | PASS | Submits beach tilemap slice 2 draw command to wDrawCommand (`01:7A11`) |
+| `func_001_7A16` | VERIFIED | PASS | PASS | Submits beach tilemap slice 1 draw command to wDrawCommand (`01:7A16`) |
+| `RenderIntroInertLink` | VERIFIED | PASS | PASS | Unconscious Link on beach entity renderer and state machine dispatcher (`01:7A2F`) |
+| `InertLinkState0Handler` | VERIFIED | PASS | PASS | Inert Link initial delay timer countdown (`01:7A52`) |
+| `InertLinkState1Handler` | VERIFIED | PASS | PASS | Inert Link delay before vertical camera panning (`01:7A5E`) |
+| `InertLinkState2Handler` | VERIFIED | PASS | PASS | Camera vertical panning up to Koholint sky, streaming post-beach tilemap, title music trigger (`01:7A6E`) |
+| `InertLinkState3Handler` | VERIFIED | PASS | PASS | Inert Link final timer countdown, advances gameplay subtype and unloads beach entities (`01:7AC4`) |
+| `func_7C60` | VERIFIED | PASS | PASS | Streams title screen post-beach tilemap row into wDrawCommand and advances row counter (`01:7C60`) |
+| `func_001_7CCB` | VERIFIED | PASS | PASS | Streams GBC title screen post-beach attribute map row command into wDrawCommandVRAM1 (`01:7CCB`) |
 | `IntroStage5Handler` | VERIFIED | PASS | PASS | Intro stage 5: sets beach BG map, palette flag, and advances subtype (`01:711A`) |
 | `IntroStage6Handler` | VERIFIED | PASS | PASS | Intro stage 6: sea waves sfx, fade timer, palette updates, beach entity setup (`01:7158`) |
 | `IntroBeachHandler` | VERIFIED | PASS | PASS | Intro stage 7: renders beach entities (`01:71C3`) |
