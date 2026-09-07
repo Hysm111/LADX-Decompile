@@ -239,6 +239,63 @@ void func_001_68D9(GBState *gb);
  */
 void PeachPictureState7Handler(GBState *gb);
 
+
+/**
+ * PeachPictureState8Handler (01:6908)
+ * Collapse sequence explosion and tower sinking animation step.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState8Handler(GBState *gb);
+
+/**
+ * PeachPictureState9Handler (01:6945)
+ * Final collapse timer before fading out picture cutscene.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState9Handler(GBState *gb);
+
+/**
+ * FileSaveFadeOut (01:5825)
+ * Handles screen fade-out and returns to world gameplay.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void FileSaveFadeOut(GBState *gb);
+
+/**
+ * PeachPictureStateAHandler (01:5822)
+ * Final cutscene fade-out handler, calls func_6A7C and FileSaveFadeOut.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureStateAHandler(GBState *gb);
+
+/**
+ * PeachPictureState0Handler (01:6808)
+ * Initial cutscene setup: advances subtype and copies palettes to WRAM bank 3 on CGB.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState0Handler(GBState *gb);
+
+/**
+ * PeachPictureState1Handler (01:6829)
+ * Fades out current screen and loads checkerboard tileset 0F.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureState1Handler(GBState *gb);
+
+/**
+ * PeachPictureEntryPoint (01:67EE)
+ * Main state dispatcher for full-screen picture cutscenes.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void PeachPictureEntryPoint(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

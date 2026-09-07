@@ -797,6 +797,143 @@ void test_peach_picture_state_7(void) {
     assert(gb_read(&gb, wGameplaySubtype) == 8);
 }
 
+
+void test_peach_picture_state_8(void) {
+    printf("[*] Running PeachPictureState8Handler tests (01:6908)...\n");
+    GBState gb;
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, wGameplaySubtype, 8);
+
+    /* 1. wD210 > 1 -> decrements wD210, stays in state 8 */
+    gb_write(&gb, wD210, 5);
+    PeachPictureState8Handler(&gb);
+    assert(gb_read(&gb, wD210) == 4);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+
+    /* 2. wD210 == 1 -> explosion, resets timers, wD213 goes from 0 to 1 */
+    gb_write(&gb, wD210, 1);
+    gb_write(&gb, wD211, 0x10);
+    gb_write(&gb, wD213, 0);
+    PeachPictureState8Handler(&gb);
+    assert(gb_read(&gb, wD210) == 0x30);
+    assert(gb_read(&gb, wD214) == 0x30);
+    assert(gb_read(&gb, wD215) == 0x18);
+    assert(gb_read(&gb, wD211) == 0x18);
+    assert(gb_read(&gb, wD213) == 1);
+    assert(gb_read(&gb, wGameplaySubtype) == 8);
+
+    /* 3. wD210 == 1 with wD213 == 3 -> wD213 becomes 4, advances to state 9 with wD210 = 0x80 */
+    gb_write(&gb, wD210, 1);
+    gb_write(&gb, wD213, 3);
+    PeachPictureState8Handler(&gb);
+    assert(gb_read(&gb, wD213) == 4);
+    assert(gb_read(&gb, wD210) == 0x80);
+    assert(gb_read(&gb, wGameplaySubtype) == 9);
+}
+
+void test_peach_picture_state_9(void) {
+    printf("[*] Running PeachPictureState9Handler tests (01:6945)...\n");
+    GBState gb;
+    gb_init(&gb);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+    gb_write(&gb, wGameplaySubtype, 9);
+
+    /* 1. wD210 > 1 -> decrements, stays in state 9 */
+    gb_write(&gb, wD210, 3);
+    PeachPictureState9Handler(&gb);
+    assert(gb_read(&gb, wD210) == 2);
+    assert(gb_read(&gb, wGameplaySubtype) == 9);
+
+    /* 2. wD210 == 1 -> decrements to 0, advances to state 10 (0x0A) */
+    gb_write(&gb, wD210, 1);
+    gb_write(&gb, wTransitionSequenceCounter, 5);
+    gb_write(&gb, wC16C, 2);
+    PeachPictureState9Handler(&gb);
+    assert(gb_read(&gb, wD210) == 0);
+    assert(gb_read(&gb, wGameplaySubtype) == 0x0A);
+    assert(gb_read(&gb, wTransitionSequenceCounter) == 0);
+    assert(gb_read(&gb, wC16C) == 0);
+}
+
+void test_file_save_fade_out_and_state_A(void) {
+    printf("[*] Running FileSaveFadeOut & PeachPictureStateAHandler tests (01:5822, 01:5825)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* 1. Transition counter != 4 -> does nothing */
+    gb_write(&gb, wTransitionSequenceCounter, 2);
+    FileSaveFadeOut(&gb);
+    assert(gb_read(&gb, wGameplayType) == 0);
+
+    /* 2. Transition counter == 4 on CGB */
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    gb_write(&gb, wIsIndoor, 0);
+
+    /* Set byte in bank 3 wBGPal1 */
+    gb_write(&gb, rSVBK, 3);
+    gb_write(&gb, wBGPal1, 0x55);
+    gb_write(&gb, wIsFileSelectionArrowShifted, 0xFF);
+
+    PeachPictureStateAHandler(&gb);
+
+    /* Check palette copied to bank 2 */
+    gb_write(&gb, rSVBK, 2);
+    assert(gb_read(&gb, wBGPal1) == 0x55);
+    gb_write(&gb, rSVBK, 0);
+
+    /* Check return to world gameplay */
+    assert(gb_read(&gb, wGameplayType) == GAMEPLAY_WORLD);
+    assert(gb_read(&gb, wGameplaySubtype) == GAMEPLAY_WORLD_LOAD_2);
+    assert(gb_read(&gb, hVolumeRight) == 7);
+    assert(gb_read(&gb, hVolumeLeft) == 0x70);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_BASE_OVERWORLD_DUP);
+    assert(gb_read(&gb, wWindowY) == 0x80);
+}
+
+void test_peach_picture_state_0_and_1(void) {
+    printf("[*] Running PeachPictureState0Handler & 1 tests (01:6808, 01:6829)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, hIsGBC, 1);
+    gb_write(&gb, wGameplaySubtype, 0);
+    gb_write(&gb, wTransitionSequenceCounter, 4);
+    gb_write(&gb, hMapId, MAP_TAIL_CAVE);
+
+    /* Set byte in bank 1 wBGPal1 */
+    gb_write(&gb, rSVBK, 0);
+    gb_write(&gb, wBGPal1, 0x33);
+
+    PeachPictureState0Handler(&gb);
+
+    /* Check palette copied to bank 3 */
+    gb_write(&gb, rSVBK, 3);
+    assert(gb_read(&gb, wBGPal1) == 0x33);
+    gb_write(&gb, rSVBK, 0);
+
+    /* Check state 1 execution */
+    assert(gb_read(&gb, wGameplaySubtype) == 2);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_0F);
+    assert(gb_read(&gb, hVolumeRight) == 3);
+    assert(gb_read(&gb, hVolumeLeft) == 0x30);
+    assert(gb_read(&gb, wScrollXOffset) == 0);
+}
+
+void test_peach_picture_entry_point(void) {
+    printf("[*] Running PeachPictureEntryPoint tests (01:67EE)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Subtype 2 dispatches to state 2 */
+    gb_write(&gb, wGameplaySubtype, 2);
+    gb_write(&gb, hMapId, MAP_EAGLES_TOWER);
+    PeachPictureEntryPoint(&gb);
+    assert(gb_read(&gb, wTilesetToLoad) == TILESET_EAGLES_TOWER_TOP);
+    assert(gb_read(&gb, wGameplaySubtype) == 3);
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -821,5 +958,10 @@ void run_bank1_tests(void) {
     test_peach_picture_state_4();
     test_peach_picture_state_5_and_68D9();
     test_peach_picture_state_7();
+    test_peach_picture_state_8();
+    test_peach_picture_state_9();
+    test_file_save_fade_out_and_state_A();
+    test_peach_picture_state_0_and_1();
+    test_peach_picture_entry_point();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

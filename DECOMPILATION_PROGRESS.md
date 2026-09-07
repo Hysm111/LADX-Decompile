@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 35.83%
-* **Number of Verified Functions**: 430
-* **Number of Decompiled Functions**: 430
-* **Number Remaining**: ~770 functions
-* **Current Subsystem**: Bank 1 - Cutscenes & Screen Shake Handling (`code/bank1.asm`, `01:68AA`-`01:6A7C`)
-* **Current Task**: Bank 1 Cutscenes & Screen Shake Handling block completed
-* **Last Completed Task**: Decompiled and verified 5 Bank 1 cutscene and screen shake routines (`func_001_695B`, `func_6A7C`, `PeachPictureState4Handler`, `PeachPictureState5Handler`, `PeachPictureState7Handler`) (`01:68AA`-`01:6A7C`)
-* **Next Task**: Decompile and verify Bank 1 Eagle's Tower collapse finale & Peach Picture states 8-A (`code/bank1.asm`, `01:6908`-`01:6828`)
-* **Last Update Timestamp**: 2026-09-07T01:05:00+03:00
+* **Current Overall Progress**: 36.42%
+* **Number of Verified Functions**: 437
+* **Number of Decompiled Functions**: 437
+* **Number Remaining**: ~763 functions
+* **Current Subsystem**: Bank 1 - Cutscenes & World Map Navigation (`code/bank1.asm`, `01:67EE`-`01:6950`, `01:5822`-`01:5825`)
+* **Current Task**: Bank 1 Peach Picture / Eagle's Tower Collapse subsystem completed (100% verified)
+* **Last Completed Task**: Decompiled and verified 7 Bank 1 cutscene and screen fade-out routines (`PeachPictureState8Handler`, `PeachPictureState9Handler`, `PeachPictureStateAHandler`, `FileSaveFadeOut`, `PeachPictureState0Handler`, `PeachPictureState1Handler`, `PeachPictureEntryPoint`) (`01:67EE`-`01:6950`, `01:5822`-`01:5825`)
+* **Next Task**: Decompile and verify Bank 1 world map location name dialogs & map scrolling routines (`func_001_5A59`, `func_001_5A71`, `label_001_5B3F`, etc.) (`code/bank1.asm`, `01:5A59`+)
+* **Last Update Timestamp**: 2026-09-07T01:20:00+03:00
 
 ---
 
@@ -343,6 +343,13 @@
 | `SelectMusicTrackAfterTransition_trampoline` | VERIFIED | PASS | PASS | Trampoline switching to bank $02 to select new world music track and reloading saved bank (`00:27DD`) |
 | `ResetMusicFadeTimer` | VERIFIED | PASS | PASS | Resets audio fade-out timer to max ($38) and clears fade-in timer (`00:27EA`) |
 | `func_27F2` | VERIFIED | PASS | PASS | If music does not continue after warp, invokes bank $1F helper $4003 and reloads saved bank (`00:27F2`) |
+| `PeachPictureState8Handler` | VERIFIED | PASS | PASS | Collapse explosion timer, screen rumble, and tower sinking animation step (`01:6908`) |
+| `PeachPictureState9Handler` | VERIFIED | PASS | PASS | Collapse rumble finale delay timer before fading out (`01:6945`) |
+| `PeachPictureStateAHandler` | VERIFIED | PASS | PASS | Final cutscene fade-out handler, renders sprites and calls FileSaveFadeOut (`01:5822`) |
+| `FileSaveFadeOut` | VERIFIED | PASS | PASS | Restores palettes, resets gameplay to GAMEPLAY_WORLD, and sets inventory window (`01:5825`) |
+| `PeachPictureState0Handler` | VERIFIED | PASS | PASS | Initial cutscene setup: advances subtype and copies palettes to WRAM bank 3 on CGB (`01:6808`) |
+| `PeachPictureState1Handler` | VERIFIED | PASS | PASS | Fades out screen, loads checkerboard tileset 0F, and initializes audio volume (`01:6829`) |
+| `PeachPictureEntryPoint` | VERIFIED | PASS | PASS | Main jump table dispatcher for full-screen picture cutscenes (states 0-A) (`01:67EE`) |
 
 ---
 

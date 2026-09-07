@@ -721,3 +721,135 @@ void PeachPictureState7Handler(GBState *gb) {
         gb_write(gb, wScreenShakeVertical, e);
     }
 }
+
+void PeachPictureState8Handler(GBState *gb) {
+    if (!gb) return;
+    func_6A7C(gb);
+    func_001_695B(gb);
+    uint8_t d210 = gb_read(gb, wD210);
+    d210--;
+    gb_write(gb, wD210, d210);
+    if (d210 != 0) return;
+
+    PlayBombExplosionSfx(gb);
+    gb_write(gb, wD210, 0x30);
+    gb_write(gb, wD214, 0x30);
+    gb_write(gb, wD215, 0x18);
+    uint8_t d211 = (uint8_t)(gb_read(gb, wD211) + 8);
+    gb_write(gb, wD211, d211);
+    uint8_t d213 = (uint8_t)(gb_read(gb, wD213) + 1);
+    gb_write(gb, wD213, d213);
+    if (d213 == 4) {
+        gb_write(gb, wD210, 0x80);
+        IncrementGameplaySubtype(gb);
+    }
+}
+
+void PeachPictureState9Handler(GBState *gb) {
+    if (!gb) return;
+    func_6A7C(gb);
+    func_001_695B(gb);
+    uint8_t d210 = gb_read(gb, wD210);
+    d210--;
+    gb_write(gb, wD210, d210);
+    if (d210 != 0) return;
+
+    IncrementGameplaySubtype(gb);
+    gb_write(gb, wTransitionSequenceCounter, 0);
+    gb_write(gb, wC16C, 0);
+}
+
+void FileSaveFadeOut(GBState *gb) {
+    if (!gb) return;
+    func_1A22(gb, NULL, NULL);
+    if (gb_read(gb, wTransitionSequenceCounter) != 4) {
+        return;
+    }
+
+    if (gb_read(gb, hIsGBC) != 0) {
+        for (uint16_t i = 0; i < 0x80; i++) {
+            gb_write(gb, rSVBK, 3);
+            uint8_t b = gb_read(gb, (uint16_t)(wBGPal1 + i));
+            gb_write(gb, rSVBK, 2);
+            gb_write(gb, (uint16_t)(wBGPal1 + i), b);
+        }
+        gb_write(gb, rSVBK, 3);
+        gb_write(gb, wIsFileSelectionArrowShifted, 0);
+        gb_write(gb, rSVBK, 0);
+    }
+
+    gb_write(gb, wPaletteUnknownE, 1);
+    gb_write(gb, wBlockItemUsage, 0);
+    gb_write(gb, wC116, 0);
+    gb_write(gb, hBaseScrollX, 0);
+    gb_write(gb, hBaseScrollY, 0);
+    gb_write(gb, wC167, 0);
+    gb_write(gb, hVolumeRight, 7);
+    gb_write(gb, hVolumeLeft, 0x70);
+    gb_write(gb, wGameplayType, GAMEPLAY_WORLD);
+    gb_write(gb, hContinueMusicAfterWarp, GAMEPLAY_WORLD);
+    gb_write(gb, wGameplaySubtype, GAMEPLAY_WORLD_LOAD_2);
+
+    uint8_t tileset = (gb_read(gb, wIsIndoor) != 0) ? TILESET_INDOOR : TILESET_BASE_OVERWORLD_DUP;
+    gb_write(gb, wTilesetToLoad, tileset);
+
+    func_001_5888(gb);
+    InitializeInventoryBar(gb);
+}
+
+void PeachPictureStateAHandler(GBState *gb) {
+    if (!gb) return;
+    func_6A7C(gb);
+    FileSaveFadeOut(gb);
+}
+
+void PeachPictureState1Handler(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, wC167, 1);
+    func_1A22(gb, NULL, NULL);
+    if (gb_read(gb, wTransitionSequenceCounter) != 4) {
+        return;
+    }
+    func_001_5888(gb);
+    if (gb_read(gb, hMapId) != MAP_EAGLES_TOWER) {
+        gb_write(gb, hVolumeRight, 3);
+        gb_write(gb, hVolumeLeft, 0x30);
+    }
+    IncrementGameplaySubtype(gb);
+    gb_write(gb, wScrollXOffset, 0);
+    gb_write(gb, wTilesetToLoad, TILESET_0F);
+}
+
+void PeachPictureState0Handler(GBState *gb) {
+    if (!gb) return;
+    IncrementGameplaySubtype(gb);
+    if (gb_read(gb, hIsGBC) != 0) {
+        for (uint16_t i = 0; i < 0x80; i++) {
+            gb_write(gb, rSVBK, 0);
+            uint8_t b = gb_read(gb, (uint16_t)(wBGPal1 + i));
+            gb_write(gb, rSVBK, 3);
+            gb_write(gb, (uint16_t)(wBGPal1 + i), b);
+        }
+        gb_write(gb, rSVBK, 0);
+    }
+    PeachPictureState1Handler(gb);
+}
+
+void PeachPictureEntryPoint(GBState *gb) {
+    if (!gb) return;
+    uint8_t subtype = gb_read(gb, wGameplaySubtype);
+    switch (subtype) {
+        case 0x00: PeachPictureState0Handler(gb); break;
+        case 0x01: PeachPictureState1Handler(gb); break;
+        case 0x02: PeachPictureState2Handler(gb); break;
+        case 0x03: PeachPictureState3Handler(gb); break;
+        case 0x04: PeachPictureState4Handler(gb); break;
+        case 0x05: PeachPictureState5Handler(gb); break;
+        case 0x06: FileSaveFadeOut(gb);           break;
+        case 0x07: PeachPictureState7Handler(gb); break;
+        case 0x08: PeachPictureState8Handler(gb); break;
+        case 0x09: PeachPictureState9Handler(gb); break;
+        case 0x0A: PeachPictureStateAHandler(gb); break;
+        default: break;
+    }
+}
