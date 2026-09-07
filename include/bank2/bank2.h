@@ -147,4 +147,61 @@ void LinkMotionDefault(GBState *gb,
                        void (*func_002_4b49)(GBState *),
                        void (*apply_ground_physics)(GBState *));
 
+
+/* Bank 2 Sword & Spin Attack Tables */
+extern const uint8_t LinkDirectionToStaticSwordCollitionCheckNeeded[24];
+extern const uint8_t LinkDirectionTo_wC141[24];
+extern const uint8_t LinkDirectionToOffset[24];
+extern const uint8_t LinkDirectionTo_wC143[24];
+extern const uint8_t LinkDirectionToSwordDirection[24];
+extern const uint8_t LinkDirectionToLinkAnimationState1[24];
+extern const int8_t LinkDirectionTo_wC13A[24];
+extern const int8_t LinkDirectionTo_wC139[24];
+extern const int8_t LinkDirectionTo_wC13C[24];
+extern const int8_t LinkDirectionTo_wC13B[24];
+extern const uint8_t SwordAnimationStateToUnknow[8];
+extern const uint8_t UnkownToLinkStateTable[16];
+extern const uint8_t FrameCounterToLinkDirection[4];
+extern const uint8_t LinkDirectionToSwordAnimationState[32];
+extern const uint8_t LinkDirectionToAbsolute[32];
+
+/**
+ * Resets sword animation state and spin attack variables (02:48B0).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_48B0(GBState *gb);
+
+/**
+ * Updates sword direction, link animation state, and computes sword collision box (02:4827).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_collision Optional callback for static sword collision check.
+ */
+void label_002_4827(GBState *gb, void (*check_collision)(GBState *));
+
+/**
+ * Progresses sword swing animation from wC16D timer (02:476B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_collision Optional callback for static sword collision check.
+ */
+void label_002_476B(GBState *gb, void (*check_collision)(GBState *));
+
+/**
+ * Updates spin attack 360-degree rotation animation and collision box (02:4709).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_collision Optional callback for static sword collision check.
+ */
+void UpdateSpinAttackAnimation(GBState *gb, void (*check_collision)(GBState *));
+
+/**
+ * Updates Link automatic animations: whirlpool rotation, jump frames, sword/spin attack (02:478C).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param check_collision Optional callback for static sword collision check.
+ */
+void UpdateLinkAnimation(GBState *gb, void (*check_collision)(GBState *));
+
 #endif /* LADX_BANK2_BANK2_H */

@@ -123,4 +123,14 @@
 #define USING_SPIN_ATTACK_MAX           0x20
 #define PIT_MAX_SLIPPING                24
 
+/* Values for wSwordDirection */
+#define SWORD_DIRECTION_RIGHT           0x00
+#define SWORD_DIRECTION_RIGHT_BOTTOM    0x01
+#define SWORD_DIRECTION_BOTTOM          0x02
+#define SWORD_DIRECTION_LEFT_BOTTOM     0x03
+#define SWORD_DIRECTION_LEFT            0x04
+#define SWORD_DIRECTION_LEFT_TOP        0x05
+#define SWORD_DIRECTION_TOP             0x06
+#define SWORD_DIRECTION_RIGHT_TOP       0x07
+
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */

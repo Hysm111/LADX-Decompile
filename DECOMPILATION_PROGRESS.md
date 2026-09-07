@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 54.00%
-* **Number of Verified Functions**: 648
-* **Number of Decompiled Functions**: 487
-* **Number Remaining**: ~552 functions
-* **Current Subsystem**: ROM Bank 2 (Link Motion Default Core Loop & Overhead Walk Physics, 02:4287-02:44AC)
-* **Current Task**: Bank 2 Link Motion Default Core Loop & Overhead Walk Physics decompiled and verified
-* **Last Completed Task**: Decompiled and verified `LinkMotionDefault`, `func_002_436C`, and `OverheadWalkPhysics` (`02:4287`-`02:44AC`)
-* **Next Task**: Decompile and verify Bank 2 Sword Animation, Spin Attack, and Sword Collision routines (`UpdateSpinAttackAnimation`, `UpdateLinkAnimation`, `02:4709`+)
+* **Current Overall Progress**: 54.42%
+* **Number of Verified Functions**: 653
+* **Number of Decompiled Functions**: 492
+* **Number Remaining**: ~547 functions
+* **Current Subsystem**: ROM Bank 2 (Sword Animation, Spin Attack, and Sword Collision Routines, 02:4709-02:48BF)
+* **Current Task**: Bank 2 Sword Animation, Spin Attack, and Sword Collision routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `UpdateSpinAttackAnimation`, `label_002_476B`, `UpdateLinkAnimation`, `label_002_4827`, `label_002_48B0`, and 15 lookup tables (`02:45C1`-`02:48BF`)
+* **Next Task**: Decompile and verify Bank 2 Link Movement, Diagonal Steps, and Interactive Collision Handlers (`func_002_48C5`, `func_002_48DF`, `func_002_48FB`, `func_002_4911`+)
 * **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
@@ -19,6 +19,11 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `UpdateSpinAttackAnimation` | VERIFIED | PASS | PASS | Spin attack 360-degree rotation animation, motion blocking, 45-degree angle slices, and sword collision box (`02:4709`) |
+| `label_002_476B` | VERIFIED | PASS | PASS | Progresses sword swing animation from wC16D timer, sets wC16E = 4, blocks motion, and transitions to SWING_MIDDLE (`02:476B`) |
+| `UpdateLinkAnimation` | VERIFIED | PASS | PASS | Top-level Link animation updater: whirlpool rotation (wD475), airborne jumping frames, spin attack, and sword swing advancement (`02:478C`) |
+| `label_002_4827` | VERIFIED | PASS | PASS | Computes sword direction, updates link animation state, sets coordinates wC13A..B, calculates collision box wC140..wC143, and triggers static collision check (`02:4827`) |
+| `label_002_48B0` | VERIFIED | PASS | PASS | Clears wC1AC, resets sword animation state and spin attack flags unless running with Pegasus boots (`02:48B0`) |
 | `LinkMotionDefault` | VERIFIED | PASS | PASS | Default Link motion handler: countdowns, walk physics, animations, spin attack charging and release (`02:4287`) |
 | `func_002_436C` | VERIFIED | PASS | PASS | Motion and collision physics dispatcher between overhead walk and side-scrolling physics (`02:436C`) |
 | `OverheadWalkPhysics` | VERIFIED | PASS | PASS | Overhead walking physics, Pegasus boots running, turning, piece of power boost, and slow-down throttling (`02:43BA`) |

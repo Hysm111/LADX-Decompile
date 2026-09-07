@@ -22,7 +22,9 @@
 #define wRoomTransitionDirection 0xC125
 #define wRandomSeed             0xC13D
 #define wC140                   0xC140
+#define wC141                   0xC141
 #define wC142                   0xC142
+#define wC143                   0xC143
 #define wIsRunningWithPegasusBoots 0xC14A
 #define wPegasusBootsChargeMeter 0xC14B
 #define wTransitionSequenceCounter 0xC16B
@@ -31,6 +33,7 @@
 #define wConveyorBeltsCount          0xC1A5
 #define wObjectAffectingBGPalette    0xC3CB
 #define wC3CD                        0xC3CD
+#define wC3CF                        0xC3CF
 #define wC50E                        0xC50E
 #define wRoomSwitchableObject        0xD6FA
 #define wShutterDoorsMask            0xC18A

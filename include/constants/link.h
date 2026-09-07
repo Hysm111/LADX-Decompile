@@ -81,4 +81,25 @@
 #define ITEM_USAGE_NEAR_NPC                                0x01
 #define ITEM_USAGE_ON_RAFT                                 0x80
 
+#define LINK_ANIMATION_STATE_UNKNOWN_12                    0x12
+#define LINK_ANIMATION_STATE_UNKNOWN_13                    0x13
+#define LINK_ANIMATION_STATE_UNKNOWN_14                    0x14
+#define LINK_ANIMATION_STATE_UNKNOWN_15                    0x15
+#define LINK_ANIMATION_STATE_UNKNOWN_16                    0x16
+#define LINK_ANIMATION_STATE_UNKNOWN_17                    0x17
+#define LINK_ANIMATION_STATE_UNKNOWN_18                    0x18
+#define LINK_ANIMATION_STATE_UNKNOWN_19                    0x19
+#define LINK_ANIMATION_STATE_JUMPING_1                     0x5E
+#define LINK_ANIMATION_STATE_JUMPING_2                     0x5F
+#define LINK_ANIMATION_STATE_JUMPING_3                     0x60
+#define LINK_ANIMATION_STATE_UNKNOWN_61                    0x61
+#define LINK_ANIMATION_STATE_UNKNOWN_62                    0x62
+#define LINK_ANIMATION_STATE_UNKNOWN_63                    0x63
+#define LINK_ANIMATION_STATE_UNKNOWN_64                    0x64
+#define LINK_ANIMATION_STATE_UNKNOWN_65                    0x65
+#define LINK_ANIMATION_STATE_UNKNOWN_66                    0x66
+#define LINK_ANIMATION_STATE_UNKNOWN_67                    0x67
+#define LINK_ANIMATION_STATE_UNKNOWN_68                    0x68
+#define LINK_ANIMATION_STATE_UNKNOWN_69                    0x69
+
 #endif /* LADX_CONSTANTS_LINK_H */
