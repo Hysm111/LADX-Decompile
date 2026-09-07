@@ -204,4 +204,48 @@ void UpdateSpinAttackAnimation(GBState *gb, void (*check_collision)(GBState *));
  */
 void UpdateLinkAnimation(GBState *gb, void (*check_collision)(GBState *));
 
+/**
+ * Executes ground motion and gravity integration without air/side-scrolling guards (02:44FA).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_ground_physics Optional callback for ground physics handling.
+ */
+void ApplyLinkGroundMotion_noChecks(GBState *gb, void (*apply_ground_physics)(GBState *));
+
+/* Bank 2 Walking & Movement Tables */
+extern const int8_t HorizontalIncrementForLinkPosition[32];
+extern const int8_t VerticalIncrementForLinkPosition[32];
+extern const uint8_t LinkAnimationsList_WalkingNoShield[8];
+extern const uint8_t LinkAnimationsList_WalkCarryingDefaultShield[8];
+extern const uint8_t LinkAnimationsList_WalkUsingDefaultShield[8];
+extern const uint8_t LinkAnimationsList_WalkCarryingMirrorShield[8];
+extern const uint8_t LinkAnimationsList_WalkUsingMirrorShield[8];
+extern const uint8_t LinkAnimationsList_PushingObject[8];
+extern const uint8_t LinkAnimationsList_LiftingObject[8];
+extern const uint8_t Data_002_4948[8];
+extern const uint8_t Data_002_4950[8];
+extern const uint8_t LinkAnimationsList_WalkSideScrolling[8];
+extern const uint8_t Data_002_49CA[72];
+extern const int8_t Data_002_4A12[2];
+extern const int8_t Data_002_4A14[2];
+
+/**
+ * Handles Link getting unstuck from solid room collision geometry (02:4960).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bg_collision_handler Optional callback for background collision handler (02:6E45).
+ */
+void LinkMotionUnstuckingHandler(GBState *gb, void (*bg_collision_handler)(GBState *));
+
+/**
+ * Link playing ocarina state handler: progresses countdown, note VFX entities, songs, warp (02:4A16).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param select_music_track Optional callback to reload soundtrack (00:27DD / 02:4146).
+ * @param spawn_new_entity Optional callback to spawn entity (00:3B86).
+ */
+void LinkPlayingOcarinaHandler(GBState *gb,
+                               void (*select_music_track)(GBState *),
+                               uint16_t (*spawn_new_entity)(GBState *, uint8_t));
+
 #endif /* LADX_BANK2_BANK2_H */

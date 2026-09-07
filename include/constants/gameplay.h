@@ -122,6 +122,8 @@
 #define SWORD_ANIMATION_STATE_NONE      0x00
 #define USING_SPIN_ATTACK_MAX           0x20
 #define PIT_MAX_SLIPPING                24
+#define TRANSITION_GFX_MANBO_IN         0x02
+#define TRANSITION_GFX_MANBO_IN         0x02
 
 /* Values for wSwordDirection */
 #define SWORD_DIRECTION_RIGHT           0x00

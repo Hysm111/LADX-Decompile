@@ -51,5 +51,6 @@
 #define JINGLE_FEATHER_JUMP                     0x0D
 #define JINGLE_WATER_SPLASH                     0x0E
 #define JINGLE_SEAGULL                          0x21
+#define JINGLE_MANBO_WARP                       0x2C
 
 #endif /* LADX_CONSTANTS_SFX_H */

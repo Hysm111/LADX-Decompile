@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 54.42%
-* **Number of Verified Functions**: 653
+* **Current Overall Progress**: 54.67%
+* **Number of Verified Functions**: 656
 * **Number of Decompiled Functions**: 492
 * **Number Remaining**: ~547 functions
-* **Current Subsystem**: ROM Bank 2 (Sword Animation, Spin Attack, and Sword Collision Routines, 02:4709-02:48BF)
-* **Current Task**: Bank 2 Sword Animation, Spin Attack, and Sword Collision routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `UpdateSpinAttackAnimation`, `label_002_476B`, `UpdateLinkAnimation`, `label_002_4827`, `label_002_48B0`, and 15 lookup tables (`02:45C1`-`02:48BF`)
-* **Next Task**: Decompile and verify Bank 2 Link Movement, Diagonal Steps, and Interactive Collision Handlers (`func_002_48C5`, `func_002_48DF`, `func_002_48FB`, `func_002_4911`+)
+* **Current Subsystem**: ROM Bank 2 (Link Unstucking, Ocarina Playing, and Walking Lists, 02:4905-02:4B40)
+* **Current Task**: Bank 2 Link Unstucking, Ocarina Playing, and Movement Lists decompiled and verified
+* **Last Completed Task**: Decompiled and verified `ApplyLinkGroundMotion_noChecks`, `LinkMotionUnstuckingHandler`, `LinkPlayingOcarinaHandler`, and 16 lookup tables (`02:48C5`-`02:4B40`)
+* **Next Task**: Decompile and verify Bank 2 Shovel Digging and Uncovered Items handlers (`func_002_4B49`, `func_002_4BC8`, `02:4B41`-`02:4C90`)
 * **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
 
 ---
@@ -19,6 +19,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `ApplyLinkGroundMotion_noChecks` | VERIFIED | PASS | PASS | Air motion & vertical physics integration without air/side-scrolling guards (`02:44FA`) |
+| `LinkMotionUnstuckingHandler` | VERIFIED | PASS | PASS | Unstick Link from solid geometry: loops vertical adjustments, calls background collision, updates air physics (`02:4960`) |
+| `LinkPlayingOcarinaHandler` | VERIFIED | PASS | PASS | Ocarina playing handler: song countdown, note VFX entities, Marin/dialog triggers, Manbo warp transition (`02:4A16`) |
 | `UpdateSpinAttackAnimation` | VERIFIED | PASS | PASS | Spin attack 360-degree rotation animation, motion blocking, 45-degree angle slices, and sword collision box (`02:4709`) |
 | `label_002_476B` | VERIFIED | PASS | PASS | Progresses sword swing animation from wC16D timer, sets wC16E = 4, blocks motion, and transitions to SWING_MIDDLE (`02:476B`) |
 | `UpdateLinkAnimation` | VERIFIED | PASS | PASS | Top-level Link animation updater: whirlpool rotation (wD475), airborne jumping frames, spin attack, and sword swing advancement (`02:478C`) |

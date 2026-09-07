@@ -1,4 +1,5 @@
 #include "bank2/bank2.h"
+#include "bank2/audio.h"
 #include "constants/directions.h"
 #include "constants/gameplay.h"
 #include "constants/inventory.h"
@@ -13,6 +14,8 @@
 #include "home/check_items_to_use.h"
 #include "home/link.h"
 #include "home/vfx.h"
+#include "home/dialog.h"
+#include "home/entities.h"
 
 const int8_t HookshotChainSpeedX[4] = {
     0x30,  /* DIRECTION_RIGHT:  HOOKSHOT_CHAIN_SPEED ($30) */
@@ -70,6 +73,87 @@ const uint8_t JoypadToLinkDirection[11] = {
     DIRECTION_KEEP,  /* 9: down + right */
     DIRECTION_KEEP   /* 10: down + left */
 };
+
+const uint8_t LinkAnimationsList_WalkingNoShield[8] = {
+    LINK_ANIMATION_STATE_STANDING_RIGHT, LINK_ANIMATION_STATE_WALKING_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_LEFT,  LINK_ANIMATION_STATE_WALKING_LEFT,
+    LINK_ANIMATION_STATE_STANDING_UP,    LINK_ANIMATION_STATE_WALKING_UP,
+    LINK_ANIMATION_STATE_STANDING_DOWN,  LINK_ANIMATION_STATE_WALKING_DOWN
+};
+
+const uint8_t LinkAnimationsList_WalkCarryingDefaultShield[8] = {
+    LINK_ANIMATION_STATE_STANDING_SHIELD_RIGHT, LINK_ANIMATION_STATE_WALKING_SHIELD_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_LEFT,         LINK_ANIMATION_STATE_WALKING_LEFT,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_UP,    LINK_ANIMATION_STATE_WALKING_SHIELD_UP,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_DOWN,  LINK_ANIMATION_STATE_WALKING_SHIELD_DOWN
+};
+
+const uint8_t LinkAnimationsList_WalkUsingDefaultShield[8] = {
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_RIGHT, LINK_ANIMATION_STATE_WALKING_SHIELD_USE_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_LEFT,  LINK_ANIMATION_STATE_WALKING_SHIELD_USE_LEFT,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_UP,    LINK_ANIMATION_STATE_WALKING_SHIELD_USE_UP,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_DOWN,  LINK_ANIMATION_STATE_WALKING_SHIELD_USE_DOWN
+};
+
+const uint8_t LinkAnimationsList_WalkCarryingMirrorShield[8] = {
+    LINK_ANIMATION_STATE_STANDING_MIRROR_SHIELD_RIGHT, LINK_ANIMATION_STATE_WALKING_MIRROR_SHIELD_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_LEFT,                LINK_ANIMATION_STATE_WALKING_LEFT,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_UP,           LINK_ANIMATION_STATE_WALKING_SHIELD_UP,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_DOWN,         LINK_ANIMATION_STATE_WALKING_SHIELD_DOWN
+};
+
+const uint8_t LinkAnimationsList_WalkUsingMirrorShield[8] = {
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_RIGHT,       LINK_ANIMATION_STATE_WALKING_SHIELD_USE_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_SHIELD_USE_LEFT,        LINK_ANIMATION_STATE_WALKING_SHIELD_USE_LEFT,
+    LINK_ANIMATION_STATE_STANDING_MIRROR_SHIELD_USE_UP,   LINK_ANIMATION_STATE_WALKING_MIRROR_SHIELD_USE_UP,
+    LINK_ANIMATION_STATE_STANDING_MIRROR_SHIELD_USE_DOWN, LINK_ANIMATION_STATE_WALKING_MIRROR_SHIELD_USE_DOWN
+};
+
+const uint8_t LinkAnimationsList_PushingObject[8] = {
+    LINK_ANIMATION_STATE_STANDING_PUSHING_RIGHT, LINK_ANIMATION_STATE_WALKING_PUSHING_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_PUSHING_LEFT,  LINK_ANIMATION_STATE_WALKING_PUSHING_LEFT,
+    LINK_ANIMATION_STATE_STANDING_PUSHING_UP,    LINK_ANIMATION_STATE_WALKING_PUSHING_UP,
+    LINK_ANIMATION_STATE_STANDING_PUSHING_DOWN,  LINK_ANIMATION_STATE_WALKING_PUSHING_DOWN
+};
+
+const uint8_t LinkAnimationsList_LiftingObject[8] = {
+    LINK_ANIMATION_STATE_STANDING_LIFTING_RIGHT, LINK_ANIMATION_STATE_WALKING_LIFTING_RIGHT,
+    LINK_ANIMATION_STATE_STANDING_LIFTING_LEFT,  LINK_ANIMATION_STATE_WALKING_LIFTING_LEFT,
+    LINK_ANIMATION_STATE_STANDING_LIFTING_UP,    LINK_ANIMATION_STATE_WALKING_LIFTING_UP,
+    LINK_ANIMATION_STATE_STANDING_LIFTING_DOWN,  LINK_ANIMATION_STATE_WALKING_LIFTING_DOWN
+};
+
+const uint8_t Data_002_4948[8] = {
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_1_RIGHT, LINK_ANIMATION_STATE_MOVING_SWIMMING_1_RIGHT,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_1_LEFT,  LINK_ANIMATION_STATE_MOVING_SWIMMING_1_LEFT,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_1_UP,    LINK_ANIMATION_STATE_MOVING_SWIMMING_1_UP,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_1_DOWN,  LINK_ANIMATION_STATE_MOVING_SWIMMING_1_DOWN
+};
+
+const uint8_t Data_002_4950[8] = {
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_2, LINK_ANIMATION_STATE_MOVING_SWIMMING_2,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_2, LINK_ANIMATION_STATE_MOVING_SWIMMING_2,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_2, LINK_ANIMATION_STATE_MOVING_SWIMMING_2,
+    LINK_ANIMATION_STATE_HOLD_SWIMMING_2, LINK_ANIMATION_STATE_MOVING_SWIMMING_2
+};
+
+const uint8_t LinkAnimationsList_WalkSideScrolling[8] = {
+    LINK_ANIMATION_STATE_STANDING_SIDE_SCROLL_RIGHT_UP,  LINK_ANIMATION_STATE_WALKING_SIDE_SCROLL_RIGHT_UP,
+    LINK_ANIMATION_STATE_STANDING_SIDE_SCROLL_LEFT_DOWN, LINK_ANIMATION_STATE_WALKING_SIDE_SCROLL_LEFT_DOWN,
+    LINK_ANIMATION_STATE_STANDING_SIDE_SCROLL_RIGHT_UP,  LINK_ANIMATION_STATE_WALKING_SIDE_SCROLL_RIGHT_UP,
+    LINK_ANIMATION_STATE_STANDING_SIDE_SCROLL_LEFT_DOWN, LINK_ANIMATION_STATE_WALKING_SIDE_SCROLL_LEFT_DOWN
+};
+
+const uint8_t Data_002_49CA[72] = {
+    0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+    0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+    0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01,
+    0x00, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01
+};
+
+const int8_t Data_002_4A12[2] = { 0x08, (int8_t)0xF8 };
+const int8_t Data_002_4A14[2] = { 0x06, 0x01 };
 
 const int8_t Data_002_44E7[6] = {
     0, -16, 16, 0, -1, 1
@@ -293,18 +377,8 @@ void shallowWaterVfx(GBState *gb) {
     AddTranscientVfx(gb, TRANSCIENT_VFX_PEGASUS_SPLASH);
 }
 
-void ApplyLinkGroundMotion(GBState *gb, void (*apply_ground_physics)(GBState *)) {
+void ApplyLinkGroundMotion_noChecks(GBState *gb, void (*apply_ground_physics)(GBState *)) {
     if (!gb) return;
-
-    /* ld a, [wIsLinkInTheAir]; and a; jp z, .return */
-    if (gb_read(gb, wIsLinkInTheAir) == 0) {
-        return;
-    }
-
-    /* ldh a, [hIsSideScrolling]; and a; jp nz, .return */
-    if (gb_read_hram(gb, hIsSideScrolling) != 0) {
-        return;
-    }
 
     /* .noChecks: call func_21E1 */
     func_21E1(gb);
@@ -424,6 +498,22 @@ void ApplyLinkGroundMotion(GBState *gb, void (*apply_ground_physics)(GBState *))
 
     /* ld a, NOISE_SFX_FOOTSTEP; ldh [hNoiseSfx], a */
     gb_write_hram(gb, hNoiseSfx, NOISE_SFX_FOOTSTEP);
+}
+
+void ApplyLinkGroundMotion(GBState *gb, void (*apply_ground_physics)(GBState *)) {
+    if (!gb) return;
+
+    /* ld a, [wIsLinkInTheAir]; and a; jp z, .return */
+    if (gb_read(gb, wIsLinkInTheAir) == 0) {
+        return;
+    }
+
+    /* ldh a, [hIsSideScrolling]; and a; jp nz, .return */
+    if (gb_read_hram(gb, hIsSideScrolling) != 0) {
+        return;
+    }
+
+    ApplyLinkGroundMotion_noChecks(gb, apply_ground_physics);
 }
 
 void label_002_44B5(GBState *gb, void (*check_map_transition)(GBState *)) {
@@ -701,6 +791,8 @@ void LinkMotionDefault(GBState *gb,
         gb_write_hram(gb, hLinkVelocityZ, 0);
         if (ocarina_handler) {
             ocarina_handler(gb);
+        } else {
+            LinkPlayingOcarinaHandler(gb, NULL, NULL);
         }
         if (func_002_753a) {
             func_002_753a(gb);
@@ -728,6 +820,8 @@ void LinkMotionDefault(GBState *gb,
     func_002_4338(gb);
     if (ocarina_handler) {
         ocarina_handler(gb);
+    } else {
+        LinkPlayingOcarinaHandler(gb, NULL, NULL);
     }
 
     /* ld a, [wRoomTransitionState]; and a; jr nz, .return */
@@ -1125,4 +1219,259 @@ void UpdateLinkAnimation(GBState *gb, void (*check_collision)(GBState *)) {
     gb_write(gb, wC138, c138);
 
     label_002_4827(gb, check_collision);
+}
+
+void LinkMotionUnstuckingHandler(GBState *gb, void (*bg_collision_handler)(GBState *)) {
+    if (!gb) return;
+
+    /* ld a, $02; ld [wC1C4], a */
+    gb_write(gb, wC1C4, 0x02);
+
+    /* ldh a, [hLinkPhysicsModifier]; and a; jr nz, jr_002_49AA */
+    if (gb_read_hram(gb, hLinkPhysicsModifier) == 0) {
+        /* ldh a, [hLinkPositionY]; add $10; ldh [hLinkPositionY], a; ldh [hLinkFinalPositionY], a */
+        uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x10);
+        gb_write_hram(gb, hLinkPositionY, pos_y);
+        gb_write_hram(gb, hLinkFinalPositionY, pos_y);
+
+        /* ldh a, [hLinkPositionZ]; add $10; ldh [hLinkPositionZ], a */
+        uint8_t pos_z = (uint8_t)(gb_read_hram(gb, hLinkPositionZ) + 0x10);
+        gb_write_hram(gb, hLinkPositionZ, pos_z);
+
+        /* .loop_4978 */
+        while (1) {
+            /* ld a, $FF; ldh [hLinkSpeedY], a */
+            gb_write_hram(gb, hLinkSpeedY, 0xFF);
+            /* xor a; ldh [hLinkSpeedX], a */
+            gb_write_hram(gb, hLinkSpeedX, 0x00);
+
+            /* ldh a, [hLinkPositionY]; add $08; ldh [hLinkPositionY], a; ldh [hLinkFinalPositionY], a */
+            pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x08);
+            gb_write_hram(gb, hLinkPositionY, pos_y);
+            gb_write_hram(gb, hLinkFinalPositionY, pos_y);
+
+            /* ldh a, [hLinkPositionZ]; add $08; ldh [hLinkPositionZ], a */
+            pos_z = (uint8_t)(gb_read_hram(gb, hLinkPositionZ) + 0x08);
+            gb_write_hram(gb, hLinkPositionZ, pos_z);
+
+            /* call BackgroundCollisionHandler */
+            if (bg_collision_handler) {
+                bg_collision_handler(gb);
+            }
+
+            /* ldh a, [hObjectUnderEntity]; cp $E1; jr z, .loop_4978 */
+            uint8_t under = gb_read_hram(gb, hObjectUnderEntity);
+            if (under == 0xE1) {
+                continue;
+            }
+
+            /* cp $61; jr z, .jr_49A0 */
+            if (under == 0x61) {
+                break;
+            }
+
+            /* ld a, [wCollisionType]; and a; jr nz, .loop_4978 */
+            if (gb_read(gb, wCollisionType) != 0) {
+                continue;
+            }
+            break;
+        }
+
+        /* .jr_49A0: ld a, $01; ldh [hLinkPhysicsModifier], a */
+        gb_write_hram(gb, hLinkPhysicsModifier, 0x01);
+        /* ldh a, [hLinkPositionY]; sub $03; ldh [hLinkPositionY], a */
+        pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) - 0x03);
+        gb_write_hram(gb, hLinkPositionY, pos_y);
+    }
+
+    /* jr_002_49AA: call ApplyLinkGroundMotion.noChecks */
+    ApplyLinkGroundMotion_noChecks(gb, NULL);
+
+    /* ldh a, [hLinkPositionZ]; and a; jr nz, .jr_49B6 */
+    if (gb_read_hram(gb, hLinkPositionZ) == 0) {
+        /* xor a; ld [wLinkMotionState], a */
+        gb_write(gb, wLinkMotionState, 0x00);
+    }
+
+    /* .jr_49B6: ld a, $01; ld [wIsLinkInTheAir], a */
+    gb_write(gb, wIsLinkInTheAir, 0x01);
+
+    /* call CheckItemsToUse */
+    CheckItemsToUse(gb, NULL, NULL, NULL);
+
+    /* call UpdateLinkAnimation */
+    UpdateLinkAnimation(gb, NULL);
+
+    /* ld a, [wSwordAnimationState]; ld [wC16A], a */
+    gb_write(gb, wC16A, gb_read(gb, wSwordAnimationState));
+
+    /* jp ApplyLinkMotionState */
+    ApplyLinkMotionState(gb, NULL, NULL, NULL);
+}
+
+void LinkPlayingOcarinaHandler(GBState *gb,
+                               void (*select_music_track)(GBState *),
+                               uint16_t (*spawn_new_entity)(GBState *, uint8_t)) {
+    if (!gb) return;
+
+    /* ld a, [wLinkPlayingOcarinaCountdown]; and a; ret z */
+    uint8_t countdown = gb_read(gb, wLinkPlayingOcarinaCountdown);
+    if (countdown == 0) {
+        return;
+    }
+
+    /* ld hl, hLinkInteractiveMotionBlocked; ld [hl], $02 */
+    gb_write_hram(gb, hLinkInteractiveMotionBlocked, 0x02);
+
+    /* cp $FF; jr nz, jr_002_4A7C */
+    if (countdown == 0xFF) {
+        /* ld a, [wD210]; add $01; ld [wD210], a; ld a, [wD211]; adc $00; ld [wD211], a */
+        uint16_t d210_val = (uint16_t)(gb_read(gb, wD210) | (gb_read(gb, wD211) << 8));
+        d210_val++;
+        gb_write(gb, wD210, (uint8_t)(d210_val & 0xFF));
+        gb_write(gb, wD211, (uint8_t)(d210_val >> 8));
+
+        /* cp $08; jr nz, .jr_4A53; ld a, [wD210]; cp $D0; jr nz, .jr_4A53 */
+        if (d210_val == 0x08D0) {
+            /* xor a; ld [wLinkPlayingOcarinaCountdown], a; ld [wC167], a */
+            gb_write(gb, wLinkPlayingOcarinaCountdown, 0x00);
+            gb_write(gb, wC167, 0x00);
+            /* ld a, $03; ld [wC5A3], a */
+            gb_write(gb, wC5A3, 0x03);
+
+            /* ld a, [wD465]; cp $47; ret z */
+            if (gb_read(gb, wD465) == 0x47) {
+                return;
+            }
+
+            /* jr jr_002_4A6C */
+            uint8_t slot = gb_read(gb, wD461);
+            gb_write(gb, (uint16_t)(wEntitiesStateTable + slot), 0x00);
+            if (select_music_track) {
+                select_music_track(gb);
+            } else {
+                SelectMusicTrackAfterTransition(gb);
+            }
+            return;
+        }
+
+        /* .jr_4A53: ld a, [wD465]; cp $47; jr z, jr_002_4A7A */
+        if (gb_read(gb, wD465) != 0x47) {
+            /* ldh a, [hJoypadState]; and J_A | J_B; jr z, jr_002_4A7A */
+            if ((gb_read_hram(gb, hJoypadState) & (J_A | J_B)) != 0) {
+                /* xor a; ld [wLinkPlayingOcarinaCountdown], a; ld [wC167], a */
+                gb_write(gb, wLinkPlayingOcarinaCountdown, 0x00);
+                gb_write(gb, wC167, 0x00);
+                /* ld a, $03; ld [wC5A3], a */
+                gb_write(gb, wC5A3, 0x03);
+
+                /* jr_002_4A6C */
+                uint8_t slot = gb_read(gb, wD461);
+                gb_write(gb, (uint16_t)(wEntitiesStateTable + slot), 0x00);
+                if (select_music_track) {
+                    select_music_track(gb);
+                } else {
+                    SelectMusicTrackAfterTransition(gb);
+                }
+                return;
+            }
+        }
+        /* jr_002_4A7A -> jr jr_002_4AD1 */
+    } else {
+        /* jr_002_4A7C */
+        ClearLinkPositionIncrement(gb);
+        ResetSpinAttack(gb);
+
+        /* dec [hl]; jr nz, jr_002_4AD1 */
+        countdown--;
+        gb_write(gb, wLinkPlayingOcarinaCountdown, countdown);
+        if (countdown == 0) {
+            /* ld a, [wIsMarinFollowingLink]; and a; jr z, .jr_4AA2 */
+            if (gb_read(gb, wIsMarinFollowingLink) != 0) {
+                /* ld a, [wSelectedSongIndex]; cp $01; jr z, jr_002_4AB2 */
+                /* ld a, [wIsIndoor]; and a; jr nz, jr_002_4AB2 */
+                if (gb_read(gb, wSelectedSongIndex) != 0x01 && gb_read(gb, wIsIndoor) == 0) {
+                    /* call_open_dialog Dialog277 */
+                    OpenDialogInTable2(gb, 0x77);
+                }
+            } else {
+                /* .jr_4AA2: ld a, [wOcarinaSongFlags]; and a; jr nz, jr_002_4AB2 */
+                if (gb_read(gb, wOcarinaSongFlags) == 0) {
+                    /* call_open_dialog Dialog08E */
+                    OpenDialogInTable0(gb, 0x8E);
+                    gb_write(gb, wC167, 0x00);
+                    return;
+                }
+            }
+
+            /* jr_002_4AB2 */
+            gb_write(gb, wC167, 0x00);
+            /* ld a, [wSelectedSongIndex]; cp $01; jr nz, .ret_4AD0 */
+            if (gb_read(gb, wSelectedSongIndex) == 0x01) {
+                /* ld a, TRANSITION_GFX_MANBO_IN; ld [wTransitionGfx], a */
+                gb_write(gb, wTransitionGfx, TRANSITION_GFX_MANBO_IN);
+                /* xor a; ld [wTransitionGfxFrameCount], a; ld [wTransitionSequenceCounter], a; ld [wC16C], a */
+                gb_write(gb, wTransitionGfxFrameCount, 0x00);
+                gb_write(gb, wTransitionSequenceCounter, 0x00);
+                gb_write(gb, wC16C, 0x00);
+                /* ld a, JINGLE_MANBO_WARP; ldh [hJingle], a */
+                gb_write_hram(gb, hJingle, JINGLE_MANBO_WARP);
+            }
+            return;
+        }
+    }
+
+    /* jr_002_4AD1 */
+    uint8_t c5a4 = (uint8_t)(gb_read(gb, wC5A4) + 1);
+    gb_write(gb, wC5A4, c5a4);
+    if (c5a4 >= 0x38) {
+        gb_write(gb, wC5A4, 0x00);
+        uint8_t c5a5 = (uint8_t)(gb_read(gb, wC5A5) ^ 0x01);
+        gb_write(gb, wC5A5, c5a5);
+    }
+
+    /* .jr_4AE8 */
+    uint8_t c5a5 = gb_read(gb, wC5A5);
+    uint8_t anim_state = (c5a5 != 0) ? LINK_ANIMATION_STATE_UNKNOWN_75 : (uint8_t)(LINK_ANIMATION_STATE_UNKNOWN_75 + 1);
+    gb_write_hram(gb, hLinkAnimationState, anim_state);
+
+    /* ld a, $02; ld [wC167], a; ld [wC111], a */
+    gb_write(gb, wC167, 0x02);
+    gb_write(gb, wC111, 0x02);
+
+    /* ld a, [wLinkPlayingOcarinaCountdown]; cp $10; ret c */
+    countdown = gb_read(gb, wLinkPlayingOcarinaCountdown);
+    if (countdown < 0x10) {
+        return;
+    }
+
+    /* ld a, [wC5A4]; cp $14; jr nz, .ret_4B40 */
+    if (gb_read(gb, wC5A4) != 0x14) {
+        return;
+    }
+
+    /* ld a, ENTITY_MUSICAL_NOTE; call SpawnNewEntity_trampoline; jr c, .ret_4B40 */
+    uint16_t slot = SpawnNewEntity_trampoline(gb, ENTITY_MUSICAL_NOTE, spawn_new_entity);
+    if (slot == 0xFFFF) {
+        return;
+    }
+
+    /* ldh a, [hLinkPositionY]; sub $08; ld [wEntitiesPosYTable + de], a */
+    uint8_t note_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) - 0x08);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + slot), note_y);
+
+    /* ld a, [wC5A5]; ld c, a; ld b, d; ld hl, Data_002_4A12; add hl, bc */
+    /* ldh a, [hLinkPositionX]; add [hl]; ld [wEntitiesPosXTable + de], a */
+    uint8_t bc_idx = (uint8_t)(gb_read(gb, wC5A5) & 1);
+    uint8_t note_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + (uint8_t)Data_002_4A12[bc_idx]);
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + slot), note_x);
+
+    /* ld hl, Data_002_4A14; add hl, bc; ld a, [hl]; ld [wEntitiesSpeedXTable + de], a */
+    gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + slot), (uint8_t)Data_002_4A14[bc_idx]);
+
+    /* ld [wEntitiesSpeedYTable + de], $FC */
+    gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + slot), 0xFC);
+
+    /* ld [wEntitiesInertiaTable + de], $40 */
+    gb_write(gb, (uint16_t)(wEntitiesInertiaTable + slot), 0x40);
 }

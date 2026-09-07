@@ -40,6 +40,8 @@
 #define ENTITY_GHOST                 0xD4
 #define ENTITY_ROOSTER               0xD5
 #define ENTITY_SWORD_BEAM            0xDF
+#define ENTITY_MUSICAL_NOTE          0xC9
+#define ENTITY_MUSICAL_NOTE          0xC9
 #define ENTITIES_END                 0xFF
 
 #define BANK_OverworldEntitiesPointersTable     0x16

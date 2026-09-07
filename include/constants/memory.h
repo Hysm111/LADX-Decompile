@@ -543,8 +543,14 @@
 #define wC166                                 0xC166
 #define wLinkPlayingOcarinaCountdown          0xC166
 #define wC1CF                                 0xC1CF
+#define wC5A3                                 0xC5A3
+#define wC5A3                                 0xC5A3
 #define wC5A4                                 0xC5A4
 #define wC5A5                                 0xC5A5
+#define wD461                                 0xD461
+#define wD465                                 0xD465
+#define wD461                                 0xD461
+#define wD465                                 0xD465
 #define wBossDefeated                         0xD46C
 #define wSelectedSongIndex                    0xDB4A
 #define wC10A                                 0xC10A

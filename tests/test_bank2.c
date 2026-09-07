@@ -60,6 +60,22 @@ static void mock_check_collision(GBState *gb) {
     (void)gb;
     g_mock_sword_collision_calls++;
 }
+static int g_mock_bg_collision_calls = 0;
+static void mock_bg_collision(GBState *gb) {
+    (void)gb;
+    g_mock_bg_collision_calls++;
+}
+
+static int g_mock_select_music_calls = 0;
+static void mock_select_music(GBState *gb) {
+    (void)gb;
+    g_mock_select_music_calls++;
+}
+
+static uint16_t mock_spawn_entity(GBState *gb, uint8_t entity_type) {
+    gb_write(gb, (uint16_t)(wEntitiesTypeTable + 15), entity_type);
+    return 15;
+}
 static void mock_check_map_transition(GBState *gb) {
     (void)gb;
     g_mock_map_transition_calls++;
@@ -1120,6 +1136,200 @@ void run_bank2_tests(void) {
         assert(gb_read(&gb, wC138) == 2);
         assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 1);
         assert(g_mock_sword_collision_calls == 1);
+    }
+
+    /* Test 35: Walking, animation and data tables */
+    {
+        assert(sizeof(HorizontalIncrementForLinkPosition) == 32);
+        assert(sizeof(VerticalIncrementForLinkPosition) == 32);
+        assert(sizeof(JoypadToLinkDirection) == 11);
+        assert(sizeof(LinkAnimationsList_WalkingNoShield) == 8);
+        assert(sizeof(LinkAnimationsList_WalkCarryingDefaultShield) == 8);
+        assert(sizeof(LinkAnimationsList_WalkUsingDefaultShield) == 8);
+        assert(sizeof(LinkAnimationsList_WalkCarryingMirrorShield) == 8);
+        assert(sizeof(LinkAnimationsList_WalkUsingMirrorShield) == 8);
+        assert(sizeof(LinkAnimationsList_PushingObject) == 8);
+        assert(sizeof(LinkAnimationsList_LiftingObject) == 8);
+        assert(sizeof(Data_002_4948) == 8);
+        assert(sizeof(Data_002_4950) == 8);
+        assert(sizeof(LinkAnimationsList_WalkSideScrolling) == 8);
+        assert(sizeof(Data_002_49CA) == 72);
+        assert(sizeof(Data_002_4A12) == 2);
+        assert(sizeof(Data_002_4A14) == 2);
+
+        assert(HorizontalIncrementForLinkPosition[1] == 0x10);
+        assert(HorizontalIncrementForLinkPosition[2] == (int8_t)0xF0);
+        assert(VerticalIncrementForLinkPosition[4] == (int8_t)0xF0);
+        assert(VerticalIncrementForLinkPosition[8] == 0x10);
+
+        assert(JoypadToLinkDirection[0] == DIRECTION_KEEP);
+        assert(JoypadToLinkDirection[1] == DIRECTION_RIGHT);
+        assert(JoypadToLinkDirection[2] == DIRECTION_LEFT);
+        assert(JoypadToLinkDirection[4] == DIRECTION_UP);
+        assert(JoypadToLinkDirection[8] == DIRECTION_DOWN);
+
+        assert(LinkAnimationsList_WalkingNoShield[0] == LINK_ANIMATION_STATE_STANDING_RIGHT);
+        assert(LinkAnimationsList_WalkingNoShield[1] == LINK_ANIMATION_STATE_WALKING_RIGHT);
+        assert(Data_002_4A12[0] == 0x08);
+        assert(Data_002_4A12[1] == (int8_t)0xF8);
+        assert(Data_002_4A14[0] == 0x06);
+        assert(Data_002_4A14[1] == 0x01);
+    }
+
+    /* Test 36: LinkMotionUnstuckingHandler */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* Case 1: Physics modifier == 0 -> executes unstick loop and sets modifier to 1 */
+        gb_write_hram(&gb, hLinkPhysicsModifier, 0x00);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hLinkPositionZ, 0x00);
+        /* Collision clears when hObjectUnderEntity == 0x61 */
+        gb_write_hram(&gb, hObjectUnderEntity, 0x61);
+        gb_write(&gb, wCollisionType, 0x00);
+        g_mock_bg_collision_calls = 0;
+
+        LinkMotionUnstuckingHandler(&gb, mock_bg_collision);
+
+        assert(gb_read(&gb, wC1C4) == 0x02);
+        assert(gb_read_hram(&gb, hLinkPhysicsModifier) == 0x01);
+        assert(g_mock_bg_collision_calls == 1);
+        /* Initial +0x10, then loop +0x08, then .jr_49A0 -0x03 -> 0x40 + 0x10 + 0x08 - 3 = 0x55 */
+        assert(gb_read_hram(&gb, hLinkPositionY) == 0x55);
+        assert(gb_read(&gb, wIsLinkInTheAir) == 1);
+
+        /* Case 2: Physics modifier != 0 -> skips initial loop and continues to motion */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPhysicsModifier, 0x01);
+        gb_write_hram(&gb, hLinkPositionZ, 0x00);
+        g_mock_bg_collision_calls = 0;
+
+        LinkMotionUnstuckingHandler(&gb, mock_bg_collision);
+        assert(gb_read(&gb, wC1C4) == 0x02);
+        assert(g_mock_bg_collision_calls == 0);
+        assert(gb_read(&gb, wLinkMotionState) == 0x00);
+        assert(gb_read(&gb, wIsLinkInTheAir) == 1);
+    }
+
+    /* Test 37: LinkPlayingOcarinaHandler */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* 1. Countdown == 0 -> returns early */
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x00);
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 0x00);
+
+        /* 2. Countdown == 0xFF: increments wD210/wD211 */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0xFF);
+        gb_write(&gb, wD210, 0x20);
+        gb_write(&gb, wD211, 0x01);
+
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 0x02);
+        assert(gb_read(&gb, wD210) == 0x21);
+        assert(gb_read(&gb, wD211) == 0x01);
+
+        /* 3. Countdown == 0xFF: reaches 0x08D0 triggers termination and reload track */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0xFF);
+        gb_write(&gb, wD210, 0xCF);
+        gb_write(&gb, wD211, 0x08);
+        gb_write(&gb, wD465, 0x00);
+        gb_write(&gb, wD461, 0x03);
+        gb_write(&gb, (uint16_t)(wEntitiesStateTable + 3), 0x05);
+        g_mock_select_music_calls = 0;
+
+        LinkPlayingOcarinaHandler(&gb, mock_select_music, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x00);
+        assert(gb_read(&gb, wC167) == 0x00);
+        assert(gb_read(&gb, wC5A3) == 0x03);
+        assert(gb_read(&gb, (uint16_t)(wEntitiesStateTable + 3)) == 0x00);
+        assert(g_mock_select_music_calls == 1);
+
+        /* 4. Countdown == 0xFF: A button cancels and reloads track */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0xFF);
+        gb_write(&gb, wD210, 0x00);
+        gb_write(&gb, wD211, 0x00);
+        gb_write(&gb, wD465, 0x00);
+        gb_write(&gb, wD461, 0x02);
+        gb_write(&gb, (uint16_t)(wEntitiesStateTable + 2), 0x05);
+        gb_write_hram(&gb, hJoypadState, J_A);
+        g_mock_select_music_calls = 0;
+
+        LinkPlayingOcarinaHandler(&gb, mock_select_music, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x00);
+        assert(gb_read(&gb, wC5A3) == 0x03);
+        assert(gb_read(&gb, (uint16_t)(wEntitiesStateTable + 2)) == 0x00);
+        assert(g_mock_select_music_calls == 1);
+
+        /* 5. Countdown decrements towards 0 */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x15);
+        gb_write(&gb, wC5A4, 0x00);
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x14);
+        assert(gb_read(&gb, wC5A4) == 0x01);
+        assert(gb_read(&gb, wC167) == 0x02);
+        assert(gb_read(&gb, wC111) == 0x02);
+
+        /* 6. Reaching 0 with Marin following (outdoor, song != 1) triggers Dialog277 (0x277) */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x01);
+        gb_write(&gb, wIsMarinFollowingLink, 0x01);
+        gb_write(&gb, wSelectedSongIndex, 0x00);
+        gb_write(&gb, wIsIndoor, 0x00);
+
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x00);
+        assert(gb_read(&gb, wDialogIndex) == 0x77);
+        assert(gb_read(&gb, wDialogIndexHi) == 0x02);
+
+        /* 7. Reaching 0 with no Marin and no songs known triggers Dialog08E (0x8E) */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x01);
+        gb_write(&gb, wIsMarinFollowingLink, 0x00);
+        gb_write(&gb, wOcarinaSongFlags, 0x00);
+
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x00);
+        assert(gb_read(&gb, wDialogIndex) == 0x8E);
+        assert(gb_read(&gb, wDialogIndexHi) == 0x00);
+
+        /* 8. Song 1 (Manbo's Mambo) triggers warp transition and jingle */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x01);
+        gb_write(&gb, wOcarinaSongFlags, 0x02);
+        gb_write(&gb, wSelectedSongIndex, 0x01);
+        gb_write_hram(&gb, hJingle, 0x00);
+
+        LinkPlayingOcarinaHandler(&gb, NULL, NULL);
+        assert(gb_read(&gb, wLinkPlayingOcarinaCountdown) == 0x00);
+        assert(gb_read(&gb, wTransitionGfx) == TRANSITION_GFX_MANBO_IN);
+        assert(gb_read_hram(&gb, hJingle) == JINGLE_MANBO_WARP);
+
+        /* 9. Musical note entity spawning: countdown >= 0x10 and wC5A4 reaches 0x14 */
+        gb_init(&gb);
+        gb_write(&gb, wLinkPlayingOcarinaCountdown, 0x20);
+        gb_write(&gb, wC5A4, 0x13); /* will increment to 0x14 */
+        gb_write(&gb, wC5A5, 0x00);
+        gb_write_hram(&gb, hLinkPositionX, 0x50);
+        gb_write_hram(&gb, hLinkPositionY, 0x60);
+
+        LinkPlayingOcarinaHandler(&gb, NULL, mock_spawn_entity);
+        /* Musical note entity (ENTITY_MUSICAL_NOTE = 0xC9) spawned at entity slot 15 */
+        assert(gb_read(&gb, (uint16_t)(wEntitiesTypeTable + 15)) == ENTITY_MUSICAL_NOTE);
+        /* note_y = 0x60 - 8 = 0x58 */
+        assert(gb_read(&gb, (uint16_t)(wEntitiesPosYTable + 15)) == 0x58);
+        /* note_x = 0x50 + Data_002_4A12[0] (8) = 0x58 */
+        assert(gb_read(&gb, (uint16_t)(wEntitiesPosXTable + 15)) == 0x58);
+        assert(gb_read(&gb, (uint16_t)(wEntitiesSpeedXTable + 15)) == 0x06);
+        assert(gb_read(&gb, (uint16_t)(wEntitiesSpeedYTable + 15)) == 0xFC);
+        assert(gb_read(&gb, (uint16_t)(wEntitiesInertiaTable + 15)) == 0x40);
     }
 
     printf("[+] Bank 2 unit tests passed successfully!\n");
