@@ -1,3 +1,4 @@
+#include "constants/joypad.h"
 #include "bank1/world_map.h"
 #include "bank1/room_transition.h"
 #include "home/animated_tiles.h"
@@ -166,4 +167,154 @@ void WorldMapState4Handler(GBState *gb) {
     }
     IncrementGameplaySubtype(gb);
     PlayValidationJingle(gb);
+}
+
+void playMoveSelectionJingle(GBState *gb) {
+    if (!gb) return;
+    gb_write(gb, hJingle, JINGLE_MOVE_SELECTION);
+}
+
+void MoveSelect(GBState *gb) {
+    if (!gb) return;
+    if ((gb_read(gb, hJoypadState) & (J_UP | J_DOWN)) != 0) {
+        playMoveSelectionJingle(gb);
+    }
+}
+
+void label_001_5B3F(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t room = gb_read(gb, wDBB4);
+    uint8_t e = (uint8_t)(((room >> 1) & 0x78) + 0x14);
+    uint8_t swapped = (uint8_t)((room << 4) | (room >> 4));
+    uint8_t d = (uint8_t)(((swapped >> 1) & 0x78) + 0x14);
+
+    uint16_t oam_addr = (uint16_t)(wDynamicOAMBuffer + 0x50);
+    gb_write(gb, oam_addr + 0, e);
+    gb_write(gb, oam_addr + 1, d);
+    gb_write(gb, oam_addr + 2, 0xF0);
+    gb_write(gb, oam_addr + 3, 0x00);
+
+    gb_write(gb, oam_addr + 4, e);
+    gb_write(gb, oam_addr + 5, (uint8_t)(d + 0x08));
+    gb_write(gb, oam_addr + 6, 0xF0);
+    gb_write(gb, oam_addr + 7, 0x20);
+
+    if ((gb_read(gb, hFrameCounter) & 0x10) != 0) {
+        return;
+    }
+
+    uint16_t arrow_addr = (uint16_t)(wDynamicOAMBuffer + 0x58);
+    gb_write(gb, arrow_addr + 0, (uint8_t)(e + 0x04));
+    gb_write(gb, arrow_addr + 1, (uint8_t)(d + 0xF6));
+    gb_write(gb, arrow_addr + 2, 0xF6);
+    gb_write(gb, arrow_addr + 3, 0x00);
+
+    gb_write(gb, arrow_addr + 4, (uint8_t)(e + 0x04));
+    gb_write(gb, arrow_addr + 5, (uint8_t)(d + 0x13));
+    gb_write(gb, arrow_addr + 6, 0xF6);
+    gb_write(gb, arrow_addr + 7, 0x20);
+
+    gb_write(gb, arrow_addr + 8, (uint8_t)(e + 0xF6));
+    gb_write(gb, arrow_addr + 9, (uint8_t)(d + 0x04));
+    gb_write(gb, arrow_addr + 10, 0xF8);
+    gb_write(gb, arrow_addr + 11, 0x00);
+
+    gb_write(gb, arrow_addr + 12, (uint8_t)(e + 0x0B));
+    gb_write(gb, arrow_addr + 13, (uint8_t)(d + 0x04));
+    gb_write(gb, arrow_addr + 14, 0xF8);
+    gb_write(gb, arrow_addr + 15, 0x40);
+}
+
+void func_001_5A71(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t old_room = gb_read(gb, wDBB4);
+    gb_write(gb, hMultiPurpose0, old_room);
+
+    uint8_t c1b3 = gb_read(gb, wC1B3);
+    uint8_t c1b2 = gb_read(gb, wC1B2);
+    uint8_t dialog_state = gb_read(gb, wDialogState);
+
+    if ((c1b3 | c1b2 | dialog_state) != 0) {
+        label_001_5B3F(gb);
+        return;
+    }
+
+    uint8_t pressed = gb_read(gb, hPressedButtonsMask);
+    uint8_t c = pressed;
+    uint8_t hold = gb_read(gb, wC182);
+
+    if ((pressed & 0x0F) != 0) {
+        hold++;
+        gb_write(gb, wC182, hold);
+        if (hold == 0x18) {
+            gb_write(gb, wC182, 0x15);
+        } else {
+            c = gb_read(gb, hJoypadState);
+        }
+    } else {
+        gb_write(gb, wC182, 0);
+        c = gb_read(gb, hJoypadState);
+    }
+
+    static const uint8_t Data_001_5A6B[4] = {0, 1, 0xFF, 0};
+    uint8_t x_dir = c & 0x03;
+    uint8_t room = gb_read(gb, wDBB4);
+    uint8_t high_y = room & 0xF0;
+    uint8_t new_x = (uint8_t)((room + Data_001_5A6B[x_dir]) & 0x0F);
+    room = high_y | new_x;
+    gb_write(gb, wDBB4, room);
+
+    static const uint8_t Data_001_5A6E[4] = {0, 0xF0, 0x10, 0};
+    uint8_t y_dir = (c >> 2) & 0x03;
+    room = (uint8_t)(room + Data_001_5A6E[y_dir]);
+    gb_write(gb, wDBB4, room);
+
+    if (room == old_room) {
+        label_001_5B3F(gb);
+        return;
+    }
+
+    uint8_t c5a2 = gb_read(gb, wC5A2);
+    uint8_t room_status = gb_read(gb, (uint16_t)(wOverworldRoomStatus + room));
+    uint8_t free_move = gb_read(gb, wFreeMovementMode);
+
+    if (c5a2 == 0 && room_status == 0 && free_move == 0) {
+        gb_write(gb, hJingle, JINGLE_BUMP);
+        gb_write(gb, wDBB4, old_room);
+        label_001_5B3F(gb);
+        return;
+    }
+
+    playMoveSelectionJingle(gb);
+
+    uint8_t val = MapSpecialLocationNamesTable[room];
+    if (val != 0) {
+        uint8_t cat = (uint8_t)(((val >> 4) & 0x07) + 1);
+        if (cat == 1) {
+            if (gb_read(gb, wC5A2) != 0) {
+                goto check_clear_c1b1;
+            }
+            uint8_t st = gb_read(gb, (uint16_t)(wOverworldRoomStatus + room));
+            if ((st & 0x20) == 0) {
+                goto check_clear_c1b1;
+            }
+        }
+        if (gb_read(gb, wC1B1) != cat) {
+            gb_write(gb, wC1B2, 0x10);
+            gb_write(gb, wC1B3, 0);
+            gb_write(gb, wC1B1, cat);
+        }
+        gb_write(gb, wC1B4, gb_read(gb, wDBB4));
+        label_001_5B3F(gb);
+        return;
+    }
+
+check_clear_c1b1:
+    if (gb_read(gb, wC1B1) != 0) {
+        gb_write(gb, wC1B1, 0);
+        gb_write(gb, wC1B3, 0x10);
+    }
+    label_001_5B3F(gb);
 }

@@ -393,3 +393,4 @@
 #define wC1B4                                 0xC1B4
 #define wC5A2                                 0xC5A2
 #define wLCDControl                           0xD6FD
+#define wC182                                 0xC182

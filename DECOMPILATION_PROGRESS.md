@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 37.00%
-* **Number of Verified Functions**: 444
-* **Number of Decompiled Functions**: 444
-* **Number Remaining**: ~756 functions
-* **Current Subsystem**: Bank 1 - World Map Setup & Navigation (`code/world_map.asm`, `01:5648`-`01:571B`, `01:5A59`, `01:49BE`)
-* **Current Task**: Bank 1 World Map Setup & Transition block completed (100% verified)
-* **Last Completed Task**: Decompiled and verified 7 Bank 1 world map setup, transition, and location dialog routines (`PlayValidationJingle`, `func_001_5A59`, `WorldMapState0Handler`, `WorldMapState1Handler`, `WorldMapState2Handler`, `WorldMapState3Handler`, `WorldMapState4Handler`) (`01:49BE`, `01:5A59`, `01:5648`-`01:571B`)
-* **Next Task**: Decompile and verify Bank 1 World Map interactive cursor movement & display routines (`WorldMapInteractiveHandler`, `WorldMapEntryPoint`, `func_001_5A71`, `label_001_5B3F`) (`code/world_map.asm`, `01:5626`, `01:571C`-`01:5B3F`)
-* **Last Update Timestamp**: 2026-09-07T01:35:00+03:00
+* **Current Overall Progress**: 37.33%
+* **Number of Verified Functions**: 448
+* **Number of Decompiled Functions**: 448
+* **Number Remaining**: ~752 functions
+* **Current Subsystem**: Bank 1 - World Map Cursor Navigation & OAM (`code/bank1.asm`, `01:5A71`-`01:5B3F`, `01:6BA8`-`01:6BAE`)
+* **Current Task**: Bank 1 World Map Cursor Movement & OAM Brackets completed (100% verified)
+* **Last Completed Task**: Decompiled and verified 4 Bank 1 world map cursor movement and selection routines (`playMoveSelectionJingle`, `MoveSelect`, `func_001_5A71`, `label_001_5B3F`) (`01:6BA8`-`01:6BAE`, `01:5A71`-`01:5B3F`)
+* **Next Task**: Decompile and verify Bank 1 World Map marker animation and interactive dispatch routines (`func_001_5C49`, `func_001_5C55`, `WorldMapInteractiveHandler`, `WorldMapEntryPoint`) (`code/world_map.asm`, `01:5626`, `01:571C`-`01:5821`, `01:5C49`+)
+* **Last Update Timestamp**: 2026-09-07T01:45:00+03:00
 
 ---
 
@@ -357,6 +357,10 @@
 | `WorldMapState2Handler` | VERIFIED | PASS | PASS | Requests TILESET_WORLD_MAP ($0B) and advances subtype (`01:56F4`) |
 | `WorldMapState3Handler` | VERIFIED | PASS | PASS | Requests TILESET_WORLD_MAP_TILEMAP ($0E), sets wPaletteUnknownE, and advances subtype (`01:56FD`) |
 | `WorldMapState4Handler` | VERIFIED | PASS | PASS | Map fade-in via func_1A39, plays validation jingle, and advances subtype to interactive mode (`01:570B`) |
+| `playMoveSelectionJingle` | VERIFIED | PASS | PASS | Sets hJingle to JINGLE_MOVE_SELECTION ($0A) (`01:6BAE`) |
+| `MoveSelect` | VERIFIED | PASS | PASS | Checks up/down D-pad input and plays selection jingle (`01:6BA8`) |
+| `func_001_5A71` | VERIFIED | PASS | PASS | Handles world map cursor movement, auto-repeat timer, and fog-of-war constraints (`01:5A71`) |
+| `label_001_5B3F` | VERIFIED | PASS | PASS | Computes map grid screen coordinates and renders cursor brackets and flashing arrows to OAM (`01:5B3F`) |
 
 ---
 

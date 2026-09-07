@@ -6,7 +6,8 @@
 /* Values for hJingle */
 #define JINGLE_NONE                             0x00
 #define JINGLE_PUZZLE_SOLVED                    0x02
-#define JINGLE_MOVE_SELECTION 0x0A
+#define JINGLE_BUMP                             0x09
+#define JINGLE_MOVE_SELECTION                   0x0A
 #define JINGLE_DIALOG_BREAK     0x15
 #define JINGLE_SWORD_POKING                     0x07
 #define JINGLE_VALIDATE                         0x13

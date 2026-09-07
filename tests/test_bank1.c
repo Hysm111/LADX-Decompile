@@ -1030,6 +1030,115 @@ void test_world_map_states(void) {
     gb_write(&gb, rSVBK, 0);
 }
 
+
+void test_move_select_and_jingle(void) {
+    printf("[*] Running MoveSelect and playMoveSelectionJingle tests (01:6BA8, 01:6BAE)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    playMoveSelectionJingle(&gb);
+    assert(gb_read(&gb, hJingle) == JINGLE_MOVE_SELECTION);
+
+    gb_init(&gb);
+    gb_write(&gb, hJoypadState, J_LEFT);
+    MoveSelect(&gb);
+    assert(gb_read(&gb, hJingle) == 0);
+
+    gb_write(&gb, hJoypadState, J_UP);
+    MoveSelect(&gb);
+    assert(gb_read(&gb, hJingle) == JINGLE_MOVE_SELECTION);
+}
+
+void test_label_001_5B3F(void) {
+    printf("[*] Running label_001_5B3F tests (01:5B3F)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Room 0x35: Y=3, X=5 -> e = 3*8 + 0x14 = 0x2C, d = 5*8 + 0x14 = 0x3C */
+    gb_write(&gb, wDBB4, 0x35);
+    gb_write(&gb, hFrameCounter, 0x00); /* Bit 4 = 0 -> render arrows */
+
+    label_001_5B3F(&gb);
+
+    uint16_t oam = (uint16_t)(wDynamicOAMBuffer + 0x50);
+    assert(gb_read(&gb, oam + 0) == 0x2C);
+    assert(gb_read(&gb, oam + 1) == 0x3C);
+    assert(gb_read(&gb, oam + 2) == 0xF0);
+    assert(gb_read(&gb, oam + 3) == 0x00);
+
+    assert(gb_read(&gb, oam + 4) == 0x2C);
+    assert(gb_read(&gb, oam + 5) == 0x44);
+    assert(gb_read(&gb, oam + 6) == 0xF0);
+    assert(gb_read(&gb, oam + 7) == 0x20);
+
+    /* Arrows present */
+    uint16_t arrow = (uint16_t)(wDynamicOAMBuffer + 0x58);
+    assert(gb_read(&gb, arrow + 0) == (uint8_t)(0x2C + 4));
+    assert(gb_read(&gb, arrow + 1) == (uint8_t)(0x3C + 0xF6));
+    assert(gb_read(&gb, arrow + 2) == 0xF6);
+
+    /* Test bit 4 = 1 -> skip arrows */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x35);
+    gb_write(&gb, hFrameCounter, 0x10);
+    label_001_5B3F(&gb);
+    assert(gb_read(&gb, oam + 0) == 0x2C);
+    assert(gb_read(&gb, arrow + 0) == 0x00);
+}
+
+void test_func_001_5A71(void) {
+    printf("[*] Running func_001_5A71 tests (01:5A71)...\n");
+    GBState gb;
+    gb_init(&gb);
+
+    /* Case 1: Dialog active -> cursor does not move */
+    gb_write(&gb, wDBB4, 0x10);
+    gb_write(&gb, wDialogState, 1);
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    func_001_5A71(&gb);
+    assert(gb_read(&gb, wDBB4) == 0x10);
+
+    /* Case 2: Move right to unvisited room -> blocked by fog of war, plays bump */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x10);
+    gb_write(&gb, (uint16_t)(wOverworldRoomStatus + 0x10), 1);
+    gb_write(&gb, (uint16_t)(wOverworldRoomStatus + 0x11), 0); /* unvisited */
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    func_001_5A71(&gb);
+    assert(gb_read(&gb, wDBB4) == 0x10); /* restored */
+    assert(gb_read(&gb, hJingle) == JINGLE_BUMP);
+
+    /* Case 3: Move right to visited room -> allowed, plays selection jingle */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x10);
+    gb_write(&gb, (uint16_t)(wOverworldRoomStatus + 0x11), 1); /* visited */
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    func_001_5A71(&gb);
+    assert(gb_read(&gb, wDBB4) == 0x11);
+    assert(gb_read(&gb, hJingle) == JINGLE_MOVE_SELECTION);
+
+    /* Case 4: Free movement mode allows unvisited room */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x10);
+    gb_write(&gb, wFreeMovementMode, 1);
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    gb_write(&gb, hJoypadState, J_RIGHT);
+    func_001_5A71(&gb);
+    assert(gb_read(&gb, wDBB4) == 0x11);
+    assert(gb_read(&gb, hJingle) == JINGLE_MOVE_SELECTION);
+
+    /* Case 5: Auto-repeat counter test */
+    gb_init(&gb);
+    gb_write(&gb, wDBB4, 0x20);
+    gb_write(&gb, wFreeMovementMode, 1);
+    gb_write(&gb, wC182, 0x17);
+    gb_write(&gb, hPressedButtonsMask, J_RIGHT);
+    func_001_5A71(&gb);
+    assert(gb_read(&gb, wC182) == 0x15); /* loops back to 0x15 */
+}
+
 void run_bank1_tests(void) {
     test_prepare_entity_position_for_room_transition();
     test_update_recent_rooms_list();
@@ -1062,5 +1171,8 @@ void run_bank1_tests(void) {
     test_play_validation_jingle();
     test_func_001_5A59();
     test_world_map_states();
+    test_move_select_and_jingle();
+    test_label_001_5B3F();
+    test_func_001_5A71();
     printf("  [PASS] All bank1 room transition & sprite functions verified successfully!\n\n");
 }

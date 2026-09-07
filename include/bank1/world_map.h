@@ -56,4 +56,27 @@ void WorldMapState3Handler(GBState *gb);
  */
 void WorldMapState4Handler(GBState *gb);
 
+
+/**
+ * Play move selection jingle (01:6BAE).
+ * Sets hJingle to JINGLE_MOVE_SELECTION (0x0A).
+ */
+void playMoveSelectionJingle(GBState *gb);
+
+/**
+ * Check up/down D-pad and play move selection jingle (01:6BA8).
+ */
+void MoveSelect(GBState *gb);
+
+/**
+ * Handle world map cursor movement and fog-of-war constraints (01:5A71).
+ */
+void func_001_5A71(GBState *gb);
+
+/**
+ * Render world map cursor brackets and flashing directional arrows to OAM (01:5B3F).
+ */
+void label_001_5B3F(GBState *gb);
+
 #endif /* LADX_BANK1_WORLD_MAP_H */
+
