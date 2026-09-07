@@ -55,6 +55,29 @@
 #define SLIME_KEY                       0x06
 #define BOW_WOW_FOLLOWING 0x01
 
+
+/* Event trigger / effect constants */
+#define EVENT_TRIGGER_MASK              0x1F
+#define EVENT_EFFECT_MASK               0xE0
+#define EFFECT_NONE                     0x00
+#define EFFECT_OPEN_SHUTTER_DOORS       0x20
+#define EFFECT_KILL_ALL_ENEMIES         0x40
+#define EFFECT_REVEAL_CHEST             0x60
+#define EFFECT_DROP_KEY                 0x80
+#define EFFECT_REVEAL_STAIRCASE         0xA0
+#define EFFECT_CLEAR_MIDBOSS            0xC0
+
+/* Room status flags */
+#define ROOM_STATUS_NONE                0x00
+#define ROOM_STATUS_DOOR_OPEN_RIGHT     0x01
+#define ROOM_STATUS_DOOR_OPEN_LEFT      0x02
+#define ROOM_STATUS_DOOR_OPEN_UP        0x04
+#define ROOM_STATUS_DOOR_OPEN_DOWN      0x08
+#define ROOM_STATUS_EVENT_1             0x10
+#define ROOM_STATUS_EVENT_2             0x20
+#define ROOM_STATUS_EVENT_3             0x40
+#define ROOM_STATUS_VISITED             0x80
+
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */
 #define TRANSITION_GFX_MANBO_OUT         0x03
 #define ATTACK_STEP_DURATION_MASK        0x7F

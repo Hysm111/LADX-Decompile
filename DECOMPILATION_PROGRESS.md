@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 44.50%
-* **Number of Verified Functions**: 534
+* **Current Overall Progress**: 45.33%
+* **Number of Verified Functions**: 544
 * **Number of Decompiled Functions**: 452
-* **Number Remaining**: ~666 functions
-* **Current Subsystem**: Bank 1 - Game Over Subsystem Complete (`code/game_over.asm`, 100% VERIFIED)
-* **Current Task**: Entire Bank 1 Game Over Subsystem (`code/game_over.asm`) 100% decompiled and verified
-* **Last Completed Task**: Decompiled and verified 7 Bank 1 Game Over routines and complete subsystem (`LinkPassOut`, `LinkPassOutHandler`, `LoadGameOverStage1Handler`, `LoadGameOverStage2Handler`, `LoadGameOverStage3Handler`, `GameOverInteractiveHandler`, `func_001_4339`) (`01:41C2`-`01:4370`)
-* **Next Task**: Decompile and verify Bank 1 World Handler routines (`code/world_handler.asm`, `01:4371`-`01:46A9`)
+* **Number Remaining**: ~656 functions
+* **Current Subsystem**: Bank 1 - World Handler & Dungeon Minimap Subsystem (`code/world_handler.asm` & `code/bank1.asm`, 100% VERIFIED)
+* **Current Task**: Bank 1 World Handler & Dungeon Minimap Subsystem 100% decompiled and verified
+* **Last Completed Task**: Decompiled and verified 10 Bank 1 World Handler & Dungeon Minimap routines (`WorldHandlerEntryPoint`, `GameplayWorldLoad0Handler`, `GameplayWorldLoadRoomHandler`, `GameplayWorldSelectTilesetHandler`, `GameplayWorldLoadRoomTilemapHandler`, `GameplayWorldLoadHeartsAndRupeesHandler`, `GameplayWorldLoadABButtonsHandler`, `GameplayWorldLoad6Handler`, `CreateMinimapTilemap`, `func_001_5619`) (`01:4371`-`01:454F`, `01:5511`-`01:5625`)
+* **Next Task**: Decompile and verify remaining Bank 1 routines in `code/bank1.asm` (`01:4650`-`01:46A9`, `01:4E08`-`01:53D7`, `01:6800`-`01:6D49`)
 * **Last Update Timestamp**: 2026-09-07T05:00:00+03:00
 
 ---
@@ -447,6 +447,16 @@
 | `LoadGameOverStage3Handler` | VERIFIED | PASS | PASS | Waits for countdown, advances stage, and starts Game Over music (`01:42CA`) |
 | `GameOverInteractiveHandler` | VERIFIED | PASS | PASS | Game Over interactive handler (Save & Continue, Save & Quit, Continue without saving) (`01:42D9`) |
 | `func_001_4339` | VERIFIED | PASS | PASS | Option selection navigation and cursor arrow sprite rendering (`01:4339`) |
+| `WorldHandlerEntryPoint` | VERIFIED | PASS | PASS | State machine dispatcher for GAMEPLAY_WORLD_LOAD subtypes (0-6) (`01:4371`) |
+| `GameplayWorldLoad0Handler` | VERIFIED | PASS | PASS | Unloads audio track, prepares overworld/minimap/debug tilemap, sets glint sequence (`01:4395`) |
+| `GameplayWorldLoadRoomHandler` | VERIFIED | PASS | PASS | Clears lower WRAM, resets motion, loads room and entities, compass chime check (`01:442B`) |
+| `GameplayWorldSelectTilesetHandler` | VERIFIED | PASS | PASS | Selects room tilesets, clears update flags, sets room-specific tileset (`01:44B4`) |
+| `GameplayWorldLoadRoomTilemapHandler` | VERIFIED | PASS | PASS | Sets room tilemap tileset, handles switchable object animation & button state (`01:44DB`) |
+| `GameplayWorldLoadHeartsAndRupeesHandler` | VERIFIED | PASS | PASS | Invokes LoadHeartsAndRupeesCount in Bank $02, advances subtype (`01:44F9`) |
+| `GameplayWorldLoadABButtonsHandler` | VERIFIED | PASS | PASS | Invokes DrawABButtonSlots in Bank $20, advances subtype (`01:4500`) |
+| `GameplayWorldLoad6Handler` | VERIFIED | PASS | PASS | Initializes inventory bar, turns on window display, initiates fade-in and soundtrack (`01:4507`) |
+| `CreateMinimapTilemap` | VERIFIED | PASS | PASS | Builds dynamic in-memory tilemap of dungeon minimap and label at wMinimapTilemap (`01:5511`) |
+| `func_001_5619` | VERIFIED | PASS | PASS | Minimap tilemap writer helper writing 4 bytes (hMultiPurpose0-3) to [hl] (`01:5619`) |
 
 ---
 

@@ -264,7 +264,10 @@
 #define TILESET_INDOOR                        0x06
 #define TILESET_BASE_OVERWORLD                0x05
 #define TILESET_BASE_OVERWORLD_DUP            0x07
+#define TILESET_ROOM_TILEMAP                  0x01
+#define TILESET_ROOM_SPECIFIC                 0x09
 #define TILESET_0F                            0x0F
+#define REPLACE_TILES_BUTTON_PRESSED          0x03
 #define TILESET_CHRISTINE                     0x12
 #define TILESET_MARIN_BEACH                   0x13
 #define TILESET_FACE_SHRINE_MURAL             0x14
@@ -287,7 +290,10 @@
 #define TILEMAP_MENU_FILE_ERASE       0x06
 #define TILEMAP_MENU_FILE_COPY        0x0C
 #define TILEMAP_MENU_FILE_SAVE        0x0D
+#define TILEMAP_MINIMAP               0x07
+#define TILEMAP_EAGLES_TOWER_CLOUDS   0x09
 #define TILEMAP_GAME_OVER             0x0A
+#define TILEMAP_INVENTORY_DEBUG       0x0B
 #define TILESET_SAVE_MENU             0x0D
 
 #endif /* LADX_CONSTANTS_GFX_H */
