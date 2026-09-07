@@ -121,7 +121,6 @@
 #define OAMF_PALMASK     0x07
 #define OAM_GBC_PAL_4    0x04
 
-#endif /* LADX_CONSTANTS_HARDWARE_H */
 #define hLinkSpeedX                 0xFF9A
 #define hLinkSpeedY                 0xFF9B
 #define hLinkDirection              0xFF9E
@@ -138,3 +137,5 @@
 #define hMultiPurposeE                  0xFFE5
 #define hMultiPurposeB                  0xFFE2
 #define hMultiPurposeC                  0xFFE3
+
+#endif /* LADX_CONSTANTS_HARDWARE_H */

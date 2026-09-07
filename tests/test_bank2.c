@@ -7,6 +7,8 @@
 #include "constants/audio.h"
 #include "constants/directions.h"
 #include "constants/entities.h"
+#include "constants/hardware.h"
+#include "constants/link.h"
 #include "constants/maps.h"
 #include "constants/memory.h"
 #include "constants/rooms.h"
@@ -343,6 +345,170 @@ void run_bank2_tests(void) {
         }
         bool ok = FireHookshot(&gb);
         assert(!ok);
+    }
+
+    /* Test 17: DirectionToLinkAnimationState, HorizontalIncrementForLinkPosition,
+     * VerticalIncrementForLinkPosition, JoypadToLinkDirection Tables */
+    {
+        assert(DirectionToLinkAnimationState[DIRECTION_RIGHT] == LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_RIGHT);
+        assert(DirectionToLinkAnimationState[DIRECTION_LEFT]  == LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_LEFT);
+        assert(DirectionToLinkAnimationState[DIRECTION_UP]    == LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_UP);
+        assert(DirectionToLinkAnimationState[DIRECTION_DOWN]  == LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_DOWN);
+
+        assert(sizeof(HorizontalIncrementForLinkPosition) == 32);
+        assert(sizeof(VerticalIncrementForLinkPosition) == 32);
+        assert(sizeof(JoypadToLinkDirection) == 11);
+
+        assert(JoypadToLinkDirection[0] == DIRECTION_KEEP);
+        assert(JoypadToLinkDirection[1] == DIRECTION_RIGHT);
+        assert(JoypadToLinkDirection[2] == DIRECTION_LEFT);
+        assert(JoypadToLinkDirection[3] == DIRECTION_KEEP);
+        assert(JoypadToLinkDirection[4] == DIRECTION_UP);
+        assert(JoypadToLinkDirection[8] == DIRECTION_DOWN);
+        assert(JoypadToLinkDirection[5] == DIRECTION_KEEP);
+    }
+
+    /* Test 18: func_002_4338 - Lifted Object State */
+    {
+        GBState gb;
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkAnimationState, 0);
+        gb_write_hram(&gb, hLinkInteractiveMotionBlocked, 0);
+
+        /* a < 2: no effect */
+        gb_write(&gb, wIsCarryingLiftedObject, 0);
+        func_002_4338(&gb);
+        assert(gb_read_hram(&gb, hLinkAnimationState) == 0);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 0);
+
+        gb_write(&gb, wIsCarryingLiftedObject, 1);
+        func_002_4338(&gb);
+        assert(gb_read_hram(&gb, hLinkAnimationState) == 0);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 0);
+
+        /* a >= 2: animation state updated and motion blocked */
+        gb_write(&gb, wIsCarryingLiftedObject, 2);
+        func_002_4338(&gb);
+        assert(gb_read_hram(&gb, hLinkAnimationState) == 2);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 1);
+
+        gb_write(&gb, wIsCarryingLiftedObject, 0x38);
+        func_002_4338(&gb);
+        assert(gb_read_hram(&gb, hLinkAnimationState) == 0x38);
+        assert(gb_read_hram(&gb, hLinkInteractiveMotionBlocked) == 1);
+    }
+
+    /* Test 19: func_002_434A - Attack Step Countdown & Animation State */
+    {
+        GBState gb;
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkAnimationState, 0);
+
+        /* Countdown mask is zero */
+        gb_write(&gb, wLinkAttackStepAnimationCountdown, 0x80);
+        func_002_434A(&gb);
+        assert(gb_read(&gb, wLinkAttackStepAnimationCountdown) == 0);
+        assert(gb_read_hram(&gb, hLinkAnimationState) == 0);
+
+        /* Countdown > 0: decrements and updates state based on direction */
+        const uint8_t dirs[4] = { DIRECTION_RIGHT, DIRECTION_LEFT, DIRECTION_UP, DIRECTION_DOWN };
+        const uint8_t exp_anim[4] = {
+            LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_RIGHT,
+            LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_LEFT,
+            LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_UP,
+            LINK_ANIMATION_STATE_HOOKSHOT_CHAIN_DOWN
+        };
+
+        for (int d = 0; d < 4; d++) {
+            gb_write(&gb, wLinkAttackStepAnimationCountdown, 0x15);
+            gb_write_hram(&gb, hLinkDirection, dirs[d]);
+            func_002_434A(&gb);
+            assert(gb_read(&gb, wLinkAttackStepAnimationCountdown) == 0x14);
+            assert(gb_read_hram(&gb, hLinkAnimationState) == exp_anim[d]);
+        }
+    }
+
+    /* Test 20: MoveLinkToPressedButtonDirection - Normal & Piece of Power */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* Normal: Right (1) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x01);
+        MoveLinkToPressedButtonDirection(&gb, 0);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedX) == 0x10);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Normal: Left (2) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x02);
+        MoveLinkToPressedButtonDirection(&gb, 0);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedX) == (int8_t)0xF0);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Normal: Up + Right (5) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x05);
+        MoveLinkToPressedButtonDirection(&gb, 0);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedX) == 0x0C);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedY) == (int8_t)0xF4);
+
+        /* Piece of Power (offset 0x10): Right (1) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x01);
+        MoveLinkToPressedButtonDirection(&gb, 0x10);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedX) == 0x14);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Piece of Power: Up + Left (6) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x06);
+        MoveLinkToPressedButtonDirection(&gb, 0x10);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedX) == (int8_t)0xF1);
+        assert((int8_t)gb_read_hram(&gb, hLinkSpeedY) == (int8_t)0xF1);
+    }
+
+    /* Test 21: func_002_438F - Smooth Acceleration / Speed Nudging */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        /* Target speed for Right (1) is X=0x10, Y=0x00 */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x01);
+
+        /* Case 1: current speed X < target X -> increments speed X */
+        gb_write_hram(&gb, hLinkSpeedX, 0x0E);
+        gb_write_hram(&gb, hLinkSpeedY, 0x00);
+        func_002_438F(&gb, 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x0F);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Case 2: current speed X > target X -> decrements speed X */
+        gb_write_hram(&gb, hLinkSpeedX, 0x12);
+        gb_write_hram(&gb, hLinkSpeedY, 0x00);
+        func_002_438F(&gb, 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x11);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Case 3: current speed X == target X -> unmodified */
+        gb_write_hram(&gb, hLinkSpeedX, 0x10);
+        gb_write_hram(&gb, hLinkSpeedY, 0x00);
+        func_002_438F(&gb, 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x10);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0x00);
+
+        /* Target speed for Up (4) is X=0x00, Y=0xF0 (-16) */
+        gb_write_hram(&gb, hPressedButtonsMask, 0x04);
+
+        /* Case 4: current speed Y is 0xF4 (-12, which is > -16) -> decrements towards 0xF0 */
+        gb_write_hram(&gb, hLinkSpeedX, 0x00);
+        gb_write_hram(&gb, hLinkSpeedY, 0xF4);
+        func_002_438F(&gb, 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x00);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0xF3);
+
+        /* Case 5: current speed Y is 0xEC (-20, which is < -16) -> increments towards 0xF0 */
+        gb_write_hram(&gb, hLinkSpeedX, 0x00);
+        gb_write_hram(&gb, hLinkSpeedY, 0xEC);
+        func_002_438F(&gb, 0);
+        assert(gb_read_hram(&gb, hLinkSpeedX) == 0x00);
+        assert(gb_read_hram(&gb, hLinkSpeedY) == 0xED);
     }
 
     printf("[+] Bank 2 unit tests passed successfully!\n");
