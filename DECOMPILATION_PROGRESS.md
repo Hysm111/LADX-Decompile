@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 56.00%
-* **Number of Verified Functions**: 672
-* **Number of Decompiled Functions**: 495
-* **Number Remaining**: ~544 functions
-* **Current Subsystem**: ROM Bank 2 (Swimming, Diving & Hole Falling, 02:4EF0-02:50C9)
-* **Current Task**: Bank 2 Swimming, Diving, Water Splash & Unknown Motion Handler routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `func_002_5928`, `LinkMotionSwimmingHandler`, `LinkMotionUnknownHandler`, and velocity lookup tables `Data_002_4EF0`–`4F20` (`02:4EF0`-`02:50C9`, `02:5928`)
-* **Next Task**: Decompile and verify Bank 2 Pit Falling Subsystem (`LinkMotionFallingDownHandler`, `02:50D4`-`02:51BB`)
-* **Last Update Timestamp**: 2026-09-08T00:15:00+03:00
+* **Current Overall Progress**: 56.25%
+* **Number of Verified Functions**: 675
+* **Number of Decompiled Functions**: 498
+* **Number Remaining**: ~525 functions
+* **Current Subsystem**: ROM Bank 2 (Pit Falling Subsystem, 02:50CA-02:51BB, 02:52B9-02:52DF)
+* **Current Task**: Bank 2 Pit Falling Subsystem routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `LinkFallingDownAnimation`, `LinkMotionFallingDownHandler`, `label_002_52B9`, and `func_002_52D6` (`02:50CA`-`02:51BB`, `02:52B9`-`02:52DF`)
+* **Next Task**: Decompile and verify Bank 2 Got Item & Recover Subsystems (`HandleGotItemA`, `HandleGotItemB`, `LinkMotionRecoverHandler`, `02:51BC`-`02:52B8`)
+* **Last Update Timestamp**: 2026-09-09T22:50:00+03:00
 
 ---
 
@@ -19,6 +19,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `LinkMotionFallingDownHandler` | VERIFIED | PASS | PASS | Pit falling handler: animation advancement, overworld warp holes, tractor device, mountain cave waterfall warp, entry respawn (`02:50D4`) |
+| `label_002_52B9` | VERIFIED | PASS | PASS | Resets Link coordinates to map entry position, sets invincibility timer 0x40, and returns to default motion (`02:52B9`) |
+| `func_002_52D6` | VERIFIED | PASS | PASS | Resets active staircase state to STAIRCASE_INACTIVE (`02:52D6`) |
 | `func_002_5928` | VERIFIED | PASS | PASS | Generates water splash transient VFX and triggers JINGLE_WATER_SPLASH (`02:5928`) |
 | `LinkMotionSwimmingHandler` | VERIFIED | PASS | PASS | Handles swimming/diving physics, A stroke speed boost, B dive toggle, and underwater heart/warp checks (`02:4F30`) |
 | `LinkMotionUnknownHandler` | VERIFIED | PASS | PASS | Unknown / falling motion state 0x0F: blocks input, integrates Z velocity, transitions map on threshold (`02:50A3`) |

@@ -34,5 +34,6 @@
 #define OBJ_PHYSICS_DOOR_CLOSED        0x90 /* key door / boss door / bombable door */
 #define OBJ_PHYSICS_WATER_SIDESCROLL   0xB0
 #define OBJ_PHYSICS_LADDER_SIDESCROLL  0xB1
+#define OBJ_PHYSICS_TRACTOR_DEVICE     0xFF
 
 #endif /* LADX_CONSTANTS_PHYSICS_H */

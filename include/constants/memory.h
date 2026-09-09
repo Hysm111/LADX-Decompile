@@ -397,6 +397,7 @@
 #define wRecentRoomsIndex                       0xCE80
 #define wRecentRooms                            0xCE81
 #define wDungeonItemFlags                       0xDB16
+#define wLinkFallingDownObjectPhysics           0xDBCB
 #define wCurrentDungeonItemFlags                0xDBCC
 #define wColorDungeonItemFlags                  0xDDDA
 #define wLinkPositionXHistory                   0xD155

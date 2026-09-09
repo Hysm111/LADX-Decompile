@@ -77,6 +77,8 @@
 #define LINK_ANIMATION_STATE_REVOLVING_DOOR_4              0x53
 #define LINK_ANIMATION_STATE_REVOLVING_DOOR_5              0x54
 #define LINK_ANIMATION_STATE_FALLING_PIT_1                 0x55
+#define LINK_ANIMATION_STATE_FALLING_PIT_2                 0x56
+#define LINK_ANIMATION_STATE_FALLING_PIT_3                 0x57
 #define DIRECTION_VERTICAL_MASK                            0x02
 
 #define ATTACK_STEP_DURATION_MASK                          0x7F
