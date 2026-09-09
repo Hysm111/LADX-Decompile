@@ -540,6 +540,9 @@
 #define wC3C4                                 0xC3C4
 #define wC3C5                                 0xC3C5
 #define wC3C7                                 0xC3C7
+#define wPhotoAlbumCooldown                   0xDE05
+#define wDebugWarpIndex                       0xD479
+#define wColorDungonCorrectTombStones         0xDDD9
 #define wD466                                 0xD466
 #define wNoiseSfxSeaWavesCounter              0xC114
 #define wC550                                 0xC550

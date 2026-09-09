@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 57.25%
-* **Number of Verified Functions**: 687
-* **Number of Decompiled Functions**: 510
-* **Number Remaining**: ~513 functions
-* **Current Subsystem**: ROM Bank 2 (Key Door Opening & Room Status Subsystem, 02:53B0-02:5477)
-* **Current Task**: Bank 2 Key Door Opening & Room Status Subsystem routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `TryOpenKeyDoor`, `EnqueueDoorUnlockedSfx`, `label_002_5425`, and `GetRoomStatusAddress` (`02:53B0`-`02:5477`, `02:5B9F`)
-* **Next Task**: Decompile and verify Bank 2 Debug Warp, Transient VFX Loop, and Staircase Subsystem (`label_002_5487`, `renderTranscientVFXs`, `staircaseIsActive`, `02:5487`-`02:5566`)
-* **Last Update Timestamp**: 2026-09-09T23:10:00+03:00
+* **Current Overall Progress**: 57.58%
+* **Number of Verified Functions**: 691
+* **Number of Decompiled Functions**: 514
+* **Number Remaining**: ~509 functions
+* **Current Subsystem**: ROM Bank 2 (Debug Warp, Transient VFX Loop, & Staircase Subsystem, 02:5487-02:5566)
+* **Current Task**: Bank 2 Debug Warp, Transient VFX Loop, and Staircase Subsystem routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `label_002_5487`, `renderTranscientVFXs`, `staircaseIsActive`, and `ExecuteDebugWarp` (`02:5487`-`02:5566`)
+* **Next Task**: Decompile and verify Bank 2 Transient Visual Effects Rendering Engine (`RenderTranscientVfx`, `ClearTranscientVfx`, `02:5567`-`02:5606`)
+* **Last Update Timestamp**: 2026-09-09T23:18:00+03:00
 
 ---
 
@@ -19,6 +19,10 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `label_002_5487` | VERIFIED | PASS | PASS | Clears indoor room statuses, decrements dialog and photo album cooldowns, updates VFX & staircase (`02:5487`) |
+| `renderTranscientVFXs` | VERIFIED | PASS | PASS | Iterates transient VFX slots 15..0, renders active VFXs, updates inactive staircase to active on exit (`02:54E4`) |
+| `staircaseIsActive` | VERIFIED | PASS | PASS | Validates proximity to staircase, carrying state, color dungeon entrance conditions, triggers fade warp (`02:552A`) |
+| `ExecuteDebugWarp` | VERIFIED | PASS | PASS | Increments debug warp index, reads room/map from table, sets destination 0x50/0x70, triggers fade out (`02:54AE`) |
 | `TryOpenKeyDoor` | VERIFIED | PASS | PASS | Key door opening state handler: decrements small keys, syncs item flags, triggers SFX, marks room opened, reveals object, poof VFX, or spawns pushed block (`02:53B0`) |
 | `EnqueueDoorUnlockedSfx` | VERIFIED | PASS | PASS | Enqueues door unlocked noise SFX to hNoiseSfx (`02:5420`) |
 | `label_002_5425` | VERIFIED | PASS | PASS | Spawns key drop point or slime key entity depending on dungeon map ID (`02:5425`) |

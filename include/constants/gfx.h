@@ -92,7 +92,9 @@
 #define OBJECT_MACROS_SECTION        0xF5
 
 /* Staircase state */
+#define STAIRCASE_NONE               0x00
 #define STAIRCASE_INACTIVE           0x01
+#define STAIRCASE_ACTIVE             0x02
 
 /* Switchable object types */
 #define ROOM_SWITCHABLE_OBJECT_NONE          0x00

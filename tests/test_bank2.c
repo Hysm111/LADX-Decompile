@@ -133,6 +133,14 @@ static void mock_reveal_object(GBState *gb) {
     g_mock_reveal_object_calls++;
 }
 
+static int g_mock_transient_vfx_calls = 0;
+static uint8_t g_mock_transient_vfx_last_slot = 0;
+static void mock_render_transient_vfx(GBState *gb, uint8_t slot) {
+    (void)gb;
+    g_mock_transient_vfx_calls++;
+    g_mock_transient_vfx_last_slot = slot;
+}
+
 void run_bank2_tests(void) {
     printf("[*] Running Bank 2 unit tests...\n");
 
@@ -2620,7 +2628,182 @@ void run_bank2_tests(void) {
         assert(gb_read_hram(&gb, hMultiPurpose1) == 0x90);
     }
 
+    /* Test 64: ExecuteDebugWarp (02:54AE) */
+    {
+        GBState gb;
+        gb_init(&gb);
+        gb_write(&gb, wDebugWarpIndex, 0);
+
+        ExecuteDebugWarp(&gb);
+
+        assert(gb_read(&gb, wWarp0MapCategory) == 0x01);
+        assert(gb_read(&gb, wDebugWarpIndex) == 0x01);
+        assert(gb_read(&gb, wWarp0Room) == DebugWarpRooms[0]);
+        assert(gb_read(&gb, wWarp0Map) == DebugWarpMaps[0]);
+        assert(gb_read(&gb, wWarp0DestinationX) == 0x50);
+        assert(gb_read(&gb, wWarp0DestinationY) == 0x70);
+        assert(gb_read_hram(&gb, hJingle) == JINGLE_PUZZLE_SOLVED);
+
+        /* Wrap index at 0x0B -> 0 */
+        gb_write(&gb, wDebugWarpIndex, 0x0A);
+        ExecuteDebugWarp(&gb);
+        assert(gb_read(&gb, wDebugWarpIndex) == 0x00);
+        assert(gb_read(&gb, wWarp0Room) == DebugWarpRooms[10]);
+        assert(gb_read(&gb, wWarp0Map) == DebugWarpMaps[10]);
+    }
+
+    /* Test 65: staircaseIsActive (02:552A) */
+    {
+        GBState gb;
+
+        /* 1. Jumping over staircase (Z != 0) -> no trigger */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPositionZ, 0x04);
+        gb_write_hram(&gb, hLinkPositionX, 0x40);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_ACTIVE);
+
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 2. Carrying lifted object -> no trigger */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPositionZ, 0x00);
+        gb_write_hram(&gb, hLinkPositionX, 0x40);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+        gb_write(&gb, wIsCarryingLiftedObject, 1);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_ACTIVE);
+
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 3. Outside staircase radius (dx >= 10, e.g. Link=0x50, Staircase=0x40 -> dx = 16 + 5 = 21 >= 10) */
+        gb_init(&gb);
+        gb_write_hram(&gb, hLinkPositionX, 0x50);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_ACTIVE);
+
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 4. Color Dungeon Entrance closed (room 0x77, outdoors, tombstone != 0x80) */
+        gb_init(&gb);
+        gb_write_hram(&gb, hMapRoom, ROOM_OW_COLOR_DUNGEON_ENTRANCE);
+        gb_write(&gb, wIsIndoor, 0);
+        gb_write(&gb, wColorDungonCorrectTombStones, 0x03);
+        gb_write_hram(&gb, hLinkPositionX, 0x40);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_ACTIVE);
+
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 5. Color Dungeon Entrance open (room 0x77, outdoors, tombstone == 0x80) -> triggers warp and resets staircase */
+        gb_write(&gb, wColorDungonCorrectTombStones, 0x80);
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_NONE);
+
+        /* 6. Standard staircase trigger (within [-5, +4], e.g. Link=0x3F, Staircase=0x40 -> dx = -1 + 5 = 4 < 10) */
+        gb_init(&gb);
+        gb_write_hram(&gb, hMapRoom, 0x10);
+        gb_write_hram(&gb, hLinkPositionX, 0x3F);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x42);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_ACTIVE);
+
+        staircaseIsActive(&gb);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_NONE);
+    }
+
+    /* Test 66: renderTranscientVFXs (02:54E4) */
+    {
+        GBState gb;
+
+        /* 1. VFX iteration: calls callback for non-zero slots */
+        gb_init(&gb);
+        gb_write(&gb, (uint16_t)(wTranscientVfxTypeTable + 3), 0x02);
+        gb_write(&gb, (uint16_t)(wTranscientVfxTypeTable + 7), 0x05);
+        g_mock_transient_vfx_calls = 0;
+
+        renderTranscientVFXs(&gb, mock_render_transient_vfx);
+
+        assert(g_mock_transient_vfx_calls == 2);
+        assert(gb_read(&gb, wActiveEntityIndex) == 0x00);
+
+        /* 2. Inactive staircase, Link still on top (dx < 12 && dy < 12) -> stays inactive */
+        gb_init(&gb);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_INACTIVE);
+        gb_write_hram(&gb, hLinkPositionX, 0x40);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x40);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+
+        renderTranscientVFXs(&gb, NULL);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_INACTIVE);
+
+        /* 3. Inactive staircase, Link leaves in X (dx >= 12, Link=0x50, Staircase=0x40 -> 0x10 + 6 = 22 >= 12) -> becomes active */
+        gb_write_hram(&gb, hLinkPositionX, 0x50);
+        renderTranscientVFXs(&gb, NULL);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 4. Inactive staircase, Link leaves in Y (dy >= 12, Link=0x50, Staircase=0x40) -> becomes active */
+        gb_init(&gb);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_INACTIVE);
+        gb_write_hram(&gb, hLinkPositionX, 0x40);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+        gb_write_hram(&gb, hLinkPositionY, 0x50);
+        gb_write_hram(&gb, hStaircasePosY, 0x40);
+
+        renderTranscientVFXs(&gb, NULL);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_ACTIVE);
+
+        /* 5. Room transition active -> early returns, staircase untouched */
+        gb_init(&gb);
+        gb_write(&gb, wRoomTransitionState, 1);
+        gb_write_hram(&gb, hStaircase, STAIRCASE_INACTIVE);
+        gb_write_hram(&gb, hLinkPositionX, 0x50);
+        gb_write_hram(&gb, hStaircasePosX, 0x40);
+
+        renderTranscientVFXs(&gb, NULL);
+        assert(gb_read_hram(&gb, hStaircase) == STAIRCASE_INACTIVE);
+    }
+
+    /* Test 67: label_002_5487 (02:5487) */
+    {
+        GBState gb;
+        gb_init(&gb);
+
+        gb_write(&gb, wIndoorARoomStatus, 0x55);
+        gb_write(&gb, wIndoorBRoomStatus, 0xAA);
+        gb_write(&gb, wDialogCooldown, 0x05);
+        gb_write(&gb, wPhotoAlbumCooldown, 0x08);
+
+        label_002_5487(&gb, NULL);
+
+        assert(gb_read(&gb, wIndoorARoomStatus) == 0x00);
+        assert(gb_read(&gb, wIndoorBRoomStatus) == 0x00);
+        assert(gb_read(&gb, wDialogCooldown) == 0x04);
+        assert(gb_read(&gb, wPhotoAlbumCooldown) == 0x07);
+
+        /* Cooldowns at 0 do not underflow */
+        gb_write(&gb, wDialogCooldown, 0x00);
+        gb_write(&gb, wPhotoAlbumCooldown, 0x00);
+        label_002_5487(&gb, NULL);
+        assert(gb_read(&gb, wDialogCooldown) == 0x00);
+        assert(gb_read(&gb, wPhotoAlbumCooldown) == 0x00);
+    }
+
     printf("[+] Bank 2 unit tests passed successfully!\n");
 }
+
 
 
