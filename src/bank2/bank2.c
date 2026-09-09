@@ -23,6 +23,7 @@
 #include "home/bank.h"
 #include "home/room.h"
 #include "home/gameplay.h"
+#include "bank1/room_transition.h"
 
 const int8_t HookshotChainSpeedX[4] = {
     0x30,  /* DIRECTION_RIGHT:  HOOKSHOT_CHAIN_SPEED ($30) */
@@ -2549,5 +2550,142 @@ void label_002_538B_entity(GBState *gb, uint8_t de) {
 
 void label_002_538B(GBState *gb) {
     label_002_538B_entity(gb, 0);
+}
+
+/* Bank 2 Debug Warp Tables (02:5471+) */
+const uint8_t DebugWarpRooms[11] = {
+    0x30, /* MAP_BOTTLE_GROTTO */
+    0x33, /* MAP_BOTTLE_GROTTO */
+    0x81, /* MAP_CATFISHS_MAW */
+    0x01, /* MAP_TAIL_CAVE */
+    0x28, /* MAP_BOTTLE_GROTTO */
+    0x56, /* MAP_KEY_CAVERN */
+    0x68, /* MAP_ANGLERS_TUNNEL */
+    0x87, /* MAP_CATFISHS_MAW */
+    0xB3, /* MAP_FACE_SHRINE */
+    0xE6, /* MAP_EAGLES_TOWER */
+    0x0A  /* MAP_TURTLE_ROCK */
+};
+
+const uint8_t DebugWarpMaps[11] = {
+    MAP_BOTTLE_GROTTO,
+    MAP_BOTTLE_GROTTO,
+    MAP_CATFISHS_MAW,
+    MAP_TAIL_CAVE,
+    MAP_BOTTLE_GROTTO,
+    MAP_KEY_CAVERN,
+    MAP_ANGLERS_TUNNEL,
+    MAP_CATFISHS_MAW,
+    MAP_FACE_SHRINE,
+    MAP_EAGLES_TOWER,
+    MAP_TURTLE_ROCK
+};
+
+uint16_t GetRoomStatusAddress(GBState *gb) {
+    if (!gb) return 0;
+
+    uint8_t room = gb_read_hram(gb, hMapRoom);
+    if (gb_read(gb, wIsIndoor) == 0) {
+        return (uint16_t)(wOverworldRoomStatus + room);
+    }
+
+    uint8_t map_id = gb_read_hram(gb, hMapId);
+    if (map_id == MAP_COLOR_DUNGEON) {
+        return (uint16_t)(wColorDungeonRoomStatus + room);
+    }
+
+    uint8_t d = gb_read(gb, wIsIndoor);
+    if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+        d++;
+    }
+
+    return (uint16_t)(wOverworldRoomStatus + ((uint16_t)d << 8) + room);
+}
+
+void EnqueueDoorUnlockedSfx(GBState *gb) {
+    if (!gb) return;
+    gb_write_hram(gb, hNoiseSfx, NOISE_SFX_DOOR_UNLOCKED);
+}
+
+void label_002_5425(GBState *gb, uint16_t (*spawn_new_entity)(GBState *, uint8_t)) {
+    if (!gb) return;
+
+    uint8_t map_id = gb_read_hram(gb, hMapId);
+    uint8_t entity_type;
+    if (map_id == MAP_COLOR_DUNGEON) {
+        entity_type = ENTITY_KEY_DROP_POINT;
+    } else if (map_id < MAP_CAVE_B) {
+        entity_type = ENTITY_KEY_DROP_POINT;
+    } else {
+        entity_type = ENTITY_HIDING_SLIME_KEY;
+    }
+
+    uint16_t slot = SpawnNewEntity_trampoline(gb, entity_type, spawn_new_entity);
+    if (slot == 0xFFFF) {
+        return;
+    }
+
+    uint8_t pos_x = 0x28;
+    if (map_id == MAP_COLOR_DUNGEON) {
+        pos_x = 0x48;
+        if (gb_read_hram(gb, hMapRoom) == ROOM_OW_MARIN_BRIDGE) {
+            pos_x = 0x58;
+        }
+    }
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + slot), pos_x);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + slot), 0x3C);
+    gb_write(gb, (uint16_t)(wEntitiesPosZTable + slot), 0x70);
+}
+
+void TryOpenKeyDoor(GBState *gb,
+                    void (*sync_item_flags)(GBState *),
+                    void (*reveal_object)(GBState *),
+                    uint16_t (*spawn_new_entity)(GBState *, uint8_t)) {
+    if (!gb) return;
+
+    if (gb_read_hram(gb, hMultiPurposeG) == 0x40) {
+        /* .spawnPushedBlock */
+        uint16_t slot = SpawnNewEntity_trampoline(gb, ENTITY_PUSHED_BLOCK, spawn_new_entity);
+        if (slot == 0xFFFF) {
+            return;
+        }
+
+        uint8_t status = (uint8_t)(gb_read(gb, (uint16_t)(wEntitiesStatusTable + slot)) - 1);
+        gb_write(gb, (uint16_t)(wEntitiesStatusTable + slot), status);
+
+        uint8_t pos_x = (uint8_t)((gb_read_hram(gb, hMultiPurpose4) & 0xF0) + 0x08);
+        gb_write(gb, (uint16_t)(wEntitiesPosXTable + slot), pos_x);
+
+        uint8_t pos_y = (uint8_t)((gb_read_hram(gb, hMultiPurpose5) & 0xF0) + 0x10);
+        gb_write(gb, (uint16_t)(wEntitiesPosYTable + slot), pos_y);
+        return;
+    }
+
+    uint8_t keys = gb_read(gb, wSmallKeysCount);
+    if (keys == 0) {
+        return;
+    }
+
+    keys--;
+    gb_write(gb, wSmallKeysCount, keys);
+    SynchronizeDungeonsItemFlags_trampoline(gb, sync_item_flags ? sync_item_flags : SynchronizeDungeonsItemFlags);
+    EnqueueDoorUnlockedSfx(gb);
+
+    uint16_t room_status_addr = GetRoomStatusAddress(gb);
+    uint8_t status = (uint8_t)(gb_read(gb, room_status_addr) | ROOM_STATUS_EVENT_3);
+    gb_write(gb, room_status_addr, status);
+    gb_write_hram(gb, hRoomStatus, status);
+
+    uint8_t left = (uint8_t)(gb_read_hram(gb, hMultiPurpose4) & 0xF0);
+    gb_write_hram(gb, hIntersectedObjectLeft, left);
+
+    uint8_t top = (uint8_t)(gb_read_hram(gb, hMultiPurpose5) & 0xF0);
+    gb_write_hram(gb, hIntersectedObjectTop, top);
+
+    RevealObjectUnderObject_trampoline(gb, reveal_object);
+
+    gb_write_hram(gb, hMultiPurpose0, (uint8_t)(left + 0x08));
+    gb_write_hram(gb, hMultiPurpose1, (uint8_t)(top + 0x10));
+    AddTranscientVfx(gb, TRANSCIENT_VFX_POOF);
 }
 

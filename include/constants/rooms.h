@@ -5,6 +5,7 @@
 #define ROOM_OW_TURTLE_ROCK_WARP_HOLE       0x01
 #define UNKNOWN_ROOM_06              0x06
 #define ROOM_OW_RIGHT_OF_EGG         0x07
+#define ROOM_OW_MARIN_BRIDGE         0x08
 #define ROOM_OW_EAGLES_TOWER         0x0E
 #define UNKNOWN_ROOM_0C              0x0C
 #define UNKNOWN_ROOM_1B              0x1B

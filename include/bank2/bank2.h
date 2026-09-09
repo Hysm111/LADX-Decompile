@@ -508,4 +508,45 @@ void label_002_538B_entity(GBState *gb, uint8_t de);
  */
 void label_002_538B(GBState *gb);
 
+/* Bank 2 Debug Warp Tables (02:5471+) */
+extern const uint8_t DebugWarpRooms[11];
+extern const uint8_t DebugWarpMaps[11];
+
+/**
+ * Retrieves the address of the room status byte for the current room (02:5B9F).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @return 16-bit address in WRAM of room status flags.
+ */
+uint16_t GetRoomStatusAddress(GBState *gb);
+
+/**
+ * Triggers the door unlocked noise SFX (02:5420).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void EnqueueDoorUnlockedSfx(GBState *gb);
+
+/**
+ * Spawns a key drop entity or slime key entity depending on dungeon map ID (02:5425).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param spawn_new_entity Optional entity spawn callback (00:3B86).
+ */
+void label_002_5425(GBState *gb, uint16_t (*spawn_new_entity)(GBState *, uint8_t));
+
+/**
+ * Tries to open a key door with a small key or spawn pushed block (02:53B0).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param sync_item_flags Optional callback for SynchronizeDungeonsItemFlags (01:5E67).
+ * @param reveal_object Optional callback for RevealObjectUnderObject (bank $14).
+ * @param spawn_new_entity Optional callback for SpawnNewEntity (00:3B86).
+ */
+void TryOpenKeyDoor(GBState *gb,
+                    void (*sync_item_flags)(GBState *),
+                    void (*reveal_object)(GBState *),
+                    uint16_t (*spawn_new_entity)(GBState *, uint8_t));
+
 #endif /* LADX_BANK2_BANK2_H */
+

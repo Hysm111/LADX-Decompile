@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 56.92%
-* **Number of Verified Functions**: 683
-* **Number of Decompiled Functions**: 506
-* **Number Remaining**: ~517 functions
-* **Current Subsystem**: ROM Bank 2 (Magic Rod Visuals & Projectiles, 02:52E0-02:53AF)
-* **Current Task**: Bank 2 Magic Rod Visuals & Projectiles routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `label_002_5310` and `label_002_538B` (`02:52E0`-`02:53AF`)
-* **Next Task**: Decompile and verify Bank 2 Key Door Opening & Key Drop Subsystem (`TryOpenKeyDoor`, `EnqueueDoorUnlockedSfx`, `label_002_5425`, `02:53B0`-`02:5477`)
-* **Last Update Timestamp**: 2026-09-09T23:05:00+03:00
+* **Current Overall Progress**: 57.25%
+* **Number of Verified Functions**: 687
+* **Number of Decompiled Functions**: 510
+* **Number Remaining**: ~513 functions
+* **Current Subsystem**: ROM Bank 2 (Key Door Opening & Room Status Subsystem, 02:53B0-02:5477)
+* **Current Task**: Bank 2 Key Door Opening & Room Status Subsystem routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `TryOpenKeyDoor`, `EnqueueDoorUnlockedSfx`, `label_002_5425`, and `GetRoomStatusAddress` (`02:53B0`-`02:5477`, `02:5B9F`)
+* **Next Task**: Decompile and verify Bank 2 Debug Warp, Transient VFX Loop, and Staircase Subsystem (`label_002_5487`, `renderTranscientVFXs`, `staircaseIsActive`, `02:5487`-`02:5566`)
+* **Last Update Timestamp**: 2026-09-09T23:10:00+03:00
 
 ---
 
@@ -19,6 +19,10 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `TryOpenKeyDoor` | VERIFIED | PASS | PASS | Key door opening state handler: decrements small keys, syncs item flags, triggers SFX, marks room opened, reveals object, poof VFX, or spawns pushed block (`02:53B0`) |
+| `EnqueueDoorUnlockedSfx` | VERIFIED | PASS | PASS | Enqueues door unlocked noise SFX to hNoiseSfx (`02:5420`) |
+| `label_002_5425` | VERIFIED | PASS | PASS | Spawns key drop point or slime key entity depending on dungeon map ID (`02:5425`) |
+| `GetRoomStatusAddress` | VERIFIED | PASS | PASS | Resolves 16-bit WRAM address of room status byte for overworld, indoors A/B, or color dungeon (`02:5B9F`) |
 | `label_002_5310` | VERIFIED | PASS | PASS | Emits Magic Rod attack OAM sprites according to direction and swing phase (`02:5310`) |
 | `label_002_538B` | VERIFIED | PASS | PASS | Initializes spawned Magic Rod fireball entity position, variant, and velocity with Piece of Power bonus (`02:538B`) |
 | `HandleGotItemA` | VERIFIED | PASS | PASS | Got item jingle trigger on countdown 0x2E and updates sprite (`02:51BC`) |

@@ -33,8 +33,9 @@
 
 /* Values for hNoiseSfx */
 #define NOISE_SFX_NONE                          0x00
-#define NOISE_SFX_SPIN_ATTACK                   0x03
 #define NOISE_SFX_SWORD_SWING_A                 0x02
+#define NOISE_SFX_SPIN_ATTACK                   0x03
+#define NOISE_SFX_DOOR_UNLOCKED                 0x04
 #define NOISE_SFX_STAIRS                        0x06
 #define NOISE_SFX_FOOTSTEP                      0x07
 #define NOISE_SFX_WHOOSH                        0x0A
