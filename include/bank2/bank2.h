@@ -419,4 +419,63 @@ void label_002_52B9(GBState *gb);
  */
 void LinkMotionFallingDownHandler(GBState *gb);
 
+/**
+ * Link got item sequence dispatcher: triggers power-up jingle on countdown 0x2E and updates sprite (02:51BC).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_motion_state Optional callback for ApplyLinkMotionState.
+ * @param func_020_4ab3 Optional callback for bank 20 helper func_020_4AB3.
+ */
+void HandleGotItemA(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *));
+
+/**
+ * Link got item state handler: resets spin attack, applies air physics, updates OAM sprite buffer (02:51C7).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_motion_state Optional callback for ApplyLinkMotionState.
+ * @param func_020_4ab3 Optional callback for bank 20 helper func_020_4AB3.
+ */
+void HandleGotItemB(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *));
+
+/**
+ * Writes Guardian Acorn tile and returns OAM flags (02:523A).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($14).
+ */
+uint8_t func_002_523A(GBState *gb, uint16_t bc, uint8_t e);
+
+/**
+ * Writes default got-item tile and returns OAM flags (02:523F).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($14).
+ */
+uint8_t func_002_523F(GBState *gb, uint16_t bc, uint8_t e);
+
+/**
+ * Writes Magic Rod tile and returns OAM flags (02:524A).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($10).
+ */
+uint8_t func_002_524A(GBState *gb, uint16_t bc, uint8_t e);
+
+/**
+ * Handles Link recovering from pit fall or damage, countdown animation, and entry repositioning (02:5267).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void LinkMotionRecoverHandler(GBState *gb);
+
 #endif /* LADX_BANK2_BANK2_H */

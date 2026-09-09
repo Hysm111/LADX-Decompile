@@ -13,6 +13,7 @@
 #define JINGLE_SWORD_POKING                     0x07
 #define JINGLE_VALIDATE                         0x13
 #define JINGLE_WRONG_ANSWER                     0x1D
+#define JINGLE_GOT_POWER_UP                     0x17
 #define JINGLE_BOUNCE                           0x20
 #define JINGLE_GHOST_PRESENCE                   0x2D
 #define JINGLE_FALL_DOWN                        0x08

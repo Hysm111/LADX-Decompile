@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 56.25%
-* **Number of Verified Functions**: 675
-* **Number of Decompiled Functions**: 498
-* **Number Remaining**: ~525 functions
-* **Current Subsystem**: ROM Bank 2 (Pit Falling Subsystem, 02:50CA-02:51BB, 02:52B9-02:52DF)
-* **Current Task**: Bank 2 Pit Falling Subsystem routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `LinkFallingDownAnimation`, `LinkMotionFallingDownHandler`, `label_002_52B9`, and `func_002_52D6` (`02:50CA`-`02:51BB`, `02:52B9`-`02:52DF`)
-* **Next Task**: Decompile and verify Bank 2 Got Item & Recover Subsystems (`HandleGotItemA`, `HandleGotItemB`, `LinkMotionRecoverHandler`, `02:51BC`-`02:52B8`)
-* **Last Update Timestamp**: 2026-09-09T22:50:00+03:00
+* **Current Overall Progress**: 56.75%
+* **Number of Verified Functions**: 681
+* **Number of Decompiled Functions**: 504
+* **Number Remaining**: ~519 functions
+* **Current Subsystem**: ROM Bank 2 (Got Item & Link Recover Subsystem, 02:51BC-02:52B8)
+* **Current Task**: Bank 2 Got Item & Recover Subsystem routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `HandleGotItemA`, `HandleGotItemB`, `func_002_523A`, `func_002_523F`, `func_002_524A`, and `LinkMotionRecoverHandler` (`02:51BC`-`02:52B8`)
+* **Next Task**: Decompile and verify Bank 2 Magic Rod Visuals & Attack Sprites (`label_002_5310`, `02:52E0`-`02:538A`)
+* **Last Update Timestamp**: 2026-09-09T22:55:00+03:00
 
 ---
 
@@ -19,6 +19,12 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `HandleGotItemA` | VERIFIED | PASS | PASS | Got item jingle trigger on countdown 0x2E and updates sprite (`02:51BC`) |
+| `HandleGotItemB` | VERIFIED | PASS | PASS | Got item state handler: spin attack reset, air physics, OAM sprite buffer generation (`02:51C7`) |
+| `func_002_523A` | VERIFIED | PASS | PASS | Writes Guardian Acorn tile 0xAE and returns OAM flags 0x14 (`02:523A`) |
+| `func_002_523F` | VERIFIED | PASS | PASS | Writes default got-item tile 0x8E and returns OAM flags 0x14 (`02:523F`) |
+| `func_002_524A` | VERIFIED | PASS | PASS | Writes Magic Rod tile 0x8C and returns OAM flags 0x10 (`02:524A`) |
+| `LinkMotionRecoverHandler` | VERIFIED | PASS | PASS | Link recovery from falling/damage: countdown animations, health subtraction, Angler's Tunnel repositioning, map entry respawn (`02:5267`) |
 | `LinkMotionFallingDownHandler` | VERIFIED | PASS | PASS | Pit falling handler: animation advancement, overworld warp holes, tractor device, mountain cave waterfall warp, entry respawn (`02:50D4`) |
 | `label_002_52B9` | VERIFIED | PASS | PASS | Resets Link coordinates to map entry position, sets invincibility timer 0x40, and returns to default motion (`02:52B9`) |
 | `func_002_52D6` | VERIFIED | PASS | PASS | Resets active staircase state to STAIRCASE_INACTIVE (`02:52D6`) |

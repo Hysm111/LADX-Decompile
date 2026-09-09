@@ -11,6 +11,7 @@
 #include "constants/physics.h"
 #include "constants/sfx.h"
 #include "constants/vfx.h"
+#include "constants/dialog.h"
 #include "home/check_items_to_use.h"
 #include "home/link.h"
 #include "home/vfx.h"
@@ -2284,4 +2285,142 @@ void LinkMotionFallingDownHandler(GBState *gb) {
     label_002_52B9(gb);
     gb_write(gb, wSubtractHealthBuffer, (uint8_t)(gb_read(gb, wSubtractHealthBuffer) + 0x04));
     gb_write(gb, wC167, 0x00);
+}
+
+uint8_t func_002_523A(GBState *gb, uint16_t bc, uint8_t e) {
+    if (gb) gb_write(gb, bc, e);
+    return 0x14;
+}
+
+uint8_t func_002_523F(GBState *gb, uint16_t bc, uint8_t e) {
+    if (gb) gb_write(gb, bc, e);
+    return 0x14;
+}
+
+uint8_t func_002_524A(GBState *gb, uint16_t bc, uint8_t e) {
+    if (gb) gb_write(gb, bc, e);
+    return 0x10;
+}
+
+void HandleGotItemB(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *)) {
+    if (!gb) return;
+
+    ResetSpinAttack(gb);
+    gb_write(gb, wC16A, 0x00);
+    gb_write(gb, wSwordAnimationState, 0x00);
+    gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x00);
+
+    if (apply_motion_state) {
+        apply_motion_state(gb);
+    } else {
+        ApplyLinkMotionState(gb, NULL, NULL, NULL);
+    }
+
+    func_21E1(gb);
+
+    int8_t vz = (int8_t)(gb_read_hram(gb, hLinkVelocityZ) - 2);
+    gb_write_hram(gb, hLinkVelocityZ, (uint8_t)vz);
+
+    uint8_t pz = gb_read_hram(gb, hLinkPositionZ);
+    if ((pz & 0x80) != 0) {
+        gb_write_hram(gb, hLinkPositionZ, 0x00);
+        gb_write(gb, wC149, 0x00);
+        gb_write_hram(gb, hLinkVelocityZ, 0x00);
+    }
+
+    gb_write_hram(gb, hLinkAnimationState, LINK_ANIMATION_STATE_UNKNOWN_6B);
+
+    uint16_t bc = (uint16_t)(wLinkOAMBuffer + 0x10);
+    uint8_t py = gb_read_hram(gb, hLinkPositionY);
+    pz = gb_read_hram(gb, hLinkPositionZ);
+    uint8_t c13b = gb_read(gb, wC13B);
+    uint8_t multi0 = (uint8_t)(py - pz + c13b - 0x10);
+    gb_write_hram(gb, hMultiPurpose0, multi0);
+
+    uint8_t got_item = gb_read(gb, wDialogGotItem);
+    if (got_item == DIALOG_GOT_PIECE_OF_POWER) {
+        gb_write_hram(gb, hMultiPurpose1, (uint8_t)(gb_read_hram(gb, hLinkPositionX) - 0x08));
+        uint8_t fc = gb_read_hram(gb, hFrameCounter);
+        gb_write_hram(gb, hMultiPurpose3, (uint8_t)((fc << 2) & 0x10));
+        gb_write_hram(gb, hMultiPurpose2, 0x06);
+        func_1819(gb, func_020_4ab3);
+        return;
+    }
+
+    gb_write(gb, bc++, (uint8_t)(multi0 + 0x02));
+    gb_write(gb, bc++, gb_read_hram(gb, hLinkPositionX));
+
+    uint8_t tile;
+    uint8_t attr;
+    if (got_item == DIALOG_GOT_GUARDIAN_ACORN) {
+        tile = 0xAE;
+        attr = func_002_523A(gb, bc, tile);
+    } else if (got_item == DIALOG_GOT_MAGIC_POWDER) {
+        tile = 0x8E;
+        gb_write(gb, bc, tile);
+        attr = 0x16;
+    } else if (got_item == DIALOG_GOT_ROD) {
+        tile = 0x8C;
+        attr = func_002_524A(gb, bc, tile);
+    } else {
+        tile = 0x8E;
+        attr = func_002_523F(gb, bc, tile);
+    }
+
+    bc++;
+    gb_write(gb, bc, attr);
+}
+
+void HandleGotItemA(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *)) {
+    if (!gb) return;
+
+    if (gb_read(gb, wDialogGotItemCountdown) == 0x2E) {
+        gb_write_hram(gb, hJingle, JINGLE_GOT_POWER_UP);
+    }
+
+    HandleGotItemB(gb, apply_motion_state, func_020_4ab3);
+}
+
+void LinkMotionRecoverHandler(GBState *gb) {
+    if (!gb) return;
+
+    ResetSpinAttack(gb);
+    ClearLinkPositionIncrement(gb);
+
+    uint8_t countdown = gb_read_hram(gb, hLinkCountdown);
+    if (countdown != 0) {
+        uint8_t anim;
+        if (countdown < 0x30) {
+            anim = LINK_ANIMATION_STATE_HIDDEN;
+        } else if (countdown < 0x40) {
+            anim = LINK_ANIMATION_STATE_HOLD_SWIMMING_2;
+        } else {
+            if (countdown == 0x40) {
+                gb_write_hram(gb, hWaveSfx, NOISE_SFX_SPIN_ATTACK);
+            }
+            anim = LINK_ANIMATION_STATE_HOLD_SWIMMING_1_DOWN;
+        }
+        gb_write_hram(gb, hLinkAnimationState, anim);
+        return;
+    }
+
+    gb_write(gb, wC167, 0x00);
+
+    if (gb_read_hram(gb, hLinkPhysicsModifier) == 0x06) {
+        gb_write(gb, wSubtractHealthBuffer, (uint8_t)(gb_read(gb, wSubtractHealthBuffer) + 0x04));
+    }
+    gb_write_hram(gb, hLinkPhysicsModifier, 0x00);
+
+    if (gb_read(gb, wIsIndoor) == 0) {
+        if (gb_read_hram(gb, hMapRoom) == ROOM_OW_ANGLERS_TUNNEL_ENTRANCE) {
+            gb_write(gb, wLinkMapEntryPositionX, 0x48);
+            gb_write(gb, wLinkMapEntryPositionY, 0x30);
+        }
+    }
+
+    label_002_52B9(gb);
 }

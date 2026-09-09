@@ -21,6 +21,13 @@
 #define DIALOG_CLOSING_1               0x0E
 #define DIALOG_CLOSING_2               0x0F
 
+/* Got item dialog IDs (wDialogGotItem) */
+#define DIALOG_GOT_PIECE_OF_POWER      0x01
+#define DIALOG_GOT_TOADSTOOL           0x02
+#define DIALOG_GOT_MAGIC_POWDER        0x03
+#define DIALOG_GOT_ROD                 0x04
+#define DIALOG_GOT_GUARDIAN_ACORN      0x05
+
 #define DIALOG_BOX_BOTTOM_FLAG         0x80
 #define DIALOG_BOX_BOTTOM_BIT          7
 #define DIALOG_COOLDOWN                0x18
