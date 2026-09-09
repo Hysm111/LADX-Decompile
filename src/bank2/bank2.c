@@ -2424,3 +2424,130 @@ void LinkMotionRecoverHandler(GBState *gb) {
 
     label_002_52B9(gb);
 }
+
+/* Bank 2 Magic Rod Visuals & Attack Sprites (02:52E0-02:53AF) */
+
+const int8_t LinkDirectionToMagicRodXOffset[8] = {
+    0x0D, (int8_t)0xF3, 0x00, (int8_t)0xFF,
+    0x08, (int8_t)0xF8, 0x0C, (int8_t)0xF5
+};
+
+const int8_t LinkDirectionToMagicRodYOffset[8] = {
+    0x00, 0x00, (int8_t)0xF3, 0x0E,
+    (int8_t)0xF3, (int8_t)0xF3, (int8_t)0xFC, 0x00
+};
+
+const uint8_t LinkDirectionToMagicRodTiles[16] = {
+    0x06, 0x08, 0x08, 0x06, 0x04, 0xFF, 0xFF, 0x04,
+    0x04, 0xFF, 0xFF, 0x04, 0x06, 0x08, 0x08, 0x06
+};
+
+const uint8_t LinkDirectionToMagicRodOAMAttributes[16] = {
+    0x02, 0x02, 0x22, 0x22, 0x22, 0x02, 0x02, 0x42,
+    0x22, 0x02, 0x02, 0x22, 0x02, 0x02, 0x22, 0x22
+};
+
+const int8_t LinkDirectionToEntitiesPositionX[4] = {
+    4, -4, -4, 4
+};
+
+const int8_t LinkDirectionToEntitiesPositionY[4] = {
+    4, 4, -4, 4
+};
+
+static const uint8_t data_13AD[8] = {
+    0x30, 0xD0, 0x00, 0x00,
+    0x40, 0xC0, 0x00, 0x00
+};
+
+static const uint8_t data_13B5[8] = {
+    0x00, 0x00, 0xD0, 0x30,
+    0x00, 0x00, 0xC0, 0x40
+};
+
+void label_002_5310(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t countdown = gb_read(gb, wLinkAttackStepAnimationCountdown) & ATTACK_STEP_DURATION_MASK;
+    uint8_t dir = gb_read_hram(gb, hLinkDirection);
+    if (countdown >= 0x08) {
+        dir += 0x04;
+    }
+    uint8_t offset = dir & 0x07;
+
+    uint8_t y_offset = (uint8_t)LinkDirectionToMagicRodYOffset[offset];
+    gb_write_hram(gb, hMultiPurpose0, y_offset);
+
+    uint8_t x_offset = (uint8_t)LinkDirectionToMagicRodXOffset[offset];
+    gb_write_hram(gb, hMultiPurpose1, x_offset);
+
+    uint8_t tile0 = LinkDirectionToMagicRodTiles[offset * 2];
+    gb_write_hram(gb, hMultiPurpose2, tile0);
+
+    uint8_t tile1 = LinkDirectionToMagicRodTiles[offset * 2 + 1];
+    gb_write_hram(gb, hMultiPurpose3, tile1);
+
+    uint8_t attr0 = LinkDirectionToMagicRodOAMAttributes[offset * 2];
+    gb_write_hram(gb, hMultiPurpose4, attr0);
+
+    uint8_t attr1 = LinkDirectionToMagicRodOAMAttributes[offset * 2 + 1];
+    gb_write_hram(gb, hMultiPurpose5, attr1);
+
+    uint16_t de = wLinkOAMBuffer + 0x10;
+    uint16_t bc = wLinkOAMBuffer + 0x14;
+
+    uint8_t final_y = (uint8_t)(gb_read(gb, wC145) + gb_read(gb, wC13B) + y_offset);
+    gb_write_hram(gb, hMultiPurpose0, final_y);
+
+    if (tile0 != 0xFF) {
+        gb_write(gb, de, final_y);
+    }
+    if (tile1 != 0xFF) {
+        gb_write(gb, bc, final_y);
+    }
+
+    de++;
+    bc++;
+
+    uint8_t pos_x = (uint8_t)(x_offset + gb_read_hram(gb, hLinkPositionX));
+    gb_write(gb, de, pos_x);
+    gb_write(gb, bc, (uint8_t)(pos_x + 0x08));
+
+    de++;
+    bc++;
+
+    gb_write(gb, de, tile0);
+    gb_write(gb, bc, tile1);
+
+    de++;
+    bc++;
+
+    gb_write(gb, de, attr0);
+    gb_write(gb, bc, attr1);
+}
+
+void label_002_538B_entity(GBState *gb, uint8_t de) {
+    if (!gb) return;
+
+    uint8_t dir = gb_read_hram(gb, hLinkDirection) & 0x03;
+    uint8_t pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + (uint8_t)LinkDirectionToEntitiesPositionX[dir]);
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + de), pos_x);
+
+    uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + (uint8_t)LinkDirectionToEntitiesPositionY[dir]);
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + de), pos_y);
+
+    gb_write(gb, (uint16_t)(wEntitiesSpriteVariantTable + de), 0x00);
+
+    /* label_140F */
+    uint8_t offset = dir;
+    if (gb_read(gb, wActivePowerUp) == POWER_UP_PIECE_OF_POWER) {
+        offset += 4;
+    }
+    gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + de), data_13AD[offset]);
+    gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + de), data_13B5[offset]);
+}
+
+void label_002_538B(GBState *gb) {
+    label_002_538B_entity(gb, 0);
+}
+

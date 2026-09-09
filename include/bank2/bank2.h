@@ -478,4 +478,34 @@ uint8_t func_002_524A(GBState *gb, uint16_t bc, uint8_t e);
  */
 void LinkMotionRecoverHandler(GBState *gb);
 
+/* Bank 2 Magic Rod Sprite Data Tables */
+extern const int8_t LinkDirectionToMagicRodXOffset[8];
+extern const int8_t LinkDirectionToMagicRodYOffset[8];
+extern const uint8_t LinkDirectionToMagicRodTiles[16];
+extern const uint8_t LinkDirectionToMagicRodOAMAttributes[16];
+extern const int8_t LinkDirectionToEntitiesPositionX[4];
+extern const int8_t LinkDirectionToEntitiesPositionY[4];
+
+/**
+ * Emits Magic Rod attack OAM sprites according to direction and swing phase (02:5310).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_5310(GBState *gb);
+
+/**
+ * Initializes projectile entity position, variant, and velocity based on Link direction (02:538B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param de Target entity slot index.
+ */
+void label_002_538B_entity(GBState *gb, uint8_t de);
+
+/**
+ * Initializes spawned Magic Rod fireball entity position, variant, and velocity (02:538B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_538B(GBState *gb);
+
 #endif /* LADX_BANK2_BANK2_H */

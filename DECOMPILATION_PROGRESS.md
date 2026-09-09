@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 56.75%
-* **Number of Verified Functions**: 681
-* **Number of Decompiled Functions**: 504
-* **Number Remaining**: ~519 functions
-* **Current Subsystem**: ROM Bank 2 (Got Item & Link Recover Subsystem, 02:51BC-02:52B8)
-* **Current Task**: Bank 2 Got Item & Recover Subsystem routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `HandleGotItemA`, `HandleGotItemB`, `func_002_523A`, `func_002_523F`, `func_002_524A`, and `LinkMotionRecoverHandler` (`02:51BC`-`02:52B8`)
-* **Next Task**: Decompile and verify Bank 2 Magic Rod Visuals & Attack Sprites (`label_002_5310`, `02:52E0`-`02:538A`)
-* **Last Update Timestamp**: 2026-09-09T22:55:00+03:00
+* **Current Overall Progress**: 56.92%
+* **Number of Verified Functions**: 683
+* **Number of Decompiled Functions**: 506
+* **Number Remaining**: ~517 functions
+* **Current Subsystem**: ROM Bank 2 (Magic Rod Visuals & Projectiles, 02:52E0-02:53AF)
+* **Current Task**: Bank 2 Magic Rod Visuals & Projectiles routines decompiled and verified
+* **Last Completed Task**: Decompiled and verified `label_002_5310` and `label_002_538B` (`02:52E0`-`02:53AF`)
+* **Next Task**: Decompile and verify Bank 2 Key Door Opening & Key Drop Subsystem (`TryOpenKeyDoor`, `EnqueueDoorUnlockedSfx`, `label_002_5425`, `02:53B0`-`02:5477`)
+* **Last Update Timestamp**: 2026-09-09T23:05:00+03:00
 
 ---
 
@@ -19,6 +19,8 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `label_002_5310` | VERIFIED | PASS | PASS | Emits Magic Rod attack OAM sprites according to direction and swing phase (`02:5310`) |
+| `label_002_538B` | VERIFIED | PASS | PASS | Initializes spawned Magic Rod fireball entity position, variant, and velocity with Piece of Power bonus (`02:538B`) |
 | `HandleGotItemA` | VERIFIED | PASS | PASS | Got item jingle trigger on countdown 0x2E and updates sprite (`02:51BC`) |
 | `HandleGotItemB` | VERIFIED | PASS | PASS | Got item state handler: spin attack reset, air physics, OAM sprite buffer generation (`02:51C7`) |
 | `func_002_523A` | VERIFIED | PASS | PASS | Writes Guardian Acorn tile 0xAE and returns OAM flags 0x14 (`02:523A`) |
