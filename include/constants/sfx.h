@@ -49,11 +49,13 @@
 #define NOISE_SFX_CLINK                         0x17
 #define NOISE_SFX_SWORD_SWING_D                 0x18
 #define NOISE_SFX_PING                          0x19
+#define NOISE_SFX_OPEN_KEY_CAVERN               0x2A
 
 #define JINGLE_FEATHER_JUMP                     0x0D
 #define JINGLE_WATER_SPLASH                     0x0E
 #define JINGLE_SWIM                             0x0F
 #define JINGLE_SEAGULL                          0x21
+#define JINGLE_DUNGEON_OPENED                   0x23
 #define JINGLE_MANBO_WARP                       0x2C
 
 #endif /* LADX_CONSTANTS_SFX_H */

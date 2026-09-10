@@ -167,6 +167,7 @@
 #define wEntitiesTypeTable                    0xC3A0
 #define wActiveEntityIndex                    0xC123
 #define wC111                                 0xC111
+#define wC1A7                                 0xC1A7
 #define wC1A8                                 0xC1A8
 #define wC3C1                                 0xC3C1
 #define wBossAgonySFXCountdown                0xC5A7
@@ -516,6 +517,7 @@
 #define wC16C                                 0xC16C
 #define wC5AD                                 0xC5AD
 #define wTransitionSequenceCounter            0xC16B
+#define wNextWorldMusicTrackCountdown         0xC5AF
 #define wSwitchableObjectAnimationStage       0xD6F8
 #define wIsFileSelectionArrowShifted          0xD000
 #define hNeedsUpdatingBGTiles                 0xFF90

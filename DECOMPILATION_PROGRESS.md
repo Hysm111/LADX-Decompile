@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 57.58%
-* **Number of Verified Functions**: 691
-* **Number of Decompiled Functions**: 514
-* **Number Remaining**: ~509 functions
-* **Current Subsystem**: ROM Bank 2 (Debug Warp, Transient VFX Loop, & Staircase Subsystem, 02:5487-02:5566)
-* **Current Task**: Bank 2 Debug Warp, Transient VFX Loop, and Staircase Subsystem routines decompiled and verified
-* **Last Completed Task**: Decompiled and verified `label_002_5487`, `renderTranscientVFXs`, `staircaseIsActive`, and `ExecuteDebugWarp` (`02:5487`-`02:5566`)
-* **Next Task**: Decompile and verify Bank 2 Transient Visual Effects Rendering Engine (`RenderTranscientVfx`, `ClearTranscientVfx`, `02:5567`-`02:5606`)
-* **Last Update Timestamp**: 2026-09-09T23:18:00+03:00
+* **Current Overall Progress**: 59.17%
+* **Number of Verified Functions**: 710
+* **Number of Decompiled Functions**: 533
+* **Number Remaining**: ~490 functions
+* **Current Subsystem**: ROM Bank 2 (Transient Visual Effects Rendering Engine, 02:5567-02:5934)
+* **Current Task**: Bank 2 Transient Visual Effects Rendering Engine decompiled and verified
+* **Last Completed Task**: Decompiled and verified `RenderTranscientVfx`, `ClearTranscientVfx`, `func_002_58D0`, `label_002_5854`, `label_002_58F5`, `label_002_583A`, `label_002_5877`, `RenderTranscientWaterSplash`, `RenderTranscientPegasusSplash`, `RenderTranscientPoof`, `RenderTranscientSmoke`, `RenderTranscientSwordPoke`, `RenderTranscientLaserBeam`, `RenderTranscientMovingSparkle`, `RenderTranscientLavaSplash`, `RenderTranscientPegasusDust`, `RenderTranscientRumble`, `RenderTranscientSwordBeam`, and `func_002_5926` (`02:5567`-`02:5934`)
+* **Next Task**: Decompile and verify Bank 2 Room Events and Door Opening/Closing Subsystem (`ExecuteRoomEvents`, `ShutterDoorsMaskTable`, `02:593B`-`02:5A20`)
+* **Last Update Timestamp**: 2026-09-10T17:18:00+03:00
 
 ---
 
@@ -19,6 +19,25 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `RenderTranscientVfx` | VERIFIED | PASS | PASS | Main dispatcher for transient visual effects rendering engine (13 VFX routines) (`02:5567`) |
+| `ClearTranscientVfx` | VERIFIED | PASS | PASS | Clears transient visual effect from wTranscientVfxTypeTable (`02:58E6`) |
+| `func_002_58D0` | VERIFIED | PASS | PASS | Boundary check for transient VFX coordinates (Y >= 0x88 or X >= 0xA8 clears effect) (`02:58D0`) |
+| `label_002_5854` | VERIFIED | PASS | PASS | Emits single 4-byte sprite entry with relative X/Y offsets into target OAM address (`02:5854`) |
+| `label_002_58F5` | VERIFIED | PASS | PASS | Advances dynamic OAM next available slot and wC3C1 ring buffer, wrapping at 0x60 (`02:58F5`) |
+| `label_002_583A` | VERIFIED | PASS | PASS | Emits 2 sprites into dynamic OAM buffer and advances ring buffer by 8 bytes (`02:583A`) |
+| `label_002_5877` | VERIFIED | PASS | PASS | Emits shallow water splash transient VFX sprites using Data_002_5867 (`02:5877`) |
+| `RenderTranscientWaterSplash` | VERIFIED | PASS | PASS | Renders deep (Data_002_57FD) or shallow (Data_002_5867) water splash transient VFX (`02:5825`) |
+| `RenderTranscientPegasusSplash` | VERIFIED | PASS | PASS | Renders Pegasus splash transient VFX using Data_002_580D (`02:581D`) |
+| `RenderTranscientPoof` | VERIFIED | PASS | PASS | Renders poof VFX, triggers chest spawn or stairs spawn at countdown frame 4 (`02:58A4`) |
+| `RenderTranscientSmoke` | VERIFIED | PASS | PASS | Renders smoke transient VFX using Data_002_5736 (`02:5746`) |
+| `RenderTranscientSwordPoke` | VERIFIED | PASS | PASS | Renders sword poke transient VFX using Data_002_57DD (`02:57ED`) |
+| `RenderTranscientLaserBeam` | VERIFIED | PASS | PASS | Renders single-sprite laser beam transient VFX with frame parity attribute (`02:57B4`) |
+| `RenderTranscientMovingSparkle` | VERIFIED | PASS | PASS | Updates sparkle trajectory and emits dual-sprite sparkle VFX (`02:575E`) |
+| `RenderTranscientLavaSplash` | VERIFIED | PASS | PASS | Emits 4-sprite lava splash transient VFX into dynamic OAM buffer (`02:560C`) |
+| `RenderTranscientPegasusDust` | VERIFIED | PASS | PASS | Emits Pegasus boots dust VFX into dynamic OAM or stationary OAM buffer (`02:5718`) |
+| `RenderTranscientRumble` | VERIFIED | PASS | PASS | Screen rumble, dungeon door SFX, BG tile redraws, room object replacement (`02:5646`) |
+| `RenderTranscientSwordBeam` | VERIFIED | PASS | PASS | Emits directional dual-sprite sword beam VFX modulated by frame counter (`02:55DC`) |
+| `func_002_5926` | VERIFIED | PASS | PASS | Reads Link Y position and triggers water splash transient VFX (`02:5926`) |
 | `label_002_5487` | VERIFIED | PASS | PASS | Clears indoor room statuses, decrements dialog and photo album cooldowns, updates VFX & staircase (`02:5487`) |
 | `renderTranscientVFXs` | VERIFIED | PASS | PASS | Iterates transient VFX slots 15..0, renders active VFXs, updates inactive staircase to active on exit (`02:54E4`) |
 | `staircaseIsActive` | VERIFIED | PASS | PASS | Validates proximity to staircase, carrying state, color dungeon entrance conditions, triggers fade warp (`02:552A`) |
