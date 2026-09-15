@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 59.17%
-* **Number of Verified Functions**: 710
-* **Number of Decompiled Functions**: 533
-* **Number Remaining**: ~490 functions
-* **Current Subsystem**: ROM Bank 2 (Transient Visual Effects Rendering Engine, 02:5567-02:5934)
-* **Current Task**: Bank 2 Transient Visual Effects Rendering Engine decompiled and verified
-* **Last Completed Task**: Decompiled and verified `RenderTranscientVfx`, `ClearTranscientVfx`, `func_002_58D0`, `label_002_5854`, `label_002_58F5`, `label_002_583A`, `label_002_5877`, `RenderTranscientWaterSplash`, `RenderTranscientPegasusSplash`, `RenderTranscientPoof`, `RenderTranscientSmoke`, `RenderTranscientSwordPoke`, `RenderTranscientLaserBeam`, `RenderTranscientMovingSparkle`, `RenderTranscientLavaSplash`, `RenderTranscientPegasusDust`, `RenderTranscientRumble`, `RenderTranscientSwordBeam`, and `func_002_5926` (`02:5567`-`02:5934`)
-* **Next Task**: Decompile and verify Bank 2 Room Events and Door Opening/Closing Subsystem (`ExecuteRoomEvents`, `ShutterDoorsMaskTable`, `02:593B`-`02:5A20`)
-* **Last Update Timestamp**: 2026-09-10T17:18:00+03:00
+* **Current Overall Progress**: 59.42%
+* **Number of Verified Functions**: 713
+* **Number of Decompiled Functions**: 536
+* **Number Remaining**: ~487 functions
+* **Current Subsystem**: ROM Bank 2 (Room Events & Door Opening/Closing Subsystem, 02:593B-02:5D4E)
+* **Current Task**: Bank 2 Room Events and Door Opening/Closing Subsystem decompiled and verified
+* **Last Completed Task**: Decompiled and verified `ExecuteRoomEvents`, `DoorOpening`, and `DoorClosing` (`02:593B`-`02:5D4E`) along with 13 lookup tables (`ShutterDoorsMaskTable`, `OpeningDoorTileIds`, `DoorXOffsets`, `DoorYOffsets`, `OpeningDoorTileOffsets`, `OpenDoorObjectIdsTable`, `DoorToOpenStatusFlagTable`, `DoorToAdjacentRoomTable`, `DoorToAdjacentOpenStatusFlagTable`, `ClosingDoorTileIds`, `Data_002_5BE4`, `ClosingDoorTileOffsets`, `ClosedShutterDoorObjectIdsTable`)
+* **Next Task**: Decompile and verify Bank 2 Room Triggers & Effects Subsystem (`ExecuteRoomTriggersAndEffects`, `KillAllEnemiesEffectHandler`, `CheckTriggersResolution`, `02:5D4F`+)
+* **Last Update Timestamp**: 2026-09-16T02:35:00+03:00
 
 ---
 
@@ -19,6 +19,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `ExecuteRoomEvents` | VERIFIED | PASS | PASS | Main active room events dispatcher: dialog/transition/indoors guards, triggers invocation, door opening/closing enqueue & motion blocking (`02:593B`) |
+| `DoorOpening` | VERIFIED | PASS | PASS | Multi-phase door opening animation: half/fully open tile redraws, VRAM commands, GBC palette update, wRoomObjects replacement, room & adjacent status update (`02:5A7B`) |
+| `DoorClosing` | VERIFIED | PASS | PASS | Multi-phase door closing animation: Link entry proximity displacement guard, tile redraws, VRAM commands, wRoomObjects replacement, room status clear (`02:5C04`) |
 | `RenderTranscientVfx` | VERIFIED | PASS | PASS | Main dispatcher for transient visual effects rendering engine (13 VFX routines) (`02:5567`) |
 | `ClearTranscientVfx` | VERIFIED | PASS | PASS | Clears transient visual effect from wTranscientVfxTypeTable (`02:58E6`) |
 | `func_002_58D0` | VERIFIED | PASS | PASS | Boundary check for transient VFX coordinates (Y >= 0x88 or X >= 0xA8 clears effect) (`02:58D0`) |

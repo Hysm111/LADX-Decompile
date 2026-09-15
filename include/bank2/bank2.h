@@ -757,6 +757,56 @@ void RenderTranscientVfxDefault(GBState *gb, uint8_t slot);
  */
 void func_002_5926(GBState *gb);
 
+/* ========================================================================= */
+/* Bank 2: Room Events & Door Opening/Closing Subsystem (02:593B - 02:5D4E)  */
+/* ========================================================================= */
+
+extern const uint8_t ShutterDoorsMaskTable[4];
+extern const uint8_t OpeningDoorTileIds[72];
+extern const uint8_t DoorXOffsets[18];
+extern const uint8_t DoorYOffsets[18];
+extern const uint8_t OpeningDoorTileOffsets[16];
+extern const uint8_t OpenDoorObjectIdsTable[16];
+extern const uint8_t DoorToOpenStatusFlagTable[9];
+extern const int8_t DoorToAdjacentRoomTable[9];
+extern const uint8_t DoorToAdjacentOpenStatusFlagTable[9];
+extern const uint8_t ClosingDoorTileIds[32];
+extern const uint8_t Data_002_5BE4[16];
+extern const uint8_t ClosingDoorTileOffsets[8];
+extern const uint8_t ClosedShutterDoorObjectIdsTable[8];
+
+/**
+ * Handles door opening animation, draw commands, object replacement, and status updates (02:5A7B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param func_01A_6710 Optional callback for palette loading in bank $1A.
+ * @param get_adjacent_address Optional callback for GetRoomStatusAddressForMapPosition.
+ */
+void DoorOpening(GBState *gb,
+                 void (*func_01A_6710)(GBState *),
+                 uint16_t (*get_adjacent_address)(GBState *, uint16_t));
+
+/**
+ * Handles door closing animation, draw commands, object replacement, and status updates (02:5C04).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param func_01A_6710 Optional callback for palette loading in bank $1A.
+ */
+void DoorClosing(GBState *gb, void (*func_01A_6710)(GBState *));
+
+/**
+ * Executes active room triggers, effects, and door opening/closing state handlers (02:593B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param execute_room_triggers_and_effects Optional callback for room triggers and effects (02:5D4F).
+ * @param func_01A_6710 Optional callback for palette loading in bank $1A.
+ * @param get_adjacent_address Optional callback for GetRoomStatusAddressForMapPosition.
+ */
+void ExecuteRoomEvents(GBState *gb,
+                       void (*execute_room_triggers_and_effects)(GBState *),
+                       void (*func_01A_6710)(GBState *),
+                       uint16_t (*get_adjacent_address)(GBState *, uint16_t));
+
 #endif /* LADX_BANK2_BANK2_H */
 
 

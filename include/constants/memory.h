@@ -36,9 +36,14 @@
 #define wC3CF                        0xC3CF
 #define wC50E                        0xC50E
 #define wRoomSwitchableObject        0xD6FA
+#define wDoorsOpeningOrClosing       0xC188
+#define wDoorEvent                   0xC189
 #define wShutterDoorsMask            0xC18A
 #define wC183                         0xC183
 #define wShutterDoorsMask2           0xC18B
+#define wEnqueueDoorsOpening         0xC18C
+#define wEnqueueDoorsClosing         0xC18D
+#define wRoomEvent                   0xC18E
 #define wRoomEventEffectExecuted 0xC18F
 #define wLoadedEntitySpritesheets 0xC193
 #define wEntityTilesSpriteslotIndexA 0xC197
@@ -524,6 +529,7 @@
 #define hNeedsUpdatingEntityTilesA            0xFF91
 #define hWorldTileset                         0xFF94
 #define hTileGlintSequence                    0xFFB9
+#define wDBAC                                 0xDBAC
 #define wHasDungeonMap                        0xDBCC
 #define wHasDungeonCompass                    0xDBCD
 #define wHasDungeonStoneBeak                  0xDBCE
