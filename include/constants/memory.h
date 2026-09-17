@@ -30,6 +30,7 @@
 #define wTransitionSequenceCounter 0xC16B
 #define wC167                   0xC167
 #define wC16C                   0xC16C
+#define wC1A2                        0xC1A2
 #define wConveyorBeltsCount          0xC1A5
 #define wObjectAffectingBGPalette    0xC3CB
 #define wC3CD                        0xC3CD
@@ -83,6 +84,7 @@
 #define wWarpStructs            0xD401
 #define wWarpPositions          0xD416
 #define wWarp0PositionTileIndex 0xD416
+#define wD460                   0xD460
 #define wD464                   0xD464
 #define wD474                   0xD474
 #define wD478                   0xD478

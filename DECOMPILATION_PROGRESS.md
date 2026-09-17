@@ -3,17 +3,27 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 60.33%
-* **Number of Verified Functions**: 725
-* **Number of Decompiled Functions**: 548
-* **Number Remaining**: ~475 functions
+* **Current Overall Progress**: 60.92%
+* **Number of Verified Functions**: 731
+* **Number of Decompiled Functions**: 554
+* **Number Remaining**: ~469 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 66: chest reveal and staircase object materialization decompiled and verified
-* **Last Completed Task**: Decompiled and verified `RevealChestEffectHandler` (`02:5EAB`-`02:5ED2`), `func_002_5ED3` (`02:5ED3`-`02:5F53`), and `func_002_5F5C` (`02:5F5C`-`02:5F9E`) with the `ChestTileIds`/`StaircaseTileIds` tables, using assembly-derived coordinate, draw-command, and attribute-callback tests
-* **Next Task**: Continue Room Triggers & Effects with `CheckTriggersResolution` (`02:5F9F`) and its trigger checkers (`CheckKillSidescrollBossTrigger`, `CheckLightTorchesTrigger`, `CheckStepOnButtonTrigger`, `CheckKillInOrderTrigger`, `CheckKillEnemiesTrigger`), which completes the subsystem's remaining pieces before the `ExecuteRoomTriggersAndEffects` dispatcher. Do not redo Batch 63/64/65/66 VERIFIED routines.
-* **Last Update Timestamp**: 2026-09-17T21:56:53+03:00
+* **Current Task**: Batch 67: six room trigger checkers decompiled and verified
+* **Last Completed Task**: Verified `CheckKillSidescrollBossTrigger`, `CheckLightTorchesTrigger`, `CheckStepOnButtonTrigger`, `CheckKillInOrderTrigger`, `CheckKillEnemiesTrigger`, and `CheckAnswerTunicsTrigger` (`02:5FC6`-`02:60D7`) with independent assembly-derived memory tests
+* **Next Task**: Resolve the `CheckTriggersResolution` (`02:5F9F`) jump-table input contract, then implement and verify it and `ExecuteRoomTriggersAndEffects` (`02:5D4F`) in a small batch. CheckTriggersResolution is BLOCKED pending evidence for masked trigger IDs outside 1..16: the assembly decrements the ID and indexes a 16-entry table without a bounds check. Do not substitute no-op behavior or redo VERIFIED checkers/effects.
+* **Last Update Timestamp**: 2026-09-17T22:18:30+03:00
 
 ---
+
+## Batch 67 Verification — Room Trigger Checkers
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:486-716` (`02:5FC6`-`02:60D7`) and referenced constants/helpers. Six functions are added in `src/bank2/room_triggers.c`, with declarations in `include/bank2/room_triggers.h`. Existing VERIFIED bodies and production callers are unchanged.
+- **Simple checks:** Map `06` selects saved boss status at `DAE8`, all other map bytes select `D9FF`; only bit `0x20` matters. Torches requires exactly `wC1A2 == 2`, button requires any nonzero pressed byte, and kill order requires exactly the three bytes `0,1,2`.
+- **Enemy check:** Scan slots 15..0; every nonzero status blocks unless options1 bit `0x02` is set. Only input trigger ID `8` in `hMultiPurpose0` adds the `wD460 != 0` and `wEnemyWasKilled == 0` conditions. Resolution uses the existing helper, preserving its already-executed and jingle-suppression semantics.
+- **Tunic check:** Already-executed effects return before resetting `hMultiPurpose0`. Ordinary rooms count nonzero-status entities of types `EF/F0/F1` with variant `8`; room `0A` requires exactly nine, other rooms exactly four. Room `08` returns after marking. Room `0A` marks before the effect guard, opens shutters if allowed, then sets saved color-room bit `0x10` without updating the cache. Other rooms invoke the verified chest effect. Room `12` instead counts types `F6/F7` in state `4`, requires exactly two, and marks before the guard and saved-status/cache update. No map-ID validation is added.
+- **Tests:** `tests/bank2/test_room_triggers.c` uses literal-address expected writes and full initialized `GBState` comparisons. Covers exhaustive simple byte domains, kill-order pairs, enemy status/options and special-condition pairs, tunic counts 0..16, all candidate slots/types, room-specific continuations, guards/re-entry, seven WRAM banks, jingle suppression, saved/cache differences, VFX boundaries, and NULL inputs.
+- **Validation:** Baseline and completed full Debug build/CTest PASS with assertions enabled; full test output contains no failure messages. Independent fresh Debug build/full suite and assembly review PASS. Strict C11 syntax/warning checks and `git diff --check` PASS.
+- **Scope and blocker:** Verification covers the six checkers' source-level memory behavior in `GBState`, not CPU flags/registers/cycles or every combination of inputs. `CheckTriggersResolution` is not implemented or counted as verified: IDs `0` and `17..31` do not select declared jump-table entries, and their reachable-input/dispatch contract has not been established. Its out-of-range behavior is BLOCKED pending assembly/call-site/room-data evidence. The outer dispatcher also remains unfinished. No guessed dispatch fallback was added.
 
 ## Batch 66 Verification — Chest and Staircase Reveal
 
@@ -59,6 +69,13 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `CheckTriggersResolution` | BLOCKED | — | BLOCKED | Pending evidence for masked IDs outside 1..16 and unchecked jump-table behavior (`02:5F9F`); not implemented |
+| `CheckKillSidescrollBossTrigger` | VERIFIED | PASS | PASS | Map-specific saved boss status bit 0x20 (`02:5FC6`-`02:5FD9`, Batch 67) |
+| `CheckLightTorchesTrigger` | VERIFIED | PASS | PASS | Exact wC1A2 == 2 (`02:5FDA`-`02:5FE2`, Batch 67) |
+| `CheckStepOnButtonTrigger` | VERIFIED | PASS | PASS | Nonzero switch button (`02:5FE3`-`02:5FEA`, Batch 67) |
+| `CheckKillInOrderTrigger` | VERIFIED | PASS | PASS | Exact kill order 0,1,2 (`02:5FEB`-`02:5FFB`, Batch 67) |
+| `CheckKillEnemiesTrigger` | VERIFIED | PASS | PASS | Nonzero entity status/exclusion scan and special trigger guards (`02:5FFC`-`02:602C`, Batch 67) |
+| `CheckAnswerTunicsTrigger` | VERIFIED | PASS | PASS | Exact entity counts, room-specific effects, mark-before-guard order (`02:602D`-`02:60D7`, Batch 67) |
 | `RevealChestEffectHandler` | VERIFIED | PASS | PASS | Guarded chest VFX at X 0x88, Y 0x40 inside the overlap window else 0x30; no status latch (`02:5EAB`-`02:5ED2`, Batch 66) |
 | `func_002_5ED3` | VERIFIED | PASS | PASS | Materializes chest object 0xA0 at branch-selected row, emits BG command, CGB palette via callback (`02:5ED3`-`02:5F53`, Batch 66) |
 | `func_002_5F5C` | VERIFIED | PASS | PASS | Staircase inactive at (0x88, 0x20), object 0xBE, shared draw-command tail (`02:5F5C`-`02:5F9E`, Batch 66) |

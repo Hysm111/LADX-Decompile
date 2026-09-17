@@ -28,6 +28,7 @@ void run_bank2_tests(void) {
     test_bank2_key_drop_effect();
     test_bank2_object_reveal();
     test_bank2_shutter_effects();
+    test_bank2_room_triggers();
 
     printf("[+] Bank 2 unit tests passed successfully!\n");
 }

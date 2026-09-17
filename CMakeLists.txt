@@ -48,6 +48,7 @@ set(LADX_CORE_SOURCES
     src/bank2/room_effects.c
     src/bank2/room_events.c
     src/bank2/room_transition.c
+    src/bank2/room_triggers.c
     src/bank2/shovel.c
     src/bank2/swimming.c
     src/bank2/vfx.c
@@ -103,6 +104,7 @@ add_executable(ladx_tests
     tests/bank2/test_object_reveal.c
     tests/bank2/test_room_effects.c
     tests/bank2/test_room_events.c
+    tests/bank2/test_room_triggers.c
     tests/bank2/test_shovel.c
     tests/bank2/test_shutter_effects.c
     tests/bank2/test_support.c

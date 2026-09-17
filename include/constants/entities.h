@@ -20,6 +20,9 @@
 #define ENTITY_STATUS_LIFTED     7
 #define ENTITY_STATUS_THROWN     8
 
+/* Values for wEntitiesOptions1Table. */
+#define ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL 0x02
+
 /* Values for wEntitiesPhysicsFlagsTable. */
 #define ENTITY_PHYSICS_HARMLESS  0x80
 #define ENTITY_PHYSICS_MASK      0xF0
