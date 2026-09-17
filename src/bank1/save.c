@@ -316,18 +316,6 @@ void LoadSavedFile(GBState *gb) {
     gb_write(gb, wBGMapToLoad, TILEMAP_INVENTORY);
 }
 
-#include "constants/gfx.h"
-#include "constants/audio.h"
-#include "constants/sfx.h"
-#include "constants/gameplay.h"
-#include "bank1/room_transition.h"
-#include "bank1/world_map.h"
-#include "home/link.h"
-#include "home/clear_memory.h"
-#include "home/audio.h"
-#include "home/animated_tiles.h"
-#include "home/gameplay.h"
-
 const uint8_t DebugSaveFileData[67] = {
     0x02, /* B: shield */
     0x01, /* A: sword */

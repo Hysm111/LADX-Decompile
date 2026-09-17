@@ -1,5 +1,10 @@
 #include "home/link.h"
 #include "home/bank.h"
+#include "home/audio.h"
+#include "home/gameplay.h"
+#include "home/check_items_to_use.h"
+#include "home/vfx.h"
+#include "home/dialog.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/gameplay.h"
@@ -8,6 +13,9 @@
 #include "constants/inventory.h"
 #include "constants/dialog.h"
 #include "constants/link.h"
+#include "constants/directions.h"
+#include "constants/entities.h"
+#include "constants/vfx.h"
 
 void disableMovementInTransition(GBState *gb) {
     if (!gb) return;
@@ -87,15 +95,6 @@ void UpdateLinkWalkingAnimation_trampoline(GBState *gb, void (*update_func)(GBSt
     }
     ReloadSavedBank(gb);
 }
-
-#include "home/audio.h"
-#include "home/gameplay.h"
-#include "home/check_items_to_use.h"
-#include "home/vfx.h"
-#include "constants/directions.h"
-#include "constants/entities.h"
-#include "constants/link.h"
-#include "constants/vfx.h"
 
 static const uint8_t SwordCollisionMapX[12] = {
     0x16, 0xFA, 0x08, 0x08,
@@ -317,8 +316,6 @@ void UsePegasusBoots(GBState *gb) {
     gb_write(gb, hLinkSpeedY, YPositionIncrementPegasusRunning[dir]);
     gb_write(gb, wC1AC, 0);
 }
-
-#include "home/dialog.h"
 
 static const uint8_t LinkAnimationsList_WalkingNoShield[8] = {
     LINK_ANIMATION_STATE_STANDING_RIGHT, LINK_ANIMATION_STATE_WALKING_RIGHT,

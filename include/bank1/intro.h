@@ -1,5 +1,5 @@
-#ifndef BANK1_INTRO_H
-#define BANK1_INTRO_H
+#ifndef LADX_BANK1_INTRO_H
+#define LADX_BANK1_INTRO_H
 
 #include <stdint.h>
 #include "gb.h"
@@ -126,4 +126,4 @@ void func_001_7CCB(GBState *gb);
 }
 #endif
 
-#endif /* BANK1_INTRO_H */
+#endif /* LADX_BANK1_INTRO_H */

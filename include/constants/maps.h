@@ -29,8 +29,6 @@
 /* Special rooms group for color dungeon */
 #define MAP_COLOR_DUNGEON    0xFF
 
-#endif /* LADX_CONSTANTS_MAPS_H */
-
 /* Minimap Arrow Offsets */
 #define MINIMAP_ARROW_TAIL_CAVE        3
 #define MINIMAP_ARROW_BOTTLE_GROTTO    2
@@ -41,3 +39,5 @@
 #define MINIMAP_ARROW_EAGLES_TOWER     1
 #define MINIMAP_ARROW_TURTLE_ROCK      3
 #define MINIMAP_ARROW_COLOR_DUNGEON    2
+
+#endif /* LADX_CONSTANTS_MAPS_H */

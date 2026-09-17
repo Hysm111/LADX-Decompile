@@ -302,7 +302,6 @@
 #define TILEMAP_INVENTORY_DEBUG       0x0B
 #define TILESET_SAVE_MENU             0x0D
 
-#endif /* LADX_CONSTANTS_GFX_H */
 #define TILESET_CLEAR_TILEMAP                 0x02
 #define TILESET_INTRO                         0x10
 #define TILESET_TITLE                         0x11
@@ -311,3 +310,5 @@
 #define TILEMAP_INTRO_BEACH                   0x10
 #define TILEMAP_TITLE                         0x11
 #define TILEMAP_INTRO_SEA_CGB                 0x25
+
+#endif /* LADX_CONSTANTS_GFX_H */

@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "bank1/test_bank1.h"
+#include "bank2/test_bank2.h"
+
 extern int run_clear_memory_tests(void);
 extern int run_copy_data_tests(void);
 extern int run_bank_tests(void);
@@ -16,8 +19,7 @@ extern void run_ui_tests(void);
 extern int run_gfx_tests(void);
 extern void run_check_items_to_use_tests(void);
 extern void run_animated_tiles_tests(void);
-void run_bank1_tests(void);
-void run_bank2_tests(void);
+
 
 int main(void) {
     int total_failures = 0;

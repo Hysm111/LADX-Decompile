@@ -1,0 +1,98 @@
+#ifndef LADX_BANK2_ITEMS_H
+#define LADX_BANK2_ITEMS_H
+
+#include "gb.h"
+
+extern const int8_t HookshotChainSpeedX[4];
+extern const int8_t HookshotChainSpeedY[4];
+/**
+ * Fires the hookshot chain projectile in Link's facing direction. (02:4254)
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @return true if hookshot projectile was successfully spawned, false otherwise.
+ */
+bool FireHookshot(GBState *gb);
+
+/**
+ * Link got item sequence dispatcher: triggers power-up jingle on countdown 0x2E and updates sprite (02:51BC).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_motion_state Optional callback for ApplyLinkMotionState.
+ * @param func_020_4ab3 Optional callback for bank 20 helper func_020_4AB3.
+ */
+void HandleGotItemA(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *));
+
+/**
+ * Link got item state handler: resets spin attack, applies air physics, updates OAM sprite buffer (02:51C7).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param apply_motion_state Optional callback for ApplyLinkMotionState.
+ * @param func_020_4ab3 Optional callback for bank 20 helper func_020_4AB3.
+ */
+void HandleGotItemB(GBState *gb,
+                    void (*apply_motion_state)(GBState *),
+                    void (*func_020_4ab3)(GBState *));
+
+/**
+ * Writes Guardian Acorn tile and returns OAM flags (02:523A).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($14).
+ */
+uint8_t func_002_523A(GBState *gb, uint16_t bc, uint8_t e);
+
+/**
+ * Writes default got-item tile and returns OAM flags (02:523F).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($14).
+ */
+uint8_t func_002_523F(GBState *gb, uint16_t bc, uint8_t e);
+
+/**
+ * Writes Magic Rod tile and returns OAM flags (02:524A).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param bc Destination address in OAM buffer.
+ * @param e Tile ID.
+ * @return OAM attributes byte ($10).
+ */
+uint8_t func_002_524A(GBState *gb, uint16_t bc, uint8_t e);
+
+/* Bank 2 Magic Rod Sprite Data Tables */
+extern const int8_t LinkDirectionToMagicRodXOffset[8];
+extern const int8_t LinkDirectionToMagicRodYOffset[8];
+extern const uint8_t LinkDirectionToMagicRodTiles[16];
+extern const uint8_t LinkDirectionToMagicRodOAMAttributes[16];
+extern const int8_t LinkDirectionToEntitiesPositionX[4];
+extern const int8_t LinkDirectionToEntitiesPositionY[4];
+
+/**
+ * Emits Magic Rod attack OAM sprites according to direction and swing phase (02:5310).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_5310(GBState *gb);
+
+/**
+ * Initializes projectile entity position, variant, and velocity based on Link direction (02:538B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param de Target entity slot index.
+ */
+void label_002_538B_entity(GBState *gb, uint8_t de);
+
+/**
+ * Initializes spawned Magic Rod fireball entity position, variant, and velocity (02:538B).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_538B(GBState *gb);
+
+#endif /* LADX_BANK2_ITEMS_H */

@@ -2,6 +2,7 @@
 #define LADX_BANK1_FILE_MENU_H
 
 #include "gb.h"
+#include "bank1/save.h"
 #include <stdint.h>
 
 extern const uint8_t Data_001_48E4[4];
@@ -197,7 +198,6 @@ void FileDeletionState11Handler(GBState *gb);
  */
 void FileDeletionEntryPoint(GBState *gb);
 
-extern const uint16_t SaveGameTable[3];
 extern const uint16_t Data_001_49FE[3];
 extern const uint8_t Data_001_50AF[24];
 extern const uint8_t Data_001_50C7[24];
@@ -266,8 +266,3 @@ void FileCopyStateAHandler(GBState *gb);
 void FileCopyEntryPoint(GBState *gb);
 
 #endif /* LADX_BANK1_FILE_MENU_H */
-
-
-
-
-

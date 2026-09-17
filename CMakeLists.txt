@@ -13,33 +13,43 @@ include_directories(
 # Core library
 set(LADX_CORE_SOURCES
     src/gb.c
+    src/home/animated_tiles.c
+    src/home/audio.c
+    src/home/bank.c
+    src/home/check_items_to_use.c
     src/home/clear_memory.c
     src/home/copy_data.c
-    src/home/bank.c
-    src/home/lcd.c
-    src/home/entities.c
-    src/home/audio.c
     src/home/dialog.c
-    src/home/room.c
+    src/home/entities.c
     src/home/gameplay.c
-    src/home/link.c
-    src/home/vfx.c
-    src/home/ui.c
     src/home/gfx.c
-    src/home/check_items_to_use.c
-    src/home/animated_tiles.c
-    src/bank1/room_transition.c
-    src/bank1/world_map.c
-    src/bank1/save.c
+    src/home/lcd.c
+    src/home/link.c
+    src/home/room.c
+    src/home/ui.c
+    src/home/vfx.c
+    src/bank1/face_shrine_mural.c
     src/bank1/file_menu.c
     src/bank1/game_over.c
-    src/bank1/world_handler.c
-    src/bank1/face_shrine_mural.c
-    src/bank1/siren_instruments.c
-    src/bank1/marin_beach.c
     src/bank1/intro.c
+    src/bank1/marin_beach.c
+    src/bank1/room_transition.c
+    src/bank1/save.c
+    src/bank1/siren_instruments.c
+    src/bank1/world_handler.c
+    src/bank1/world_map.c
     src/bank2/audio.c
-    src/bank2/bank2.c
+    src/bank2/falling.c
+    src/bank2/items.c
+    src/bank2/link_animation.c
+    src/bank2/link_motion.c
+    src/bank2/ocarina.c
+    src/bank2/revolving_door.c
+    src/bank2/room_events.c
+    src/bank2/room_transition.c
+    src/bank2/shovel.c
+    src/bank2/swimming.c
+    src/bank2/vfx.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
@@ -49,23 +59,51 @@ enable_testing()
 
 add_executable(ladx_tests
     tests/test_runner.c
-    tests/test_clear_memory.c
-    tests/test_copy_data.c
-    tests/test_bank.c
-    tests/test_lcd.c
-    tests/test_entities.c
-    tests/test_audio.c
-    tests/test_dialog.c
-    tests/test_room.c
-    tests/test_gameplay.c
-    tests/test_link.c
-    tests/test_vfx.c
-    tests/test_ui.c
-    tests/test_gfx.c
-    tests/test_check_items_to_use.c
     tests/test_animated_tiles.c
+    tests/test_audio.c
+    tests/test_bank.c
     tests/test_bank1.c
     tests/test_bank2.c
+    tests/test_check_items_to_use.c
+    tests/test_clear_memory.c
+    tests/test_copy_data.c
+    tests/test_dialog.c
+    tests/test_entities.c
+    tests/test_gameplay.c
+    tests/test_gfx.c
+    tests/test_lcd.c
+    tests/test_link.c
+    tests/test_room.c
+    tests/test_ui.c
+    tests/test_vfx.c
+    tests/bank1/test_face_shrine_mural.c
+    tests/bank1/test_file_menu.c
+    tests/bank1/test_game_over.c
+    tests/bank1/test_intro.c
+    tests/bank1/test_marin_beach.c
+    tests/bank1/test_room_transition.c
+    tests/bank1/test_save.c
+    tests/bank1/test_siren_instruments.c
+    tests/bank1/test_world_handler.c
+    tests/bank1/test_world_map.c
+    tests/bank2/test_audio.c
+    tests/bank2/test_chest.c
+    tests/bank2/test_falling.c
+    tests/bank2/test_got_item.c
+    tests/bank2/test_hookshot.c
+    tests/bank2/test_link_animation.c
+    tests/bank2/test_link_motion.c
+    tests/bank2/test_magic_rod.c
+    tests/bank2/test_ocarina.c
+    tests/bank2/test_revolving_door.c
+    tests/bank2/test_room.c
+    tests/bank2/test_room_events.c
+    tests/bank2/test_shovel.c
+    tests/bank2/test_support.c
+    tests/bank2/test_swimming.c
+    tests/bank2/test_sword.c
+    tests/bank2/test_tables.c
+    tests/bank2/test_vfx.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)

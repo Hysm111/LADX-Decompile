@@ -1,12 +1,20 @@
 #include "bank1/room_transition.h"
 #include "home/entities.h"
 #include "home/link.h"
+#include "home/audio.h"
+#include "home/copy_data.h"
+#include "home/dialog.h"
 #include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/memory.h"
 #include "constants/dialog.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
+#include "constants/maps.h"
+#include "constants/rooms.h"
+#include "constants/entities.h"
+#include "constants/gameplay.h"
+#include "constants/link.h"
 
 #define OAM_COUNT 40
 #define SIZEOF_OAM_ATTRS 4
@@ -153,17 +161,6 @@ void HideSprites(GBState *gb) {
         }
     }
 }
-
-#include "home/audio.h"
-#include "home/copy_data.h"
-#include "home/dialog.h"
-#include "home/entities.h"
-#include "constants/maps.h"
-#include "constants/rooms.h"
-#include "constants/entities.h"
-#include "constants/gameplay.h"
-#include "constants/sfx.h"
-#include "constants/link.h"
 
 static const uint16_t Data_001_618A[16] = {
     0x5700, 0x5710, 0x5720, 0x5730, 0x5740, 0x5750, 0x5760, 0x5770,

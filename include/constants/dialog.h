@@ -43,7 +43,6 @@
 #define ADDR_CodepointToTileMap    0x4641
 #define ADDR_CodepointToDiacritic  0x4741
 
-#endif /* LADX_CONSTANTS_DIALOG_H */
 #define Dialog18E                       0x8E
 #define Dialog1A9                       0xA9
 #define Dialog1AF                       0xAF
@@ -54,3 +53,5 @@
 #define Dialog0FC                       0xFC
 #define Dialog0FD                       0xFD
 #define Dialog04F                               0x4F
+
+#endif /* LADX_CONSTANTS_DIALOG_H */

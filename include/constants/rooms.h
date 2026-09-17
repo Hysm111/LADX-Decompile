@@ -126,5 +126,6 @@
 #define OverworldObjectPhysicFlags   0x4AD4
 #define Indoors1ObjectPhysicFlags    0x4BD4
 
-#endif /* LADX_CONSTANTS_ROOMS_H */
 #define ROOM_INDOOR_B_SCHULE_HOUSE            0xDD
+
+#endif /* LADX_CONSTANTS_ROOMS_H */
