@@ -3,17 +3,27 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 59.58%
-* **Number of Verified Functions**: 715
-* **Number of Decompiled Functions**: 538
-* **Number Remaining**: ~485 functions
+* **Current Overall Progress**: 59.83%
+* **Number of Verified Functions**: 718
+* **Number of Decompiled Functions**: 541
+* **Number Remaining**: ~482 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 63: room effect guard and kill-all-enemies effect decompiled and verified
-* **Last Completed Task**: Decompiled and verified `KillAllEnemiesEffectHandler` (`02:5D79`-`02:5DAE`) and `EventEffectGuard` (`02:5DAF`-`02:5DC1`) against the original instruction flow, with exhaustive guard/entity-byte tests
-* **Next Task**: Continue Room Triggers & Effects with `DropFairyEffectHandler` (`02:5DC2`), `RevealStaircaseEffectHandler` (`02:5DE9`), and shared `MakeEffectObjectAppear` (`02:5DF6`) in a small dependency-complete batch. `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers; do not redo the two Batch 63 VERIFIED functions.
-* **Last Update Timestamp**: 2026-09-17T20:53:56+03:00
+* **Current Task**: Batch 64: fairy drop, staircase reveal, and shared appearance helper decompiled and verified
+* **Last Completed Task**: Decompiled and verified `DropFairyEffectHandler` (`02:5DC2`-`02:5DE8`), `RevealStaircaseEffectHandler` (`02:5DE9`-`02:5DF5`), and `MakeEffectObjectAppear` (`02:5DF6`-`02:5E02`), with assembly-derived guard, callback, VFX, and room-status tests
+* **Next Task**: Continue Room Triggers & Effects with `DropKeyEffectHandler` (`02:5E03`) and, as a small dependency-complete batch permits, `ClearMidbossEffectHandler` (`02:5E18`), `OpenShutterDoorsEffectHandler` (`02:5E25`), and `CloseDoors` (`02:5E7B`). `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers. Do not redo Batch 63/64 VERIFIED routines.
+* **Last Update Timestamp**: 2026-09-17T21:14:30+03:00
 
 ---
+
+## Batch 64 Verification — Fairy and Staircase Appearance
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:104-149` (`02:5DC2`-`02:5E02`), plus the original spawn trampoline, allocator failure exit, VFX allocator, and room-status lookup instruction flow.
+- **Implementation:** Three new functions in `src/bank2/room_effects.c`, declarations in `include/bank2/room_effects.h`, and fairy entity constant `0x2F`. Existing VERIFIED function bodies and production call sites are unchanged.
+- **Fairy behavior:** After the existing guard accepts, invoke the bank-3 spawn callback through `SpawnNewEntity_trampoline`, write X/Y `0x88/0x30` and slow countdown `0x80` at the returned DE offset, then request poof VFX and update room status. There is no carry check: the original full allocator returns raw DE `0x00FF`, so writes reach `C2FF`, `C30F`, and `C54F`. VFX slot 15 can subsequently overwrite the `C54F` write. The callback must return raw DE, not the `0xFFFF` sentinel used by some other C callers. Missing callback is an explicitly documented C API no-op before the guard, not simulated allocation failure.
+- **Staircase/shared behavior:** The staircase handler schedules type-4 VFX at `0x88/0x20`; it does not directly activate or draw a staircase. The unguarded shared helper first allocates the supplied VFX, then ORs `0x10` into the saved room-status byte and copies that result to HRAM, rather than ORing the old cached value.
+- **Tests:** `tests/bank2/test_room_effect_appearance.c` uses literal assembly addresses and independent expected-state writes. Includes 131,072 handler guard cases, 23,040 saved-status/map/type cases, all 16 spawn offsets plus raw `0x00FF`, every VFX free slot and full-ring cursor with repeated wrap, map/bank boundaries, callback ordering and mutations, repeated calls, NULL behavior, and full initialized `GBState` comparisons against unintended writes.
+- **Validation:** Baseline and completed full Debug build/CTest PASS with assertions enabled; full test log inspected with no failure messages. Independent focused runtime test, strict C11 warning checks, assembly review, and `git diff --check` PASS.
+- **Verification scope:** The three routines' source-level memory behavior and call boundaries within `GBState`. The unfinished entity allocator is represented by a callback; allocator internals, CPU registers/cycles/stack behavior, and the unfinished dispatcher are not claimed verified. No substitute allocator or guessed dispatcher behavior was introduced.
 
 ## Batch 63 Verification — Room Effect Guard and Enemy Explosion
 
@@ -29,6 +39,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `DropFairyEffectHandler` | VERIFIED | PASS | PASS | Guarded fairy spawn callback, raw-DE writes including full-allocation result, poof and saved room-status update (`02:5DC2`-`02:5DE8`, Batch 64) |
+| `RevealStaircaseEffectHandler` | VERIFIED | PASS | PASS | Guarded staircase VFX at 0x88/0x20; falls through to shared appearance helper (`02:5DE9`-`02:5DF5`, Batch 64) |
+| `MakeEffectObjectAppear` | VERIFIED | PASS | PASS | VFX allocation followed by saved-status EVENT_1 update and HRAM synchronization (`02:5DF6`-`02:5E02`, Batch 64) |
 | `KillAllEnemiesEffectHandler` | VERIFIED | PASS | PASS | Guarded explosion of non-harmless entities with unsigned status >= 5; slots 15..0, status/countdown/physics/noise updates (`02:5D79`-`02:5DAE`, Batch 63) |
 | `EventEffectGuard` | VERIFIED | PASS | PASS | Branch-accurate guard; requires event-1 bit clear and executed byte nonzero, clears only wRoomEvent; Boolean models caller early return (`02:5DAF`-`02:5DC1`, Batch 63) |
 | `ExecuteRoomEvents` | VERIFIED | PASS | PASS | Main active room events dispatcher: dialog/transition/indoors guards, triggers invocation, door opening/closing enqueue & motion blocking (`02:593B`) |

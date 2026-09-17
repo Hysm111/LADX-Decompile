@@ -24,6 +24,7 @@ void run_bank2_tests(void) {
     test_bank2_vfx();
     test_bank2_room_events();
     test_bank2_room_effects();
+    test_bank2_room_effect_appearance();
 
     printf("[+] Bank 2 unit tests passed successfully!\n");
 }
