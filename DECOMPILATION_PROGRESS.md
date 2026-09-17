@@ -3,17 +3,27 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 59.83%
-* **Number of Verified Functions**: 718
-* **Number of Decompiled Functions**: 541
-* **Number Remaining**: ~482 functions
+* **Current Overall Progress**: 60.08%
+* **Number of Verified Functions**: 722
+* **Number of Decompiled Functions**: 545
+* **Number Remaining**: ~478 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 64: fairy drop, staircase reveal, and shared appearance helper decompiled and verified
-* **Last Completed Task**: Decompiled and verified `DropFairyEffectHandler` (`02:5DC2`-`02:5DE8`), `RevealStaircaseEffectHandler` (`02:5DE9`-`02:5DF5`), and `MakeEffectObjectAppear` (`02:5DF6`-`02:5E02`), with assembly-derived guard, callback, VFX, and room-status tests
-* **Next Task**: Continue Room Triggers & Effects with `DropKeyEffectHandler` (`02:5E03`) and, as a small dependency-complete batch permits, `ClearMidbossEffectHandler` (`02:5E18`), `OpenShutterDoorsEffectHandler` (`02:5E25`), and `CloseDoors` (`02:5E7B`). `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers. Do not redo Batch 63/64 VERIFIED routines.
-* **Last Update Timestamp**: 2026-09-17T21:14:30+03:00
+* **Current Task**: Batch 65: key drop, midboss clear, shutter doors, and door closing decompiled and verified
+* **Last Completed Task**: Decompiled and verified `DropKeyEffectHandler` (`02:5E03`-`02:5E17`), `ClearMidbossEffectHandler` (`02:5E18`-`02:5E24`), `OpenShutterDoorsEffectHandler` (`02:5E25`-`02:5E7A`), and `CloseDoors` (`02:5E7B`-`02:5EA2`), with assembly-derived guard, callback, latch, and routing tests
+* **Next Task**: Continue Room Triggers & Effects with `RevealChestEffectHandler` (`02:5EA9`), `func_002_5ED3` (`02:5ED3`), and `func_002_5F5C` (`02:5F5C`), including the `ChestTileIds`/`StaircaseTileIds` tables. `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers. Do not redo Batch 63/64/65 VERIFIED routines.
+* **Last Update Timestamp**: 2026-09-17T21:28:32+03:00
 
 ---
+
+## Batch 65 Verification — Key Drop and Shutter Doors
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:151-278` (`02:5E03`-`02:5EA2`), plus the original key-spawn helper, guard, room-status lookup, and SFX constants.
+- **Implementation:** Four new functions in `src/bank2/room_effects.c`, declarations in `include/bank2/room_effects.h`, and assembly-defined constants (`TRIGGER_KILL_ALL_ENEMIES`, `wShutterDoorEventExecuted`, `ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_DROP`, `JINGLE_DUNGEON_WARP_APPEAR`, `NOISE_SFX_DOOR_CLOSED`). Existing VERIFIED function bodies and production call sites are unchanged.
+- **Key drop:** After the existing guard accepts, only the room byte `0x69` (no map check) marks the saved room status and cache before delegating to the existing `label_002_5425`. The required bank-3 allocator callback follows that helper's contract: slot `0..15` or `0xFFFF` for carry failure, and it must preserve the map ID. NULL state/callback is a documented C API no-op before the guard.
+- **Midboss/shutter behavior:** `ClearMidbossEffectHandler` returns when bit 0 of `wHasInstrument1[hMapId]` is set, otherwise falls through. `OpenShutterDoorsEffectHandler` calls `CloseDoors` only when the shutter latch is zero, returns while the executed byte is zero, and on event `0xC1` sets instrument bit 0 and saved `EVENT_2` using map-only routing (no `wIsIndoor`, no cache refresh) with jingle `0x1B`; opening is enqueued only when the latch is nonzero, clearing the event and requesting noise `0x04`. `CloseDoors` uses byte-wrapped coordinate bounds on both axes and the executed-byte guard, then sets the closing flag, latch, `wC111=4`, and noise `0x10`.
+- **Tests:** `tests/bank2/test_key_drop_effect.c` and `tests/bank2/test_shutter_effects.c` use literal assembly addresses and independent expected-state writes. Coverage includes all guard-byte pairs, every room/map combination for the key-drop exception, all 16 spawn slots plus `0xFFFF` failure, callback ordering and entry state, all 256 event values through both shutter entry points, exhaustive closing-coordinate pairs with wrapping, latch transitions, map-group boundaries, raw instrument indexing, repeated calls, and NULL behavior, with full initialized `GBState` comparisons.
+- **Validation:** Baseline and completed full Debug build/CTest PASS with assertions enabled; full test log inspected with no failure messages. Independent assembly review, strict C11 warning checks, and `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior and call boundaries within `GBState`. The entity allocator remains callback-modeled; CPU registers/cycles/stack behavior and the unfinished dispatcher are not claimed verified. No substitute allocator or guessed dispatcher behavior was introduced.
 
 ## Batch 64 Verification — Fairy and Staircase Appearance
 
@@ -39,6 +49,10 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `DropKeyEffectHandler` | VERIFIED | PASS | PASS | Guarded key drop; room 0x69 exception marks saved status/cache before existing key-spawn helper (`02:5E03`-`02:5E17`, Batch 65) |
+| `ClearMidbossEffectHandler` | VERIFIED | PASS | PASS | Instrument bit-0 early return, otherwise falls through to shutter handler (`02:5E18`-`02:5E24`, Batch 65) |
+| `OpenShutterDoorsEffectHandler` | VERIFIED | PASS | PASS | Latch-gated closing, event 0xC1 midboss completion with map-only routing and no cache refresh, opening enqueue (`02:5E25`-`02:5E7A`, Batch 65) |
+| `CloseDoors` | VERIFIED | PASS | PASS | Byte-wrapped Link bounds and executed guard, then closing flag, latch, C111, and door-closed noise (`02:5E7B`-`02:5EA2`, Batch 65) |
 | `DropFairyEffectHandler` | VERIFIED | PASS | PASS | Guarded fairy spawn callback, raw-DE writes including full-allocation result, poof and saved room-status update (`02:5DC2`-`02:5DE8`, Batch 64) |
 | `RevealStaircaseEffectHandler` | VERIFIED | PASS | PASS | Guarded staircase VFX at 0x88/0x20; falls through to shared appearance helper (`02:5DE9`-`02:5DF5`, Batch 64) |
 | `MakeEffectObjectAppear` | VERIFIED | PASS | PASS | VFX allocation followed by saved-status EVENT_1 update and HRAM synchronization (`02:5DF6`-`02:5E02`, Batch 64) |

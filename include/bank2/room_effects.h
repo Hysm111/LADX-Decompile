@@ -46,4 +46,34 @@ void RevealStaircaseEffectHandler(GBState *gb);
  */
 void MakeEffectObjectAppear(GBState *gb, uint8_t vfx_type);
 
+/**
+ * Guarded key drop (02:5E03-02:5E17). Room byte 0x69 alone triggers the
+ * saved EVENT_1/cache update before delegating to label_002_5425.
+ * The required bank-3 allocator callback returns slot 0..15 or 0xFFFF for
+ * carry/failure, matching that existing helper (not the fairy raw-DE API).
+ * It must preserve the current map ID. NULL state/callback is a C API no-op.
+ */
+void DropKeyEffectHandler(GBState *gb,
+                          uint16_t (*spawn_new_entity)(GBState *, uint8_t));
+
+/**
+ * Returns if bit 0 of wHasInstrument1[hMapId] is set; otherwise falls through
+ * to OpenShutterDoorsEffectHandler (02:5E18-02:5E24). No event guard is used.
+ */
+void ClearMidbossEffectHandler(GBState *gb);
+
+/**
+ * Closes unresolved-room doors, marks resolved midboss events in saved status
+ * without refreshing hRoomStatus, and enqueues opening only if the shutter
+ * latch is nonzero (02:5E25-02:5E7A). Routing does not consult wIsIndoor.
+ */
+void OpenShutterDoorsEffectHandler(GBState *gb);
+
+/**
+ * Enqueues closing when Link is inside both byte-wrapped coordinate bounds
+ * and the effect-executed byte is zero (02:5E7B-02:5EA2).
+ * These three shutter/midboss entry points treat NULL state as a C API no-op.
+ */
+void CloseDoors(GBState *gb);
+
 #endif /* LADX_BANK2_ROOM_EFFECTS_H */

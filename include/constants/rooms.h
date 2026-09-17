@@ -96,6 +96,7 @@
 #define DOOR_TYPE_SHUTTER_RIGHT_BIT  0x08
 
 /* Additional Room Constants */
+#define ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_DROP 0x69
 #define ROOM_INDOOR_B_KANALET_MAIN_ENTRANCE 0xD3
 #define UNKNOWN_ROOM_4A              0x4A
 #define UNKNOWN_ROOM_75              0x75

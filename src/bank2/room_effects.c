@@ -2,7 +2,9 @@
 #include "bank2/room_events.h"
 #include "constants/entities.h"
 #include "constants/gameplay.h"
+#include "constants/maps.h"
 #include "constants/memory.h"
+#include "constants/rooms.h"
 #include "constants/sfx.h"
 #include "constants/vfx.h"
 #include "home/entities.h"
@@ -75,4 +77,72 @@ void MakeEffectObjectAppear(GBState *gb, uint8_t vfx_type) {
     uint8_t status = (uint8_t)(gb_read(gb, address) | ROOM_STATUS_EVENT_1);
     gb_write(gb, address, status);
     gb_write_hram(gb, hRoomStatus, status);
+}
+
+void DropKeyEffectHandler(GBState *gb,
+                          uint16_t (*spawn_new_entity)(GBState *, uint8_t)) {
+    if (!gb || !spawn_new_entity) return;
+    if (!EventEffectGuard(gb)) return;
+
+    /* The assembly tests only the room byte, not the current map. */
+    if (gb_read_hram(gb, hMapRoom) == ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_DROP) {
+        uint16_t address = GetRoomStatusAddress(gb);
+        uint8_t status = (uint8_t)(gb_read(gb, address) | ROOM_STATUS_EVENT_1);
+        gb_write(gb, address, status);
+        gb_write_hram(gb, hRoomStatus, status);
+    }
+    label_002_5425(gb, spawn_new_entity);
+}
+
+void ClearMidbossEffectHandler(GBState *gb) {
+    if (!gb) return;
+
+    uint16_t address = (uint16_t)(wHasInstrument1 + gb_read_hram(gb, hMapId));
+    if ((gb_read(gb, address) & 1) != 0) return;
+    OpenShutterDoorsEffectHandler(gb);
+}
+
+void OpenShutterDoorsEffectHandler(GBState *gb) {
+    if (!gb) return;
+
+    if (gb_read(gb, wShutterDoorEventExecuted) == 0) {
+        CloseDoors(gb);
+    }
+    if (gb_read(gb, wRoomEventEffectExecuted) == 0) return;
+
+    if (gb_read(gb, wRoomEvent) == (TRIGGER_KILL_ALL_ENEMIES | EFFECT_CLEAR_MIDBOSS)) {
+        uint8_t map_id = gb_read_hram(gb, hMapId);
+        uint16_t instrument_address = (uint16_t)(wHasInstrument1 + map_id);
+        gb_write(gb, instrument_address, (uint8_t)(gb_read(gb, instrument_address) | 1));
+
+        /* Unlike GetRoomStatusAddress, this routing ignores wIsIndoor. */
+        uint16_t base = wIndoorARoomStatus;
+        if (map_id == MAP_COLOR_DUNGEON) {
+            base = wColorDungeonRoomStatus;
+        } else if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+            base = wIndoorBRoomStatus;
+        }
+        uint16_t address = (uint16_t)(base + gb_read_hram(gb, hMapRoom));
+        gb_write(gb, address, (uint8_t)(gb_read(gb, address) | ROOM_STATUS_EVENT_2));
+        /* The original does not synchronize hRoomStatus here. */
+        gb_write_hram(gb, hJingle, JINGLE_DUNGEON_WARP_APPEAR);
+    }
+
+    if (gb_read(gb, wShutterDoorEventExecuted) == 0) return;
+    gb_write(gb, wRoomEvent, 0);
+    gb_write(gb, wEnqueueDoorsOpening, 1);
+    EnqueueDoorUnlockedSfx(gb);
+}
+
+void CloseDoors(GBState *gb) {
+    if (!gb) return;
+
+    if ((uint8_t)(gb_read_hram(gb, hLinkPositionX) - 0x11) >= 0x7E) return;
+    if ((uint8_t)(gb_read_hram(gb, hLinkPositionY) - 0x16) >= 0x5E) return;
+    if (gb_read(gb, wRoomEventEffectExecuted) != 0) return;
+
+    gb_write(gb, wEnqueueDoorsClosing, 1);
+    gb_write(gb, wShutterDoorEventExecuted, 1);
+    gb_write(gb, wC111, 4);
+    gb_write_hram(gb, hNoiseSfx, NOISE_SFX_DOOR_CLOSED);
 }

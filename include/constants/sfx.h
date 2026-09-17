@@ -14,6 +14,7 @@
 #define JINGLE_VALIDATE                         0x13
 #define JINGLE_WRONG_ANSWER                     0x1D
 #define JINGLE_GOT_POWER_UP                     0x17
+#define JINGLE_DUNGEON_WARP_APPEAR              0x1B
 #define JINGLE_BOUNCE                           0x20
 #define JINGLE_GHOST_PRESENCE                   0x2D
 #define JINGLE_FALL_DOWN                        0x08
@@ -43,6 +44,7 @@
 #define NOISE_SFX_MAGIC_ROD                     0x0D
 #define NOISE_SFX_SHOVEL_DIG                    0x0E
 #define NOISE_SFX_SEA_WAVES                     0x0F
+#define NOISE_SFX_DOOR_CLOSED                   0x10
 #define NOISE_SFX_ENEMY_DESTROYED               0x13
 #define NOISE_SFX_SWORD_SWING_B                 0x14
 #define NOISE_SFX_SWORD_SWING_C                 0x15

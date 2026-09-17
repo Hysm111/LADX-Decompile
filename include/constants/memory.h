@@ -45,6 +45,7 @@
 #define wEnqueueDoorsClosing         0xC18D
 #define wRoomEvent                   0xC18E
 #define wRoomEventEffectExecuted 0xC18F
+#define wShutterDoorEventExecuted     0xC190
 #define wLoadedEntitySpritesheets 0xC193
 #define wEntityTilesSpriteslotIndexA 0xC197
 #define wC19C                   0xC19C

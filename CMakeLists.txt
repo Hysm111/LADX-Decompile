@@ -99,9 +99,11 @@ add_executable(ladx_tests
     tests/bank2/test_revolving_door.c
     tests/bank2/test_room.c
     tests/bank2/test_room_effect_appearance.c
+    tests/bank2/test_key_drop_effect.c
     tests/bank2/test_room_effects.c
     tests/bank2/test_room_events.c
     tests/bank2/test_shovel.c
+    tests/bank2/test_shutter_effects.c
     tests/bank2/test_support.c
     tests/bank2/test_swimming.c
     tests/bank2/test_sword.c

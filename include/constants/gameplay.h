@@ -60,6 +60,7 @@
 
 
 /* Event trigger / effect constants */
+#define TRIGGER_KILL_ALL_ENEMIES        0x01
 #define EVENT_TRIGGER_MASK              0x1F
 #define EVENT_EFFECT_MASK               0xE0
 #define EFFECT_NONE                     0x00
