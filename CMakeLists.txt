@@ -100,6 +100,7 @@ add_executable(ladx_tests
     tests/bank2/test_room.c
     tests/bank2/test_room_effect_appearance.c
     tests/bank2/test_key_drop_effect.c
+    tests/bank2/test_object_reveal.c
     tests/bank2/test_room_effects.c
     tests/bank2/test_room_events.c
     tests/bank2/test_shovel.c

@@ -3,17 +3,27 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 60.08%
-* **Number of Verified Functions**: 722
-* **Number of Decompiled Functions**: 545
-* **Number Remaining**: ~478 functions
+* **Current Overall Progress**: 60.33%
+* **Number of Verified Functions**: 725
+* **Number of Decompiled Functions**: 548
+* **Number Remaining**: ~475 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 65: key drop, midboss clear, shutter doors, and door closing decompiled and verified
-* **Last Completed Task**: Decompiled and verified `DropKeyEffectHandler` (`02:5E03`-`02:5E17`), `ClearMidbossEffectHandler` (`02:5E18`-`02:5E24`), `OpenShutterDoorsEffectHandler` (`02:5E25`-`02:5E7A`), and `CloseDoors` (`02:5E7B`-`02:5EA2`), with assembly-derived guard, callback, latch, and routing tests
-* **Next Task**: Continue Room Triggers & Effects with `RevealChestEffectHandler` (`02:5EA9`), `func_002_5ED3` (`02:5ED3`), and `func_002_5F5C` (`02:5F5C`), including the `ChestTileIds`/`StaircaseTileIds` tables. `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers. Do not redo Batch 63/64/65 VERIFIED routines.
-* **Last Update Timestamp**: 2026-09-17T21:28:32+03:00
+* **Current Task**: Batch 66: chest reveal and staircase object materialization decompiled and verified
+* **Last Completed Task**: Decompiled and verified `RevealChestEffectHandler` (`02:5EAB`-`02:5ED2`), `func_002_5ED3` (`02:5ED3`-`02:5F53`), and `func_002_5F5C` (`02:5F5C`-`02:5F9E`) with the `ChestTileIds`/`StaircaseTileIds` tables, using assembly-derived coordinate, draw-command, and attribute-callback tests
+* **Next Task**: Continue Room Triggers & Effects with `CheckTriggersResolution` (`02:5F9F`) and its trigger checkers (`CheckKillSidescrollBossTrigger`, `CheckLightTorchesTrigger`, `CheckStepOnButtonTrigger`, `CheckKillInOrderTrigger`, `CheckKillEnemiesTrigger`), which completes the subsystem's remaining pieces before the `ExecuteRoomTriggersAndEffects` dispatcher. Do not redo Batch 63/64/65/66 VERIFIED routines.
+* **Last Update Timestamp**: 2026-09-17T21:56:53+03:00
 
 ---
+
+## Batch 66 Verification — Chest and Staircase Reveal
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:280-453` (`02:5EA3`-`02:5F9E`), plus the original BG-address helper, attribute-command helper, and VFX allocator instruction flow.
+- **Implementation:** Two tile tables, three new functions, and a shared draw-command tail in `src/bank2/room_effects.c`, declarations in `include/bank2/room_effects.h`. Existing VERIFIED function bodies and production call sites are unchanged.
+- **Chest reveal:** After the existing guard accepts, X is `0x88`; the VFX row is `0x40` only when the branch-faithful unsigned window (Y in `0x28..0x37`, X in `0x78..0x97`) holds, else `0x30`. Alias values such as Y `0x68` or X `0x98` take the fallback, matching the assembly's `jr nc` flow. No room-status latch is written.
+- **Object materialization:** `func_002_5ED3` selects object row `0x30` inside the same window, else `0x20`, writes chest object `0xA0` at `(top & 0xF0) | 8`, and `func_002_5F5C` marks the staircase inactive at `(0x88, 0x20)` and writes object `0xBE`. Both compute the BG address, append a 10-byte two-column command (second column at BG low + 1, no carry), and on CGB call `func_91D(gb, 2, callback)`, restoring bank 2 rather than the incoming bank. The bank-1A attribute lookup remains unfinished and is callback-modeled, matching `label_002_4D97`'s established contract.
+- **Tests:** `tests/bank2/test_object_reveal.c` uses literal assembly addresses, exact table bytes, and independent expected-state writes. Coverage includes all 65,536 guard pairs, every Link X/Y byte pair in both graphics modes, all 65,536 VFX occupancy masks plus every full-ring cursor, scroll boundaries, every queue-size byte including wrap, BG-low `0xFF`, noncanonical GBC flags, 24 attribute routes, repeated calls, and NULL behavior, with full initialized `GBState` comparisons.
+- **Validation:** Baseline and completed full Debug build/CTest PASS with assertions enabled; full test log inspected with no failure messages. Independent assembly review, strict C11 warning checks, and `git diff --check` PASS. An initial coordinate-selection bug (aliasing the computed value with the target constant) was caught by the exhaustive tests and fixed to the branch-faithful translation before commit.
+- **Verification scope:** Source-level memory behavior and callback boundaries within `GBState`. The bank-1A attribute routing remains unfinished and is not claimed verified; CPU registers/cycles/stack behavior and the unfinished dispatcher are likewise out of scope. No substitute lookup or guessed dispatcher behavior was introduced.
 
 ## Batch 65 Verification — Key Drop and Shutter Doors
 
@@ -49,6 +59,9 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `RevealChestEffectHandler` | VERIFIED | PASS | PASS | Guarded chest VFX at X 0x88, Y 0x40 inside the overlap window else 0x30; no status latch (`02:5EAB`-`02:5ED2`, Batch 66) |
+| `func_002_5ED3` | VERIFIED | PASS | PASS | Materializes chest object 0xA0 at branch-selected row, emits BG command, CGB palette via callback (`02:5ED3`-`02:5F53`, Batch 66) |
+| `func_002_5F5C` | VERIFIED | PASS | PASS | Staircase inactive at (0x88, 0x20), object 0xBE, shared draw-command tail (`02:5F5C`-`02:5F9E`, Batch 66) |
 | `DropKeyEffectHandler` | VERIFIED | PASS | PASS | Guarded key drop; room 0x69 exception marks saved status/cache before existing key-spawn helper (`02:5E03`-`02:5E17`, Batch 65) |
 | `ClearMidbossEffectHandler` | VERIFIED | PASS | PASS | Instrument bit-0 early return, otherwise falls through to shutter handler (`02:5E18`-`02:5E24`, Batch 65) |
 | `OpenShutterDoorsEffectHandler` | VERIFIED | PASS | PASS | Latch-gated closing, event 0xC1 midboss completion with map-only routing and no cache refresh, opening enqueue (`02:5E25`-`02:5E7A`, Batch 65) |

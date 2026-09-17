@@ -23,6 +23,7 @@ void test_bank2_room_events(void);
 void test_bank2_room_effects(void);
 void test_bank2_room_effect_appearance(void);
 void test_bank2_key_drop_effect(void);
+void test_bank2_object_reveal(void);
 void test_bank2_shutter_effects(void);
 
 void run_bank2_tests(void);

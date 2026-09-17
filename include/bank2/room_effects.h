@@ -76,4 +76,30 @@ void OpenShutterDoorsEffectHandler(GBState *gb);
  */
 void CloseDoors(GBState *gb);
 
+/* Bank 2 chest/staircase tile tables (02:5EA3, 02:5F54). */
+extern const uint8_t ChestTileIds[8];
+extern const uint8_t StaircaseTileIds[8];
+
+/**
+ * Guarded chest-appearance VFX at X 0x88 and Y 0x40 when Link stands within
+ * the chest tile, otherwise Y 0x30 (02:5EAB-02:5ED2).
+ */
+void RevealChestEffectHandler(GBState *gb);
+
+/**
+ * Materializes chest object 0xA0 at the object row selected from Link's
+ * position (0x30 inside the overlap window, else 0x20), column low nibble 8,
+ * and emits its BG draw command (02:5ED3-02:5F53). The optional callback
+ * implements the unfinished bank-1A attribute lookup for CGB, matching
+ * label_002_4D97's contract; NULL skips only that lookup.
+ */
+void func_002_5ED3(GBState *gb, void (*get_bg_attr_addr)(GBState *));
+
+/**
+ * Marks the staircase inactive at (0x88, 0x20), materializes object 0xBE, and
+ * emits its BG draw command via the shared tail (02:5F5C-02:5F9E). The
+ * callback has the same contract as func_002_5ED3.
+ */
+void func_002_5F5C(GBState *gb, void (*get_bg_attr_addr)(GBState *));
+
 #endif /* LADX_BANK2_ROOM_EFFECTS_H */

@@ -2,12 +2,15 @@
 #include "bank2/room_events.h"
 #include "constants/entities.h"
 #include "constants/gameplay.h"
+#include "constants/gfx.h"
 #include "constants/maps.h"
 #include "constants/memory.h"
 #include "constants/rooms.h"
 #include "constants/sfx.h"
 #include "constants/vfx.h"
+#include "home/bank.h"
 #include "home/entities.h"
+#include "home/gameplay.h"
 #include "home/vfx.h"
 
 bool EventEffectGuard(GBState *gb) {
@@ -145,4 +148,118 @@ void CloseDoors(GBState *gb) {
     gb_write(gb, wShutterDoorEventExecuted, 1);
     gb_write(gb, wC111, 4);
     gb_write_hram(gb, hNoiseSfx, NOISE_SFX_DOOR_CLOSED);
+}
+
+/* ========================================================================= */
+/* Chest and staircase object reveal (02:5EA3 - 02:5F9E)                     */
+/* ========================================================================= */
+
+/* ChestTileIds.dmg / .cgb (02:5EA3). On CGB both chest halves use the same
+ * tiles, horizontally flipped by the attribute data. */
+const uint8_t ChestTileIds[8] = {
+    0x60, 0x70,
+    0x61, 0x71,
+    0x60, 0x70,
+    0x60, 0x70
+};
+
+/* StaircaseTileIds (02:5F54). The trailing four zero bytes are unused in the
+ * original ROM: the chest has DMG and CGB variants, the staircase does not. */
+const uint8_t StaircaseTileIds[8] = {
+    0x6A, 0x7A,
+    0x6B, 0x7B,
+    0x00, 0x00,
+    0x00, 0x00
+};
+
+void RevealChestEffectHandler(GBState *gb) {
+    if (!gb) return;
+    if (!EventEffectGuard(gb)) return;
+
+    gb_write_hram(gb, hMultiPurpose0, 0x88);
+    /* Branch-faithful: y' >= 0x10 selects 0x30 regardless of the computed
+     * value; only y' < 0x10 with x' < 0x20 reaches 0x40. */
+    uint8_t y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) - 0x30 + 0x08);
+    if (y >= 0x10) {
+        y = 0x30;
+    } else {
+        uint8_t x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) - 0x88 + 0x10);
+        y = (x < 0x20) ? 0x40 : 0x30;
+    }
+    gb_write_hram(gb, hMultiPurpose1, y);
+    AddTranscientVfx(gb, TRANSCIENT_VFX_CHEST_APPEARS);
+}
+
+/* Shared tail from 02:5F27: emit the 10-byte BG column command for the two
+ * columns of the revealed object, then set palette 2 on CGB. */
+static void EmitObjectDrawCommand(GBState *gb, const uint8_t *tiles,
+                                  void (*get_bg_attr_addr)(GBState *)) {
+    uint8_t cmd_size = gb_read(gb, wDrawCommandsSize);
+    uint16_t hl = (uint16_t)(wDrawCommand + cmd_size);
+    gb_write(gb, wDrawCommandsSize, (uint8_t)(cmd_size + 0x0A));
+
+    uint8_t bg_high = gb_read_hram(gb, hIntersectedObjectBGAddressHigh);
+    uint8_t bg_low = gb_read_hram(gb, hIntersectedObjectBGAddressLow);
+
+    gb_write(gb, hl++, bg_high);
+    gb_write(gb, hl++, bg_low);
+    gb_write(gb, hl++, 0x81);
+    gb_write(gb, hl++, *tiles++);
+    gb_write(gb, hl++, *tiles++);
+
+    gb_write(gb, hl++, bg_high);
+    gb_write(gb, hl++, (uint8_t)(bg_low + 1));
+    gb_write(gb, hl++, 0x81);
+    gb_write(gb, hl++, *tiles++);
+    gb_write(gb, hl++, *tiles);
+    gb_write(gb, hl, 0x00);
+
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        func_91D(gb, 0x02, get_bg_attr_addr);
+    }
+}
+
+void func_002_5ED3(GBState *gb, void (*get_bg_attr_addr)(GBState *)) {
+    if (!gb) return;
+
+    /* Same overlap window as RevealChestEffectHandler, selecting the object
+     * row instead of the VFX row. */
+    uint8_t top = (uint8_t)(gb_read_hram(gb, hLinkPositionY) - 0x30 + 0x08);
+    if (top >= 0x10) {
+        top = 0x20;
+    } else {
+        uint8_t x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) - 0x88 + 0x10);
+        top = (x < 0x20) ? 0x30 : 0x20;
+    }
+    gb_write_hram(gb, hIntersectedObjectTop, top);
+    gb_write_hram(gb, hIntersectedObjectLeft, 0x80);
+
+    uint8_t object_index = (uint8_t)((top & 0xF0) | 0x08);
+    gb_write(gb, (uint16_t)(wRoomObjects + object_index), 0xA0);
+    gb_write(gb, wDDD8, 0xA0);
+    GetIntersectedObjectBGAddress(gb);
+
+    const uint8_t *tiles = ChestTileIds;
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        tiles = &ChestTileIds[4];
+    }
+    EmitObjectDrawCommand(gb, tiles, get_bg_attr_addr);
+}
+
+void func_002_5F5C(GBState *gb, void (*get_bg_attr_addr)(GBState *)) {
+    if (!gb) return;
+
+    gb_write_hram(gb, hStaircase, STAIRCASE_INACTIVE);
+    gb_write_hram(gb, hIntersectedObjectTop, 0x10);
+    gb_write_hram(gb, hStaircasePosY, 0x20);
+    gb_write_hram(gb, hIntersectedObjectLeft, 0x80);
+    gb_write_hram(gb, hStaircasePosX, 0x88);
+
+    uint8_t object_index =
+        (uint8_t)((gb_read_hram(gb, hIntersectedObjectTop) & 0xF0) | 0x08);
+    gb_write(gb, (uint16_t)(wRoomObjects + object_index), 0xBE);
+    gb_write(gb, wDDD8, 0xBE);
+    GetIntersectedObjectBGAddress(gb);
+
+    EmitObjectDrawCommand(gb, StaircaseTileIds, get_bg_attr_addr);
 }
