@@ -3,22 +3,34 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 59.42%
-* **Number of Verified Functions**: 713
-* **Number of Decompiled Functions**: 536
-* **Number Remaining**: ~487 functions
-* **Current Subsystem**: ROM Bank 2 (Room Events & Door Opening/Closing Subsystem, 02:593B-02:5D4E)
-* **Current Task**: Bank 2 Room Events and Door Opening/Closing Subsystem decompiled and verified
-* **Last Completed Task**: Decompiled and verified `ExecuteRoomEvents`, `DoorOpening`, and `DoorClosing` (`02:593B`-`02:5D4E`) along with 13 lookup tables (`ShutterDoorsMaskTable`, `OpeningDoorTileIds`, `DoorXOffsets`, `DoorYOffsets`, `OpeningDoorTileOffsets`, `OpenDoorObjectIdsTable`, `DoorToOpenStatusFlagTable`, `DoorToAdjacentRoomTable`, `DoorToAdjacentOpenStatusFlagTable`, `ClosingDoorTileIds`, `Data_002_5BE4`, `ClosingDoorTileOffsets`, `ClosedShutterDoorObjectIdsTable`)
-* **Next Task**: Decompile and verify Bank 2 Room Triggers & Effects Subsystem (`ExecuteRoomTriggersAndEffects`, `KillAllEnemiesEffectHandler`, `CheckTriggersResolution`, `02:5D4F`+)
-* **Last Update Timestamp**: 2026-09-16T02:35:00+03:00
+* **Current Overall Progress**: 59.58%
+* **Number of Verified Functions**: 715
+* **Number of Decompiled Functions**: 538
+* **Number Remaining**: ~485 functions
+* **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
+* **Current Task**: Batch 63: room effect guard and kill-all-enemies effect decompiled and verified
+* **Last Completed Task**: Decompiled and verified `KillAllEnemiesEffectHandler` (`02:5D79`-`02:5DAE`) and `EventEffectGuard` (`02:5DAF`-`02:5DC1`) against the original instruction flow, with exhaustive guard/entity-byte tests
+* **Next Task**: Continue Room Triggers & Effects with `DropFairyEffectHandler` (`02:5DC2`), `RevealStaircaseEffectHandler` (`02:5DE9`), and shared `MakeEffectObjectAppear` (`02:5DF6`) in a small dependency-complete batch. `ExecuteRoomTriggersAndEffects` (`02:5D4F`) and `CheckTriggersResolution` (`02:5F9F`) remain unfinished pending their handlers; do not redo the two Batch 63 VERIFIED functions.
+* **Last Update Timestamp**: 2026-09-17T20:53:56+03:00
 
 ---
+
+## Batch 63 Verification — Room Effect Guard and Enemy Explosion
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:31-102`, with entity flags, SFX, and RAM addresses checked against the disassembly constants.
+- **Implementation:** `src/bank2/room_effects.c`, declarations in `include/bank2/room_effects.h`. No existing VERIFIED function bodies or production call sites changed.
+- **Guard semantics:** The assembly prose is contradictory. The actual `jr nz` at `02:5DB3` rejects room-status bit `0x10`; `jr z` at `02:5DB9` rejects a zero executed byte. Acceptance clears only `wRoomEvent`. A Boolean return plus immediate caller return represents the assembly's `pop af; ret` early exit; neither status nor executed byte is set.
+- **Enemy semantics:** Scan slots 15 through 0, skip physics bit `0x80`, accept unsigned statuses 5–255, then write status `1`, countdown `0x1F`, physics `(old & 0xF0) | 2`, and noise SFX `0x13`.
+- **Tests:** `tests/bank2/test_room_effects.c` uses independent literal-address expectations and full initialized `GBState` comparisons. Covers 262,144 guard cases (all 256 × 256 guard-byte pairs for four event bytes), all 65,536 status/physics pairs, 32,896 handler guard-rejection cases, every sole-eligible slot, mixed entities, repeated calls, adjacent-slot sentinels, and the C API's null safety.
+- **Validation:** Full Debug build and CTest PASS (assertions enabled); full test output inspected with no failure messages. Both new C files pass strict syntax checks including conversion/sign-conversion warnings. Independent instruction-flow review and `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior within the project's `GBState` abstraction, not CPU-cycle/register/stack emulation or end-to-end execution of the unfinished dispatcher. No behavior was guessed or marked VERIFIED for deferred handlers. The dispatcher is deliberately deferred rather than implemented with no-op substitutes.
 
 ## Status Table
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
+| `KillAllEnemiesEffectHandler` | VERIFIED | PASS | PASS | Guarded explosion of non-harmless entities with unsigned status >= 5; slots 15..0, status/countdown/physics/noise updates (`02:5D79`-`02:5DAE`, Batch 63) |
+| `EventEffectGuard` | VERIFIED | PASS | PASS | Branch-accurate guard; requires event-1 bit clear and executed byte nonzero, clears only wRoomEvent; Boolean models caller early return (`02:5DAF`-`02:5DC1`, Batch 63) |
 | `ExecuteRoomEvents` | VERIFIED | PASS | PASS | Main active room events dispatcher: dialog/transition/indoors guards, triggers invocation, door opening/closing enqueue & motion blocking (`02:593B`) |
 | `DoorOpening` | VERIFIED | PASS | PASS | Multi-phase door opening animation: half/fully open tile redraws, VRAM commands, GBC palette update, wRoomObjects replacement, room & adjacent status update (`02:5A7B`) |
 | `DoorClosing` | VERIFIED | PASS | PASS | Multi-phase door closing animation: Link entry proximity displacement guard, tile redraws, VRAM commands, wRoomObjects replacement, room status clear (`02:5C04`) |

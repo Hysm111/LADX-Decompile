@@ -43,6 +43,7 @@
 #define NOISE_SFX_MAGIC_ROD                     0x0D
 #define NOISE_SFX_SHOVEL_DIG                    0x0E
 #define NOISE_SFX_SEA_WAVES                     0x0F
+#define NOISE_SFX_ENEMY_DESTROYED               0x13
 #define NOISE_SFX_SWORD_SWING_B                 0x14
 #define NOISE_SFX_SWORD_SWING_C                 0x15
 #define NOISE_SFX_DRAW_SHIELD                   0x16

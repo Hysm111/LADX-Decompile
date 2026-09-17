@@ -20,6 +20,10 @@
 #define ENTITY_STATUS_LIFTED     7
 #define ENTITY_STATUS_THROWN     8
 
+/* Values for wEntitiesPhysicsFlagsTable. */
+#define ENTITY_PHYSICS_HARMLESS  0x80
+#define ENTITY_PHYSICS_MASK      0xF0
+
 #define ENTITY_RAFT_RAFT_OWNER   0x6A
 
 #define EntityHandlersTable      0x4000

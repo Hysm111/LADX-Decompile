@@ -45,6 +45,7 @@ set(LADX_CORE_SOURCES
     src/bank2/link_motion.c
     src/bank2/ocarina.c
     src/bank2/revolving_door.c
+    src/bank2/room_effects.c
     src/bank2/room_events.c
     src/bank2/room_transition.c
     src/bank2/shovel.c
@@ -97,6 +98,7 @@ add_executable(ladx_tests
     tests/bank2/test_ocarina.c
     tests/bank2/test_revolving_door.c
     tests/bank2/test_room.c
+    tests/bank2/test_room_effects.c
     tests/bank2/test_room_events.c
     tests/bank2/test_shovel.c
     tests/bank2/test_support.c
