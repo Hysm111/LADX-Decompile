@@ -3,17 +3,27 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: 60.92%
-* **Number of Verified Functions**: 731
-* **Number of Decompiled Functions**: 554
-* **Number Remaining**: ~469 functions
+* **Current Overall Progress**: ~61.08%
+* **Number of Verified Functions**: 733
+* **Number of Decompiled Functions**: 556
+* **Number Remaining**: ~467 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 67: six room trigger checkers decompiled and verified
-* **Last Completed Task**: Verified `CheckKillSidescrollBossTrigger`, `CheckLightTorchesTrigger`, `CheckStepOnButtonTrigger`, `CheckKillInOrderTrigger`, `CheckKillEnemiesTrigger`, and `CheckAnswerTunicsTrigger` (`02:5FC6`-`02:60D7`) with independent assembly-derived memory tests
-* **Next Task**: Resolve the `CheckTriggersResolution` (`02:5F9F`) jump-table input contract, then implement and verify it and `ExecuteRoomTriggersAndEffects` (`02:5D4F`) in a small batch. CheckTriggersResolution is BLOCKED pending evidence for masked trigger IDs outside 1..16: the assembly decrements the ID and indexes a 16-entry table without a bounds check. Do not substitute no-op behavior or redo VERIFIED checkers/effects.
-* **Last Update Timestamp**: 2026-09-17T22:18:30+03:00
+* **Current Task**: Batch 68: room event trigger and effect dispatchers decompiled and verified
+* **Last Completed Task**: Verified `CheckTriggersResolution` (`02:5F9F`, supported trigger-ID domain) and `ExecuteRoomTriggersAndEffects` (`02:5D4F`) with independent assembly-derived tests, resolving the Batch 67 jump-table blocker via a full room-event data census
+* **Next Task**: Decompile and verify `ClampItemCount` (`02:60D8`-`02:60DF`) in a small batch; scope `func_002_60E0` (`02:60E0`, inventory logic) as a separate later batch. Do not redo VERIFIED functions or substitute guessed behavior.
+* **Last Update Timestamp**: 2026-09-17T22:40:17+03:00
 
 ---
+
+## Batch 68 Verification — Room Event Trigger and Effect Dispatchers
+
+- **Source of truth:** `LADX-Disassembly/src/code/events.asm:7-29` (`02:5D4F`-`02:5D78`) and `events.asm:459-484` (`02:5F9F`-`02:5FC4`), plus `src/code/macros.asm:54-60` (`JP_TABLE` expands to `rst 0`), `src/code/home/header.asm:3-5` (RST0 vector is `TableJump`), and `src/code/bank0.asm:4416-4428` (16-bit `2*A` table indexing with no bounds check). Two functions are appended in `src/bank2/room_triggers.c`, with declarations in `include/bank2/room_triggers.h`. Existing VERIFIED bodies and production callers are unchanged.
+- **Blocker resolution (Batch 67):** The unchecked jump table was the blocker: masked IDs `0` and `17..31` do not select declared entries (ID 0 reads pointer bytes at `$61A3..$61A4`; ID 17 reads `$C9,$F0` at `$5FC5..$5FC6` → `$F0C9`, not a return entry). A census of all three room-event tables in `LADX-Disassembly/src/data/events/dungeons.asm` — Indoor A 256, Indoor B 256, Color 32; 544 total, 377 zero, 167 nonzero — shows every nonzero event's masked trigger ID is 1..16 and all 16 IDs occur. Effect-zero events (e.g. `0x0D`, `0x10`) exist, so nonzero effect bits are not required. The only direct `wRoomEvent` writers stay in domain: the bank-14 table loader (`bank14.asm:2139-2171`, table load at 2165) and two zero-clears (`events.asm:92-95`, `events.asm:243-245`); the color-dungeon layout loader (`data/maps/layouts.asm:124-133`) uses only room IDs `0x00..0x15`. This establishes the supported domain for normal room data and direct references; it is not a universal proof against arbitrary memory corruption, and out-of-domain behavior remains unemulated.
+- **`CheckTriggersResolution`:** Takes the register-A event argument (not `wRoomEvent`), masks `0x1F`, stores the ID in `hMultiPurpose0`, and dispatches through a table-equivalent switch: 1/8 → `CheckKillEnemiesTrigger`, 3 → `CheckStepOnButtonTrigger`, 5 → `CheckLightTorchesTrigger`, 6 → `CheckKillInOrderTrigger`, 10 → `CheckKillSidescrollBossTrigger`, 16 → `CheckAnswerTunicsTrigger`; 2/4/7/9/11..15 are declared `Events.return` entries and still return true after the MP0 store. NULL state or unsupported IDs return false without any write: an explicit C API rejection, not a claim that the unchecked assembly jump treats invalid input as a no-op.
+- **`ExecuteRoomTriggersAndEffects`:** Returns true untouched for `wRoomEvent == 0` (assembly jumps to `MakeEffectObjectAppear.return`; callbacks are not needed). Nonzero events require a valid masked ID and both allocator callbacks before any writes; missing dependencies return false. After the checker call the dispatcher re-reads `wRoomEvent` for the `(event & 0xE0) >> 5` effect selection — a checker can execute an effect itself and clear the event (tunic rooms), so the pre-check value must not be reused. The eight effect entries select no action or one of seven verified handlers; key allocation follows `label_002_5425`'s contract (slot 0..15 or `0xFFFF` carry/failure, map ID preserved) and fairy allocation returns raw DE (0..15 or `0x00FF` when full). The bool API needs an adapter for existing void callback slots; VERIFIED callers were deliberately not rewired in this batch.
+- **Tests:** `tests/bank2/test_room_dispatch.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). The exhaustive routing oracle composes the already-VERIFIED checkers and effects and verifies dispatch/integration only, not those bodies; literal cases independently cover marking, guards, tunic MP0/event overwrites, duplicate-effect prevention, and spawn callbacks. Coverage: all 256 register-A events × 11 fixtures for the checker (including zeroed/divergent `wRoomEvent` to prove the register-A contract), all 128 effect×ID outer combinations with repeated invocation, every callback-presence combination × 256 events with ready checkers proving validation precedes any write, the zero-event shortcut preserving even `hMultiPurpose0`, unsupported memory events ignored, spawn success/failure paths, and full initialized `GBState` comparisons.
+- **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled (27.08 s / 27.20 s); full `./build/ladx_tests` output (226 lines, saved as `build/batch68-tests.log`) inspected with no failure messages. Independent review approved the supported-domain semantics and API; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS (26.24 s); `git diff --check` PASS. The event census was independently reproduced (544/377/167, no invalid IDs). Final pre-commit Debug build/CTest PASS (26.80 s), with the direct test log rechecked and no failure messages.
+- **Verification scope:** Source-level memory behavior and callback boundaries within `GBState`. CPU registers/flags/cycles/stack behavior and execution of the original unchecked out-of-table jump are not emulated or claimed verified; entity allocation internals remain callback-modeled. No guessed dispatch fallback was introduced.
 
 ## Batch 67 Verification — Room Trigger Checkers
 
@@ -69,7 +79,8 @@
 
 | Section | Status | Build | Verification | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| `CheckTriggersResolution` | BLOCKED | — | BLOCKED | Pending evidence for masked IDs outside 1..16 and unchecked jump-table behavior (`02:5F9F`); not implemented |
+| `CheckTriggersResolution` | VERIFIED | PASS | PASS | Register-A trigger dispatch, MP0 = ID & 0x1F, table-equivalent routing; supported domain 1..16 proven by full room-event census, out-of-domain inputs rejected by the C API without writes (`02:5F9F`-`02:5FC4`, Batch 68) |
+| `ExecuteRoomTriggersAndEffects` | VERIFIED | PASS | PASS | Zero-event shortcut, checker call, post-checker `wRoomEvent` reload, eight-effect dispatch; key/fairy allocation behind convention-matched callbacks (`02:5D4F`-`02:5D78`, Batch 68) |
 | `CheckKillSidescrollBossTrigger` | VERIFIED | PASS | PASS | Map-specific saved boss status bit 0x20 (`02:5FC6`-`02:5FD9`, Batch 67) |
 | `CheckLightTorchesTrigger` | VERIFIED | PASS | PASS | Exact wC1A2 == 2 (`02:5FDA`-`02:5FE2`, Batch 67) |
 | `CheckStepOnButtonTrigger` | VERIFIED | PASS | PASS | Nonzero switch button (`02:5FE3`-`02:5FEA`, Batch 67) |

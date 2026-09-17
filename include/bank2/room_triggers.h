@@ -27,4 +27,28 @@ void CheckKillEnemiesTrigger(GBState *gb);
  * executed effect returns without touching the count (02:602D-02:60D7). */
 void CheckAnswerTunicsTrigger(GBState *gb);
 
+/**
+ * Dispatches the register-A event argument (not wRoomEvent) after storing
+ * event & 0x1F in hMultiPurpose0 (02:5F9F-02:5FC4).
+ * Verified domain: masked IDs 1..16, as present in all nonzero room events.
+ * Returns true after dispatch, including declared Events.return entries.
+ * NULL or unsupported IDs return false without writes: this is a C API
+ * rejection, NOT emulation of the original unchecked out-of-table jump.
+ */
+bool CheckTriggersResolution(GBState *gb, uint8_t event);
+
+/**
+ * Checks triggers then reloads wRoomEvent to dispatch its effect (02:5D4F).
+ * Returns true for event zero (no work), or a completed supported dispatch.
+ * Nonzero events require a valid masked ID and BOTH allocator callbacks.
+ * Invalid inputs return false before writes; callers must handle rejection.
+ * spawn_key follows label_002_5425: slot 0..15 or 0xFFFF for carry/failure,
+ * preserving the map ID. spawn_fairy returns raw DE (0..15 or 0x00FF on full).
+ * Allocation internals remain external; callbacks run through the existing
+ * bank-3 trampoline. This bool API needs an adapter for void callback slots.
+ */
+bool ExecuteRoomTriggersAndEffects(GBState *gb,
+                                   uint16_t (*spawn_key)(GBState *, uint8_t),
+                                   uint16_t (*spawn_fairy)(GBState *, uint8_t));
+
 #endif /* LADX_BANK2_ROOM_TRIGGERS_H */

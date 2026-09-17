@@ -99,6 +99,7 @@ add_executable(ladx_tests
     tests/bank2/test_ocarina.c
     tests/bank2/test_revolving_door.c
     tests/bank2/test_room.c
+    tests/bank2/test_room_dispatch.c
     tests/bank2/test_room_effect_appearance.c
     tests/bank2/test_key_drop_effect.c
     tests/bank2/test_object_reveal.c

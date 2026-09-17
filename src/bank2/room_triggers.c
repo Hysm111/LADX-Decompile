@@ -102,3 +102,78 @@ void CheckAnswerTunicsTrigger(GBState *gb) {
     }
     RevealChestEffectHandler(gb);
 }
+
+bool CheckTriggersResolution(GBState *gb, uint8_t event) {
+    uint8_t trigger = event & EVENT_TRIGGER_MASK;
+    /* Invalid IDs index instruction bytes in the ROM, not a return entry.
+     * Reject unsupported C inputs rather than inventing their execution. */
+    if (!gb || trigger < 1 || trigger > 16) return false;
+
+    gb_write_hram(gb, hMultiPurpose0, trigger);
+    switch (trigger) {
+    case 1:
+    case 8:
+        CheckKillEnemiesTrigger(gb);
+        break;
+    case 3:
+        CheckStepOnButtonTrigger(gb);
+        break;
+    case 5:
+        CheckLightTorchesTrigger(gb);
+        break;
+    case 6:
+        CheckKillInOrderTrigger(gb);
+        break;
+    case 10:
+        CheckKillSidescrollBossTrigger(gb);
+        break;
+    case 16:
+        CheckAnswerTunicsTrigger(gb);
+        break;
+    default:
+        /* Declared Events.return entries: 2, 4, 7, 9, 11..15. */
+        break;
+    }
+    return true;
+}
+
+bool ExecuteRoomTriggersAndEffects(GBState *gb,
+                                   uint16_t (*spawn_key)(GBState *, uint8_t),
+                                   uint16_t (*spawn_fairy)(GBState *, uint8_t)) {
+    if (!gb) return false;
+    uint8_t event = gb_read(gb, wRoomEvent);
+    if (event == 0) return true;
+
+    uint8_t trigger = event & EVENT_TRIGGER_MASK;
+    if (trigger < 1 || trigger > 16 || !spawn_key || !spawn_fairy) return false;
+    CheckTriggersResolution(gb, event);
+
+    /* A checker can execute an effect itself and clear wRoomEvent. The
+     * assembly reloads it here, so do not dispatch from the saved event. */
+    switch ((gb_read(gb, wRoomEvent) & EVENT_EFFECT_MASK) >> 5) {
+    case 0:
+        break;
+    case 1:
+        OpenShutterDoorsEffectHandler(gb);
+        break;
+    case 2:
+        KillAllEnemiesEffectHandler(gb);
+        break;
+    case 3:
+        RevealChestEffectHandler(gb);
+        break;
+    case 4:
+        DropKeyEffectHandler(gb, spawn_key);
+        break;
+    case 5:
+        RevealStaircaseEffectHandler(gb);
+        break;
+    case 6:
+        ClearMidbossEffectHandler(gb);
+        break;
+    case 7:
+        DropFairyEffectHandler(gb, spawn_fairy);
+        break;
+    }
+    return true;
+}
