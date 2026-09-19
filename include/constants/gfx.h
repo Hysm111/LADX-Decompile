@@ -58,9 +58,11 @@
 #define OBJECT_HIDDEN_BOMBABLE_WALL_BOTTOM 0x48
 #define OBJECT_HIDDEN_BOMBABLE_WALL_LEFT 0x49
 #define OBJECT_HIDDEN_BOMBABLE_WALL_RIGHT 0x4A
+#define OBJECT_SIDE_VIEW_SPIKES      0x4C
 #define OBJECT_WEATHER_VANE_BASE     0x5E
-#define OBJECT_POT_WITH_SWITCH       0x8E
 #define OBJECT_WEATHER_VANE_TOP      0x91
+#define OBJECT_POT_WITH_SWITCH       0x8E
+#define OBJECT_WELL                  0x61
 #define OBJECT_CHEST_CLOSED          0xA0
 #define OBJECT_CHEST_OPEN            0xA1
 #define OBJECT_BOMBABLE_BLOCK        0xA9
@@ -182,6 +184,12 @@
 
 #define BANK_DungeonMinimapTiles     0x12
 #define DungeonMinimapTiles          0x7E00
+
+/* Minimap tables in Bank $02 */
+#define BANK_MinimapsTable           0x02
+#define MinimapsTable                0x6479
+#define ColorDungeonMinimap          0x66B9
+#define EaglesTowerCollapsedMinimap  0x6679
 
 /* Ending and Credits Graphic assets in Bank $13 */
 #define BANK_EndingTiles             0x13

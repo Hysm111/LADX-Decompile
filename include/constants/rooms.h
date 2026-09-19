@@ -129,5 +129,6 @@
 #define Indoors1ObjectPhysicFlags    0x4BD4
 
 #define ROOM_INDOOR_B_SCHULE_HOUSE            0xDD
+#define ROOM_INDOOR_B_EAGLES_TOWER_BOSS       0xE8
 
 #endif /* LADX_CONSTANTS_ROOMS_H */

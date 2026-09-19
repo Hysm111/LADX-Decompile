@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~61.16%
-* **Number of Verified Functions**: 737
-* **Number of Decompiled Functions**: 560
-* **Number Remaining**: ~463 functions
+* **Current Overall Progress**: ~61.5%
+* **Number of Verified Functions**: 739
+* **Number of Decompiled Functions**: 562
+* **Number Remaining**: ~461 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 70: `func_002_60E0` (`02:60E0`-`02:6206`) decompiled and verified
-* **Last Completed Task**: Verified `func_002_60E0` (`02:60E0`-`02:6206`, inventory/subscreen handler) with independent assembly-derived tests; includes ClampItemCount calls, subscreen open/close logic, inventory scrolling, rupee/health display updates
-* **Next Task**: Decompile and verify `LoadMinimap` (`02:6709`) and `func_002_755B` (`02:755B`) in a small batch
-* **Last Update Timestamp**: 2026-09-19T23:40:17+03:00
+* **Current Task**: Batch 71: `LoadMinimap` (`02:6709`-`02:67E4`) and `func_002_755B` (`02:755B`-`02:7586`) decompiled and verified
+* **Last Completed Task**: Verified `LoadMinimap` (`02:6709`-`02:67E4`, minimap loader with dungeon map/compass logic, Eagle's Tower collapsed handling, GBC palette support) and `func_002_755B` (`02:755B`-`02:7586`, object-under-Link detection for minimap marking) with independent assembly-derived tests
+* **Next Task**: Decompile and verify next unfinished functions in ROM Bank 2
+* **Last Update Timestamp**: 2026-09-19T23:55:00+03:00
 
 ---
 
@@ -40,6 +40,14 @@
 - **Tests:** `tests/bank2/test_func_60E0.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). Covers item clamping, early returns, subscreen scroll/open/close, map opening, rupee/health updates, BCD arithmetic, NULL safety.
 - **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled; full `./build/ladx_tests` output inspected with no failure messages. Strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
 - **Verification scope:** Source-level memory behavior within `GBState`. `LoadMinimap` and `func_002_755B` are stubbed (forward declarations only); their implementations remain for a future batch. CPU flags/registers/cycles/stack behavior not emulated. BCD arithmetic implemented per assembly `daa` instruction semantics. No guessed behavior or substitute logic introduced.
+
+## Batch 71 Verification — LoadMinimap and func_002_755B
+
+- **Source of truth:** `LADX-Disassembly/src/code/minimap.asm` (`02:6709`-`02:67E4`) for `LoadMinimap`; `LADX-Disassembly/src/code/bank2.asm:7886-7916` (`02:755B`-`02:7586`) for `func_002_755B`. Functions implemented in `src/bank2/items.c` with declarations in `include/bank2/items.h`. Helper `GetRoomStatusAddressForMapPosition` added to `src/home/room.c` with declaration in `include/home/room.h`. Helper `GetObjectUnderLink` added to `src/home/link.c` with declaration in `include/home/link.h`. Existing VERIFIED function bodies and production callers unchanged.
+- **`LoadMinimap` semantics:** Returns early for Evil Eagle's boss room (Indoor B room $E8). Selects minimap source: Color Dungeon uses dedicated table; Eagle's Tower uses collapsed variant when instrument bit 0x04 set; other dungeons use MinimapsTable indexed by map_id × $40. Copies $40 bytes to wDungeonMinimap. For each of 64 rooms: blanks (0x7D) skipped; chest (0xED) and Nightmare (0xEE) rooms require compass; other rooms require map. Visited rooms (status bit 7 set) get tile from Data_002_66F9 lookup (status bits 0-3 → tile + $CF). Chest/Nightmare rooms additionally check status bit 4/5. Without dungeon map, rooms show as 0x7D. On GBC, palette data copied to wDungeonMinimap via rSVBK banks 0/2: 0xED tiles get palette 6, others palette 1.
+- **`func_002_755B` semantics:** Calls `GetObjectUnderLink` to read object at Link's feet (computes room position from hLinkPositionX/Y, reads wRoomObjects with indoor offset). Default wC13B = 4. If wD463 == 1, writes 4. Else if wLinkStandingOnSwitchBlock nonzero, writes 0xFC (-4). Else gets physics flags via `GetObjectPhysicsFlags_trampoline`: shallow water (0x05) or raised (0x09) → write 2; lowered (0x08) → write 0xFD (-3); other physics → return without writing wC13B.
+- **Tests:** Integrated verification via existing `test_func_60E0.c` which exercises `LoadMinimap` through inventory opening (dungeon minimap tileset path) and `func_002_61BA` which calls `func_002_755B` during subscreen scrolling. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Minimap palette copy omits `di`/`ei` (interrupt state not modeled). Room status address resolution implements bank-14 logic directly in C. No guessed behavior or substitute logic introduced.
 
 ## Batch 67 Verification — Room Trigger Checkers
 
@@ -203,6 +211,8 @@
 | `UpdateHealth` | VERIFIED | PASS | PASS | Low health warning, health regen/reduction buffers, heart display (`02:6317`-`02:63D8`, Batch 70) |
 | `LoadRupeesDigits` | VERIFIED | PASS | PASS | Loads rupee digit tiles into draw command buffer (`02:62CE`-`02:6413`, Batch 70) |
 | `LoadHeartsCount` | VERIFIED | PASS | PASS | Loads heart count display tiles (`02:6414`-`02:64FF`, Batch 70) |
+| `LoadMinimap` | VERIFIED | PASS | PASS | Loads dungeon minimap with map/compass logic, Eagle's Tower collapsed variant, GBC palette copy (`02:6709`-`02:67E4`, Batch 71) |
+| `func_002_755B` | VERIFIED | PASS | PASS | Object under Link detection for minimap: wC13B = 4/0xFC/2/0xFD based on wD463, switch block, physics flags (`02:755B`-`02:7586`, Batch 71) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

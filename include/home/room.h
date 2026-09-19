@@ -95,6 +95,17 @@ uint8_t GetObjectPhysicsFlags_trampoline(GBState *gb, uint16_t de);
 uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de);
 
 /**
+ * GetRoomStatusAddressForMapPosition (14:5838)
+ * Computes the WRAM address of the room status byte for a given map position.
+ * Handles Color Dungeon, Eagle's Tower (collapsed), and Indoor A/B room groups.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param de Room position (YX format)
+ * @return WRAM address of room status byte
+ */
+uint16_t GetRoomStatusAddressForMapPosition(GBState *gb, uint16_t de);
+
+/**
  * GetRoomStatusAddressForMapPosition_trampoline (00:2BC1)
  * Farcalls GetRoomStatusAddressForMapPosition in bank $14 with room position in DE,
  * then restores saved ROM bank via ReloadSavedBank and returns address in HL.

@@ -138,5 +138,7 @@
 #define hMultiPurposeB                  0xFFE2
 #define hMultiPurposeC                  0xFFE3
 #define hObjectUnderLink             0xFFB8
+#define hObjectUnderEntity           0xFFAF
+#define hLinkRoomPosition            0xFFFA
 
 #endif /* LADX_CONSTANTS_HARDWARE_H */

@@ -995,3 +995,45 @@ void label_1F69_trampoline(GBState *gb,
                reveal_object, spawn_projectile, func_003_5795);
     SwitchBank(gb, 2);
 }
+
+/**
+ * GetObjectUnderLink (02:7512)
+ * Retrieves the ID of the room object currently under Link's feet.
+ * Computes room position from Link's X/Y coordinates and reads from wRoomObjects.
+ * Stores result in hObjectUnderLink and hObjectUnderEntity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @return Object ID (0-255)
+ */
+uint8_t GetObjectUnderLink(GBState *gb) {
+    if (!gb) return 0;
+
+    /* Compute X coordinate: (hLinkPositionX & 0xF0) */
+    uint8_t x = gb_read_hram(gb, hLinkPositionX) & 0xF0;
+    gb_write_hram(gb, hMultiPurpose0, x);
+
+    /* swap x */
+    x = (x << 4) | (x >> 4);
+
+    /* Compute Y coordinate: (hLinkPositionY - 4) & 0xF0 */
+    uint8_t y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) - 4) & 0xF0;
+    gb_write_hram(gb, hMultiPurpose1, y);
+
+    /* Combine: (y | x_swapped) = room position */
+    uint8_t pos = y | x;
+    gb_write_hram(gb, hLinkRoomPosition, pos);
+
+    /* Read from wRoomObjects */
+    uint16_t hl = wRoomObjects + pos;
+    uint8_t obj_id = gb_read(gb, hl);
+
+    /* Indoor offset */
+    uint8_t is_indoor = gb_read(gb, wIsIndoor);
+    hl = (uint16_t)(is_indoor << 8) | pos;
+    obj_id = gb_read(gb, hl);
+
+    gb_write_hram(gb, hObjectUnderLink, obj_id);
+    gb_write_hram(gb, hObjectUnderEntity, obj_id);
+
+    return obj_id;
+}

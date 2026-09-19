@@ -337,8 +337,10 @@
 #define wC3C9                           0xC3C9
 #define wItemPickedUpInShop             0xC509
 #define wD463                           0xD463
+#define wDungeonMinimap                 0xD480
 #define wDidStealItem                   0xD47E
 #define wSwitchableObjectAnimationStage 0xD6F8
+#define wLinkStandingOnSwitchBlock      0xD6F9
 #define wSwitchBlocksState              0xD6FB
 #define wSpawnLocationData              0xDB5F
 #define wHasInstrument7                 0xDB6B

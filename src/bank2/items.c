@@ -2,15 +2,19 @@
 #include "constants/dialog.h"
 #include "constants/entities.h"
 #include "constants/gameplay.h"
+#include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/joypad.h"
 #include "constants/link.h"
 #include "constants/maps.h"
 #include "constants/memory.h"
+#include "constants/physics.h"
+#include "constants/rooms.h"
 #include "constants/sfx.h"
 #include "constants/tilesets.h"
 #include "home/animated_tiles.h"
 #include "home/check_items_to_use.h"
+#include "home/copy_data.h"
 #include "home/entities.h"
 #include "home/link.h"
 #include "home/room.h"
@@ -317,16 +321,182 @@ static uint8_t bcd_sub(uint8_t a, uint8_t b) {
     return (uint8_t)result;
 }
 
-/* Stub for LoadMinimap (02:6709) - loads dungeon minimap */
+/* Data_002_66F9 - Tile mapping for revealed minimap rooms (02:66F9) */
+static const uint8_t Data_002_66F9[16] = {
+    0x00, 0x02, 0x03, 0x07, 0x05, 0x0A, 0x0B, 0x0F,
+    0x04, 0x08, 0x09, 0x0E, 0x06, 0x0C, 0x0D, 0x01
+};
+
+/* LoadMinimap (02:6709-02:67E4)
+ * Loads the dungeon minimap into wDungeonMinimap ($D480-$D4BF).
+ * Handles special cases for Color Dungeon, Eagle's Tower (collapsed),
+ * and Evil Eagle's boss room. Updates visited rooms based on dungeon
+ * map/compass status and room status flags. On GBC, copies palette data.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
 void LoadMinimap(GBState *gb) {
-    (void)gb;
-    /* TODO: Implement minimap loading */
+    if (!gb) return;
+
+    /* Check if this is Evil Eagle's boss room (Indoor B room E8)
+     * If so, don't load the minimap */
+    uint8_t map_room = gb_read_hram(gb, hMapRoom);
+    if (map_room == ROOM_INDOOR_B_EAGLES_TOWER_BOSS) {
+        return;
+    }
+
+    /* Select minimap table based on map ID */
+    uint16_t hl = MinimapsTable;
+    uint8_t map_id = gb_read_hram(gb, hMapId);
+
+    if (map_id == MAP_COLOR_DUNGEON) {
+        hl = ColorDungeonMinimap;
+    } else {
+        /* Compute minimap address: map_id * 0x40 (swap + 2x sla/rl) */
+        uint8_t a = map_id;
+        a = (a << 4) | (a >> 4);  /* swap a */
+        uint16_t de = ((uint16_t)a) * 4;  /* sla e; rl d; sla e; rl d */
+        hl += de;
+    }
+
+    /* Special case: Eagle's Tower collapsed */
+    if (map_id == MAP_EAGLES_TOWER) {
+        uint8_t has_instrument7 = gb_read(gb, wHasInstrument7);
+        if ((has_instrument7 & 0x04) != 0) {
+            hl = EaglesTowerCollapsedMinimap;
+        }
+    }
+
+    /* Copy minimap data (0x40 bytes) to wDungeonMinimap */
+    uint16_t de = wDungeonMinimap;
+    uint16_t bc = 0x0040;
+    CopyData(gb, hl, de, bc);
+
+    /* Process each of the 64 minimap rooms */
+    de = 0;
+    for (uint8_t e = 0; e < 0x40; e++) {
+        uint8_t a = gb_read(gb, wDungeonMinimap + e);
+
+        if (a == 0x7D) {  /* Blank - not shown on map */
+            continue;
+        }
+
+        if (a == 0xED || a == 0xEE) {  /* Chest room or Nightmare marker */
+            uint8_t has_compass = gb_read(gb, wHasDungeonCompass);
+            if (has_compass == 0) {
+                gb_write(gb, wDungeonMinimap + e, 0xEF);  /* Mark as regular room */
+                continue;
+            }
+            /* Fall through to room status check */
+        } else {
+            uint8_t has_map = gb_read(gb, wHasDungeonMap);
+            if (has_map == 0) {
+                gb_write(gb, wDungeonMinimap + e, 0x7D);  /* Hide room */
+                continue;
+            }
+        }
+
+        /* Get room status for this map position */
+        uint16_t de_temp = e;
+        uint16_t room_status_addr = GetRoomStatusAddressForMapPosition(gb, de_temp);
+        uint8_t status = gb_read(gb, room_status_addr);
+
+        if ((status & 0x80) == 0) {  /* Room not visited */
+            continue;
+        }
+
+        /* Room visited - update tile based on status */
+        uint8_t c = status & 0x0F;
+        uint8_t tile = Data_002_66F9[c];
+        tile++;  /* inc a */
+        tile += 0xCF;  /* add $CF */
+        c = tile;
+
+        uint8_t current = gb_read(gb, wDungeonMinimap + e);
+        if (current == 0xEE || current == 0xED) {
+            /* Chest or Nightmare room - check bit 4 or bit 5 of status */
+            uint16_t de_temp2 = e;
+            room_status_addr = GetRoomStatusAddressForMapPosition(gb, de_temp2);
+            status = gb_read(gb, room_status_addr);
+            uint8_t bit_mask = (current == 0xED) ? 0x10 : 0x20;
+            if ((status & bit_mask) == 0) {
+                continue;
+            }
+        }
+
+        /* Update minimap tile */
+        gb_write(gb, wDungeonMinimap + e, c);
+
+        /* If no dungeon map, show as unexplored (0x7D) */
+        if (gb_read(gb, wHasDungeonMap) == 0) {
+            gb_write(gb, wDungeonMinimap + e, 0x7D);
+        }
+    }
+
+    /* GBC palette handling */
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        for (uint8_t e = 0; e < 0x40; e++) {
+            uint8_t d = 0x01;
+            gb_write(gb, rSVBK, 0x00);
+            uint8_t tile = gb_read(gb, wDungeonMinimap + e);
+            if (tile == 0xED) {
+                d = 0x06;
+            }
+            gb_write(gb, rSVBK, 0x02);
+            gb_write(gb, wDungeonMinimap + e, d);
+        }
+
+        gb_write(gb, rSVBK, 0x00);
+    }
 }
 
-/* Stub for func_002_755B (02:755B) - gets object under Link for minimap */
+/* func_002_755B (02:755B-02:7586)
+ * Gets the object under Link and determines a value for wC13B
+ * based on the object type and Link's state. Called when getting an item
+ * and for showing location on the minimap.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
 void func_002_755B(GBState *gb) {
-    (void)gb;
-    /* TODO: Implement object under Link detection */
+    if (!gb) return;
+
+    /* Get object under Link */
+    uint8_t obj_id = GetObjectUnderLink(gb);
+
+    /* Default value for wC13B */
+    uint8_t c = 0x04;
+
+    /* Check wD463 */
+    if (gb_read(gb, wD463) == 0x01) {
+        goto write_wC13B;
+    }
+
+    /* Check if standing on switch block */
+    c = 0xFC;  /* -4 */
+    if (gb_read(gb, wLinkStandingOnSwitchBlock) != 0) {
+        goto write_wC13B;
+    }
+
+    /* Get object physics flags */
+    uint8_t physics = GetObjectPhysicsFlags_trampoline(gb, obj_id);
+    c = 0x02;
+
+    if (physics == OBJ_PHYSICS_SHALLOW_WATER) {  /* $05 */
+        goto write_wC13B;
+    }
+    if (physics == OBJ_PHYSICS_RAISED) {  /* $09 */
+        goto write_wC13B;
+    }
+    if (physics == OBJ_PHYSICS_LOWERED) {  /* $08 */
+        c = 0xFD;  /* -3 */
+        goto write_wC13B;
+    }
+
+    /* Default case - return without writing wC13B */
+    return;
+
+write_wC13B:
+    gb_write(gb, wC13B, c);
 }
 
 /* func_002_61BA (02:61BA)

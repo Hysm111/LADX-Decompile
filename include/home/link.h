@@ -247,6 +247,16 @@ void ComputeLinkPosition(GBState *gb, uint8_t direction);
  */
 void func_21E1(GBState *gb);
 
+/**
+ * GetObjectUnderLink (02:7512)
+ * Retrieves the ID of the room object currently under Link's feet.
+ * Stores result in hObjectUnderLink and hObjectUnderEntity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @return Object ID (0-255)
+ */
+uint8_t GetObjectUnderLink(GBState *gb);
+
 #ifdef __cplusplus
 }
 #endif

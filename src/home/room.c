@@ -192,6 +192,65 @@ uint8_t GetObjectPhysicsFlagsAndRestoreBank3(GBState *gb, uint16_t de) {
     return flags;
 }
 
+uint16_t GetRoomStatusAddressForMapPosition(GBState *gb, uint16_t de) {
+    if (!gb) return 0;
+
+    /* Start with MapLayout11 (Color Dungeon layout) */
+    uint16_t hl = 0x44E0;  /* MapLayout11 */
+
+    uint8_t map_id = gb_read_hram(gb, hMapId);
+
+    /* Color Dungeon uses MapLayout11 directly */
+    if (map_id == MAP_COLOR_DUNGEON) {
+        goto get_room_id;
+    }
+
+    /* Maps >= MAP_DUNGEON_G1 (0x0B) use default return */
+    if (map_id >= 0x0B) {
+        return 0;
+    }
+
+    /* Use MapLayout0 as base for regular dungeons */
+    hl = 0x4220;  /* MapLayout0 */
+
+    /* Adjust for map ID: map_id * 0x40 */
+    uint8_t a = map_id;
+    a = (a << 4) | (a >> 4);  /* swap */
+    uint16_t bc = ((uint16_t)a) * 4;
+    hl += bc;
+
+    /* Special case: Eagle's Tower collapsed */
+    if (map_id == MAP_EAGLES_TOWER) {
+        uint8_t has_instrument7 = gb_read(gb, wHasInstrument7);
+        if ((has_instrument7 & 0x04) != 0) {
+            hl = 0x4520;  /* MapLayout12 */
+        }
+    }
+
+get_room_id:
+    /* Add room position to layout */
+    hl += de;
+    uint8_t room_id = gb_read(gb, hl);
+
+    /* Base address: wIndoorARoomStatus (0xD900) */
+    hl = wIndoorARoomStatus;
+
+    /* Color Dungeon uses separate status array */
+    if (map_id == MAP_COLOR_DUNGEON) {
+        hl = wColorDungeonRoomStatus;
+        goto compute_address;
+    }
+
+    /* Indoor B maps (0x06-0x19) use wIndoorBRoomStatus (0xDA00) */
+    if (map_id >= MAP_INDOORS_B_START && map_id < MAP_INDOORS_B_END) {
+        hl = wIndoorBRoomStatus;
+    }
+
+compute_address:
+    hl += room_id;
+    return hl;
+}
+
 uint16_t GetRoomStatusAddressForMapPosition_trampoline(GBState *gb, uint16_t de, uint16_t (*get_address)(GBState *, uint16_t)) {
     if (!gb) return 0;
 
