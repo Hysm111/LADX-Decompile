@@ -272,3 +272,22 @@ void label_002_538B_entity(GBState *gb, uint8_t de) {
 void label_002_538B(GBState *gb) {
     label_002_538B_entity(gb, 0);
 }
+
+/* ClampItemCount (02:60D8-02:60DF)
+ * Clamps the item count at de to the maximum value at hl.
+ * If [de] >= [hl], sets [de] = [hl]. Then increments hl and returns.
+ * Inputs:
+ *   hl - address of maximum item count
+ *   de - address of current item count
+ */
+void ClampItemCount(GBState *gb, uint16_t hl, uint16_t de) {
+    if (!gb) return;
+    uint8_t max_val = gb_read(gb, hl);
+    uint8_t cur_val = gb_read(gb, de);
+    if (cur_val >= max_val) {
+        gb_write(gb, de, max_val);
+    }
+    /* hl is incremented in the assembly (inc hl) but not used after.
+     * The C signature does not return hl, matching the assembly's
+     * register modification convention. */
+}

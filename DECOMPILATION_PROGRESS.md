@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~61.08%
-* **Number of Verified Functions**: 733
-* **Number of Decompiled Functions**: 556
-* **Number Remaining**: ~467 functions
+* **Current Overall Progress**: ~61.12%
+* **Number of Verified Functions**: 734
+* **Number of Decompiled Functions**: 557
+* **Number Remaining**: ~466 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 68: room event trigger and effect dispatchers decompiled and verified
-* **Last Completed Task**: Verified `CheckTriggersResolution` (`02:5F9F`, supported trigger-ID domain) and `ExecuteRoomTriggersAndEffects` (`02:5D4F`) with independent assembly-derived tests, resolving the Batch 67 jump-table blocker via a full room-event data census
-* **Next Task**: Decompile and verify `ClampItemCount` (`02:60D8`-`02:60DF`) in a small batch; scope `func_002_60E0` (`02:60E0`, inventory logic) as a separate later batch. Do not redo VERIFIED functions or substitute guessed behavior.
-* **Last Update Timestamp**: 2026-09-17T22:40:17+03:00
+* **Current Task**: Batch 69: `ClampItemCount` (`02:60D8`-`02:60DF`) decompiled and verified
+* **Last Completed Task**: Verified `ClampItemCount` (`02:60D8`-`02:60DF`) with independent assembly-derived tests; `func_002_60E0` (`02:60E0`, inventory logic) scoped for a separate later batch
+* **Next Task**: Decompile and verify `func_002_60E0` (`02:60E0`-`02:61E7`, inventory/subscreen logic) in a small batch
+* **Last Update Timestamp**: 2026-09-19T22:40:17+03:00
 
 ---
 
@@ -24,6 +24,14 @@
 - **Tests:** `tests/bank2/test_room_dispatch.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). The exhaustive routing oracle composes the already-VERIFIED checkers and effects and verifies dispatch/integration only, not those bodies; literal cases independently cover marking, guards, tunic MP0/event overwrites, duplicate-effect prevention, and spawn callbacks. Coverage: all 256 register-A events × 11 fixtures for the checker (including zeroed/divergent `wRoomEvent` to prove the register-A contract), all 128 effect×ID outer combinations with repeated invocation, every callback-presence combination × 256 events with ready checkers proving validation precedes any write, the zero-event shortcut preserving even `hMultiPurpose0`, unsupported memory events ignored, spawn success/failure paths, and full initialized `GBState` comparisons.
 - **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled (27.08 s / 27.20 s); full `./build/ladx_tests` output (226 lines, saved as `build/batch68-tests.log`) inspected with no failure messages. Independent review approved the supported-domain semantics and API; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS (26.24 s); `git diff --check` PASS. The event census was independently reproduced (544/377/167, no invalid IDs). Final pre-commit Debug build/CTest PASS (26.80 s), with the direct test log rechecked and no failure messages.
 - **Verification scope:** Source-level memory behavior and callback boundaries within `GBState`. CPU registers/flags/cycles/stack behavior and execution of the original unchecked out-of-table jump are not emulated or claimed verified; entity allocation internals remain callback-modeled. No guessed dispatch fallback was introduced.
+
+## Batch 69 Verification — ClampItemCount Item Count Clamping
+
+- **Source of truth:** `LADX-Disassembly/src/code/bank2.asm:4837-4851` (`02:60D8`-`02:60DF`). One function is added in `src/bank2/items.c`, with declaration in `include/bank2/items.h`. Existing VERIFIED function bodies and production callers are unchanged.
+- **Semantics:** Takes `hl` (address of maximum item count) and `de` (address of current item count). Loads `[de]` into A, compares with `[hl]`; if `A >= [hl]` (carry clear), writes `[hl]` to `[de]`. Then `inc hl` and `ret`. The `inc hl` advances the max pointer but is not observable in the C API (no return value for hl). NULL state is a documented C API no-op.
+- **Tests:** `tests/bank2/test_clamp_item.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). Covers all relational cases: current < max (no write), current == max (no change, clamp path taken), current > max (clamped to max), zero max (clamped to zero), boundary values 0xFF, repeated calls, cross-item addresses (bomb, arrow counts), and NULL safety.
+- **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled; full `./build/ladx_tests` output inspected with no failure messages. Strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior within `GBState`. The `inc hl` register side-effect is documented but not exposed in the C signature; CPU flags/registers/cycles/stack behavior not emulated. No guessed behavior or substitute logic introduced.
 
 ## Batch 67 Verification — Room Trigger Checkers
 
@@ -180,6 +188,7 @@
 | `SpawnChestWithItem` | VERIFIED | PASS | PASS | Spawns chest entity with item at intersected object coordinates and sets variant from hMultiPurpose8 (`02:41D0`) |
 | `UseOcarina` | VERIFIED | PASS | PASS | Link ocarina action handler, verifies air/hookshot state, resets positions, selects ballad/mambo/frog/offkey SFX (`02:41FC`) |
 | `FireHookshot` | VERIFIED | PASS | PASS | Fires hookshot chain projectile, assigns lifetime countdown 0x2A and directional speed vector (`02:4254`) |
+| `ClampItemCount` | VERIFIED | PASS | PASS | Clamps item count at DE to maximum at HL; if current >= max, sets current = max; increments HL (`02:60D8`-`02:60DF`, Batch 69) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

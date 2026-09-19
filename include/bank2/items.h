@@ -95,4 +95,17 @@ void label_002_538B_entity(GBState *gb, uint8_t de);
  */
 void label_002_538B(GBState *gb);
 
+/**
+ * Clamps an item count to its maximum value (02:60D8).
+ *
+ * If the current count at `de` is greater than or equal to the maximum at `hl`,
+ * the current count is set to the maximum. The `hl` pointer is incremented
+ * (per the assembly's `inc hl` at 02:60DE) but not returned.
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param hl Address of the maximum item count.
+ * @param de Address of the current item count.
+ */
+void ClampItemCount(GBState *gb, uint16_t hl, uint16_t de);
+
 #endif /* LADX_BANK2_ITEMS_H */

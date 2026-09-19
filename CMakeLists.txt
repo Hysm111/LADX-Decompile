@@ -90,6 +90,7 @@ add_executable(ladx_tests
     tests/bank1/test_world_map.c
     tests/bank2/test_audio.c
     tests/bank2/test_chest.c
+    tests/bank2/test_clamp_item.c
     tests/bank2/test_falling.c
     tests/bank2/test_got_item.c
     tests/bank2/test_hookshot.c
