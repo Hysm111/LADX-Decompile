@@ -37,4 +37,11 @@ void renderTranscientVFXs(GBState *gb, void (*render_transient_vfx)(GBState *, u
  */
 void label_002_5487(GBState *gb, void (*render_transient_vfx)(GBState *, uint8_t));
 
+/**
+ * Loads the minimap for the current dungeon (02:6709).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void LoadMinimap(GBState *gb);
+
 #endif /* LADX_BANK2_ROOM_TRANSITION_H */

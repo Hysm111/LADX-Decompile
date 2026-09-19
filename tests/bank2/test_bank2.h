@@ -28,6 +28,7 @@ void test_bank2_shutter_effects(void);
 void test_bank2_room_triggers(void);
 void test_bank2_room_dispatch(void);
 void test_bank2_clamp_item_count(void);
+void test_bank2_func_002_60E0(void);
 
 void run_bank2_tests(void);
 

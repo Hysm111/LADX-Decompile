@@ -31,6 +31,9 @@
 #define wC167                   0xC167
 #define wC16C                   0xC16C
 #define wC1A2                        0xC1A2
+#define wTimeToNextLowHealthSFX  0xC110
+#define wIsOnLowHeath            0xC163
+#define wC3CE                    0xC3CE
 #define wConveyorBeltsCount          0xC1A5
 #define wObjectAffectingBGPalette    0xC3CB
 #define wC3CD                        0xC3CD
@@ -317,6 +320,8 @@
 #define wHasToadstool               0xDB4B
 #define wMagicPowderCount           0xDB4C
 #define wSwordLevel                 0xDB4E
+#define wRupeeCountHigh             0xDB5D
+#define wRupeeCountLow              0xDB5E
 #define wConsecutiveStepsCount      0xC120
 #define wSwordDirection             0xC136
 #define wLinkObjectPhysics          0xC181
@@ -435,6 +440,8 @@
 #define wPaletteUnknownE                      0xDDD5
 #define wD210                                 0xD210
 #define wSubscreenScrollIncrement             0xC150
+#define wInventoryShouldScroll                0xC151
+#define wC154                                 0xC154
 #define wTilesetToLoad                        0xD6FE
 #define wScreenShakeHorizontal                0xC155
 #define wScreenShakeVertical                  0xC156

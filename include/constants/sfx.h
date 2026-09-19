@@ -24,6 +24,8 @@
 #define WAVE_SFX_LIFT_UP                        0x02
 #define WAVE_SFX_LINK_HURT                      0x03
 #define WAVE_SFX_LOW_HEARTS                     0x04
+#define WAVE_SFX_RUPEE                          0x05
+#define WAVE_SFX_HEART_PICKED_UP                0x06
 #define WAVE_SFX_OCARINA_BALLAD                 0x09
 #define WAVE_SFX_OCARINA_FROG                   0x0A
 #define WAVE_SFX_OCARINA_MAMBO                  0x0B
@@ -37,6 +39,7 @@
 #define NOISE_SFX_SWORD_SWING_A                 0x02
 #define NOISE_SFX_SPIN_ATTACK                   0x03
 #define NOISE_SFX_DOOR_UNLOCKED                 0x04
+#define NOISE_SFX_CUT_GRASS                     0x05
 #define NOISE_SFX_STAIRS                        0x06
 #define NOISE_SFX_FOOTSTEP                      0x07
 #define NOISE_SFX_WHOOSH                        0x0A
@@ -54,9 +57,13 @@
 #define NOISE_SFX_PING                          0x19
 #define NOISE_SFX_OPEN_KEY_CAVERN               0x2A
 
+#define LOW_HEALTH_SFX_PAUSE                    0x30
+
 #define JINGLE_FEATHER_JUMP                     0x0D
 #define JINGLE_WATER_SPLASH                     0x0E
 #define JINGLE_SWIM                             0x0F
+#define JINGLE_OPEN_INVENTORY                   0x11
+#define JINGLE_CLOSE_INVENTORY                  0x12
 #define JINGLE_SEAGULL                          0x21
 #define JINGLE_DUNGEON_OPENED                   0x23
 #define JINGLE_MANBO_WARP                       0x2C

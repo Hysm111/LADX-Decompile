@@ -3,11 +3,17 @@
 #include "constants/entities.h"
 #include "constants/gameplay.h"
 #include "constants/hardware.h"
+#include "constants/joypad.h"
 #include "constants/link.h"
+#include "constants/maps.h"
 #include "constants/memory.h"
 #include "constants/sfx.h"
+#include "constants/tilesets.h"
+#include "home/animated_tiles.h"
 #include "home/check_items_to_use.h"
+#include "home/entities.h"
 #include "home/link.h"
+#include "home/room.h"
 
 const int8_t HookshotChainSpeedX[4] = {
     0x30,  /* DIRECTION_RIGHT:  HOOKSHOT_CHAIN_SPEED ($30) */
@@ -290,4 +296,478 @@ void ClampItemCount(GBState *gb, uint16_t hl, uint16_t de) {
     /* hl is incremented in the assembly (inc hl) but not used after.
      * The C signature does not return hl, matching the assembly's
      * register modification convention. */
+}
+
+/* BCD addition helper: adds a value to a BCD byte, returns result */
+static uint8_t bcd_add(uint8_t a, uint8_t b) {
+    uint16_t result = a + b;
+    if ((result & 0x0F) > 0x09) result += 0x06;
+    if (result > 0x99) result += 0x60;
+    return (uint8_t)result;
+}
+
+/* BCD subtraction helper: subtracts a value from a BCD byte, returns result */
+static uint8_t bcd_sub(uint8_t a, uint8_t b) {
+    if (a < b) {
+        /* Underflow - will be handled by caller */
+        return (uint8_t)(a + 0x100 - b);
+    }
+    uint16_t result = a - b;
+    if ((a & 0x0F) < (b & 0x0F)) result -= 0x06;
+    return (uint8_t)result;
+}
+
+/* Stub for LoadMinimap (02:6709) - loads dungeon minimap */
+void LoadMinimap(GBState *gb) {
+    (void)gb;
+    /* TODO: Implement minimap loading */
+}
+
+/* Stub for func_002_755B (02:755B) - gets object under Link for minimap */
+void func_002_755B(GBState *gb) {
+    (void)gb;
+    /* TODO: Implement object under Link detection */
+}
+
+/* func_002_61BA (02:61BA)
+ * Helper called during subscreen scrolling.
+ */
+void func_002_61BA(GBState *gb) {
+    if (!gb) return;
+    func_002_755B(gb);
+    ApplyLinkMotionState(gb, NULL, NULL, NULL);
+    DrawLinkSpriteAndReturn(gb);
+    AnimateEntitiesAndRestoreBank02(gb, NULL);
+}
+
+/* LoadRupeesDigits (02:62CE-02:6413)
+ * Loads the rupees digit tiles for the current rupees count.
+ */
+void LoadRupeesDigits(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t a = gb_read(gb, wDrawCommandsSize);
+    uint8_t e = a;
+    a = a + 0x06;
+    gb_write(gb, wDrawCommandsSize, a);
+    uint16_t hl = wDrawCommand;
+    hl += e;
+    gb_write(gb, hl++, 0x9C);
+    gb_write(gb, hl++, 0x2A);
+    gb_write(gb, hl++, 0x02);
+    uint16_t de = hl;
+    uint8_t rupee_high = gb_read(gb, wRupeeCountHigh);
+    rupee_high &= 0x0F;
+    e = rupee_high;
+    e += 0xB0;
+    hl = de;
+    gb_write(gb, hl++, e);
+    gb_write(gb, hl++, 0x9C);
+    gb_write(gb, hl++, 0x0D);
+    gb_write(gb, hl++, 0x06);
+    e = gb_read(gb, wRupeeCountLow);
+    e = (e >> 4) & 0x0F;
+    e += 0xB0;
+    gb_write(gb, hl++, e);
+    e = gb_read(gb, wRupeeCountLow);
+    e &= 0x0F;
+    e += 0xB0;
+    gb_write(gb, hl++, e);
+}
+
+/* UpdateRupeesCount (02:6209-02:62CB)
+ * Updates the rupee count display and plays sound effects.
+ */
+void UpdateRupeesCount(GBState *gb) {
+    if (!gb) return;
+
+    /* Check if draw commands queue has space (every other frame) */
+    if ((gb_read(gb, wDrawCommandsSize) | (gb_read_hram(gb, hFrameCounter) & 0x01)) != 0) {
+        return;
+    }
+
+    /* Check wC3CE */
+    if (gb_read(gb, wC3CE) != 0) {
+        gb_write(gb, wC3CE, gb_read(gb, wC3CE) - 1);
+        return;
+    }
+
+    /* Check add rupee buffer */
+    if ((gb_read(gb, wAddRupeeBufferLow) | gb_read(gb, wAddRupeeBufferHigh)) == 0) {
+        return;
+    }
+
+    /* Play rupee sound */
+    gb_write_hram(gb, hWaveSfx, WAVE_SFX_RUPEE);
+
+    /* Calculate rupees to add (buffer * 8 + 1, capped at 9) */
+    uint8_t e = gb_read(gb, wAddRupeeBufferLow);
+    uint8_t a = gb_read(gb, wAddRupeeBufferHigh);
+    e = (uint8_t)(e << 3);
+    a = (uint8_t)(a << 3);
+    a = (uint8_t)(a + 1);
+    if (a >= 0x0A) {
+        a = 0x09;
+    }
+
+    /* Subtract from buffer */
+    e = a;
+    a = gb_read(gb, wAddRupeeBufferLow) - e;
+    gb_write(gb, wAddRupeeBufferLow, a);
+    a = gb_read(gb, wAddRupeeBufferHigh) - 0;
+    gb_write(gb, wAddRupeeBufferHigh, a);
+
+    /* Add to rupee count (BCD) */
+    a = bcd_add(gb_read(gb, wRupeeCountLow), e);
+    gb_write(gb, wRupeeCountLow, a);
+
+    a = bcd_add(gb_read(gb, wRupeeCountHigh), 0);
+    gb_write(gb, wRupeeCountHigh, a);
+
+    /* Cap at 999 rupees (0x09 0x99) */
+    if (a >= 0x10) {
+        gb_write(gb, wRupeeCountHigh, 0x09);
+        gb_write(gb, wRupeeCountLow, 0x99);
+        gb_write(gb, wAddRupeeBufferHigh, 0x00);
+        gb_write(gb, wAddRupeeBufferLow, 0x00);
+    }
+
+    LoadRupeesDigits(gb);
+
+    /* Check subtract rupee buffer */
+    if ((gb_read(gb, wSubstractRupeeBufferLow) | gb_read(gb, wSubstractRupeeBufferHigh)) == 0) {
+        return;
+    }
+
+    /* Play cut grass sound for rupee deduction */
+    gb_write_hram(gb, hWaveSfx, NOISE_SFX_CUT_GRASS);
+
+    /* Calculate rupees to subtract */
+    e = gb_read(gb, wSubstractRupeeBufferLow);
+    a = gb_read(gb, wSubstractRupeeBufferHigh);
+    e = (uint8_t)(e << 3);
+    a = (uint8_t)(a << 3);
+    a = (uint8_t)(a + 1);
+    if (a >= 0x0A) {
+        a = 0x09;
+    }
+
+    /* Subtract from buffer */
+    uint8_t sub_e = a;
+    a = gb_read(gb, wSubstractRupeeBufferLow) - sub_e;
+    gb_write(gb, wSubstractRupeeBufferLow, a);
+    a = gb_read(gb, wSubstractRupeeBufferHigh) - 0;
+    gb_write(gb, wSubstractRupeeBufferHigh, a);
+
+    /* Check if rupees are already zero */
+    if ((gb_read(gb, wRupeeCountLow) | gb_read(gb, wRupeeCountHigh)) == 0) {
+        return;
+    }
+
+    /* Subtract from rupee count (BCD) */
+    a = bcd_sub(gb_read(gb, wRupeeCountLow), sub_e);
+    gb_write(gb, wRupeeCountLow, a);
+
+    a = bcd_sub(gb_read(gb, wRupeeCountHigh), 0);
+    gb_write(gb, wRupeeCountHigh, a);
+
+    /* Check for underflow */
+    if (a >= 0x10) {  /* carry occurred */
+        /* Reset to zero */
+        gb_write(gb, wRupeeCountHigh, 0x00);
+        gb_write(gb, wRupeeCountLow, 0x00);
+        gb_write(gb, wSubstractRupeeBufferHigh, 0x00);
+        gb_write(gb, wSubstractRupeeBufferLow, 0x00);
+    }
+
+    LoadRupeesDigits(gb);
+}
+
+/* UpdateHealth (02:6317-02:63D8)
+ * Updates health display and handles low health warnings.
+ */
+void UpdateHealth(GBState *gb) {
+    if (!gb) return;
+
+    /* Reset low health flag */
+    gb_write(gb, wIsOnLowHeath, 0x00);
+
+    uint8_t max_hearts = gb_read(gb, wMaxHearts);
+
+    /* Check if health is below low health threshold */
+    static const uint8_t ThresholdLowHealthTable[16] = {
+        0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40,
+        0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78, 0x80
+    };
+
+    if (gb_read(gb, wHealth) < ThresholdLowHealthTable[max_hearts & 0x0F]) {
+        /* Low health */
+        gb_write(gb, wIsOnLowHeath, 0x01);
+
+        /* Check and update low health SFX timer */
+        uint8_t timer = gb_read(gb, wTimeToNextLowHealthSFX);
+        if (timer == 0) {
+            /* Play low hearts sound */
+            gb_write_hram(gb, hWaveSfx, WAVE_SFX_LOW_HEARTS);
+            timer = LOW_HEALTH_SFX_PAUSE;
+        } else if (timer == 0xFF) {
+            timer = LOW_HEALTH_SFX_PAUSE;
+        } else {
+            timer = timer - 1;
+        }
+        gb_write(gb, wTimeToNextLowHealthSFX, timer);
+    }
+
+    /* Return if even frame */
+    if ((gb_read_hram(gb, hFrameCounter) & 0x01) == 0) {
+        return;
+    }
+
+    /* Return if background copy not executed */
+    if (gb_read(gb, wDrawCommandsSize) != 0) {
+        return;
+    }
+
+    /* Check if health needs to be added */
+    if (gb_read(gb, wAddHealthBuffer) == 0) {
+        goto reduce_health;
+    }
+
+    /* Decrease add health buffer */
+    gb_write(gb, wAddHealthBuffer, gb_read(gb, wAddHealthBuffer) - 1);
+
+    /* Cap max hearts at 14 (0x0E) */
+    if (max_hearts >= 0x0F) {
+        max_hearts = 0x0E;
+    }
+
+    /* Calculate max health (max_hearts * 8) */
+    uint8_t max_health = max_hearts * 8;
+
+    /* If health not at max, increment */
+    if (gb_read(gb, wHealth) != max_health) {
+        gb_write(gb, wHealth, gb_read(gb, wHealth) + 1);
+        /* Check if one heart is filled up (health % 8 == 7) */
+        if ((gb_read(gb, wHealth) & (ONE_HEART - 1)) == (ONE_HEART - 2)) {
+            gb_write_hram(gb, hWaveSfx, WAVE_SFX_HEART_PICKED_UP);
+        }
+    } else {
+        /* Health at max, reset add buffer */
+        gb_write(gb, wAddHealthBuffer, 0x00);
+        goto reduce_health;
+    }
+    return;
+
+reduce_health:
+    /* Check if health needs to be reduced */
+    if (gb_read(gb, wSubtractHealthBuffer) == 0) {
+        return;
+    }
+
+    /* Decrease sub health buffer */
+    gb_write(gb, wSubtractHealthBuffer, gb_read(gb, wSubtractHealthBuffer) - 1);
+
+    /* Decrease health */
+    if (gb_read(gb, wHealth) > 0) {
+        gb_write(gb, wHealth, gb_read(gb, wHealth) - 1);
+    }
+    LoadHeartsCount(gb);
+}
+
+/* LoadHeartsCount (02:6414-02:64FF)
+ * Loads the hearts count display.
+ */
+void LoadHeartsCount(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t a = gb_read(gb, wDrawCommandsSize);
+    uint8_t e = a;
+    a = a + 0x14;
+    gb_write(gb, wDrawCommandsSize, a);
+    uint16_t hl = wDrawCommand;
+    hl += e;
+    static const uint8_t Data_002_63FF[21] = {
+        0x9C, 0x0D, 0x06, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F,
+        0x9C, 0x2D, 0x06, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x00
+    };
+    const uint8_t *bc = Data_002_63FF;
+    e = 0x15;
+    while (e != 0) {
+        gb_write(gb, hl++, *bc++);
+        e--;
+    }
+
+    /* Draw heart count */
+    hl = (uint16_t)(wDrawCommand + 0x04);
+    hl += e;
+    uint8_t health = gb_read(gb, wHealth);
+    while (health >= ONE_HEART) {
+        health -= ONE_HEART;
+    }
+    /* TODO: Complete heart drawing logic */
+}
+
+/* func_002_60E0 (02:60E0-02:6206)
+ * Inventory and subscreen handler.
+ * Clamps item counts, checks interactive state, handles subscreen transitions,
+ * inventory scrolling, and updates rupees/health display.
+ */
+void func_002_60E0(GBState *gb) {
+    if (!gb) return;
+
+    /* Clamp item counts */
+    ClampItemCount(gb, wMaxMagicPowder, wMagicPowderCount);
+    ClampItemCount(gb, wMaxMagicPowder, wBombCount);
+    ClampItemCount(gb, wMaxMagicPowder, wArrowCount);
+
+    /* If Link is not interactive, return */
+    if (gb_read(gb, wLinkMotionState) >= LINK_MOTION_TYPE_NON_INTERACTIVE) {
+        return;
+    }
+
+    /* Check dialog state */
+    if (gb_read(gb, wDialogState) != 0) {
+        goto inventory_fully_closed2;
+    }
+
+    /* Check room transition state */
+    if (gb_read(gb, wRoomTransitionState) != 0) {
+        return;
+    }
+
+    /* Handle subscreen transition state */
+    if (gb_read(gb, wInventoryAppearing) != 0) {
+        /* Scroll subscreen */
+        if (gb_read(gb, wInventoryShouldScroll) != 0) {
+            /* Apply scroll increment to wWindowY */
+            uint8_t inc = gb_read(gb, wSubscreenScrollIncrement);
+            uint8_t new_window_y = gb_read(gb, wWindowY) + inc;
+            gb_write(gb, wWindowY, new_window_y);
+
+            /* Check if window reached bottom (0x80) */
+            if (new_window_y == 0x80) {
+                /* Subscreen fully open */
+                gb_write_hram(gb, hVolumeRight, 0x03);
+                gb_write_hram(gb, hVolumeLeft, 0x30);
+                gb_write(gb, wInventoryAppearing, 0x00);
+            } else if (new_window_y != 0x00) {
+                /* Subscreen scrolling */
+                func_002_61BA(gb);
+                return;
+            } else {
+                /* Subscreen fully open at top */
+                gb_write_hram(gb, hVolumeRight, 0x03);
+                gb_write_hram(gb, hVolumeLeft, 0x30);
+                gb_write(gb, wInventoryAppearing, 0x00);
+            }
+        } else {
+            if (gb_read(gb, wDrawCommand) == 0) {
+                /* Increment wInventoryShouldScroll */
+                gb_write(gb, wInventoryShouldScroll, gb_read(gb, wInventoryShouldScroll) + 1);
+            }
+            func_002_61BA(gb);
+        }
+        return;
+    }
+
+    /* Check if map should be opened (SELECT) */
+    if ((gb_read_hram(gb, hPressedButtonsMask) & J_SELECT) != 0) {
+        goto inventory_fully_closed2;
+    }
+
+    /* Check if subscreen should be opened (START) */
+    if ((gb_read_hram(gb, hJoypadState) & J_START) == 0) {
+        goto inventory_fully_closed2;
+    }
+
+    /* Check wWindowY */
+    uint8_t window_y = gb_read(gb, wWindowY);
+    if (window_y != 0) {
+        /* Additional checks when window is not at top */
+        if (gb_read(gb, wD464) != 0) {
+            goto inventory_fully_closed2;
+        }
+        if (gb_read(gb, wC167) != 0) {
+            goto inventory_fully_closed2;
+        }
+        if (gb_read_hram(gb, hLinkInteractiveMotionBlocked) == 0x02) {
+            goto inventory_fully_closed2;
+        }
+        if ((uint8_t)(gb_read_hram(gb, hLinkAnimationState) + 1) == 0) {
+            goto inventory_fully_closed2;
+        }
+    }
+
+    /* Check ocarina menu state */
+    uint8_t ocarina_open = gb_read(gb, wOcarinaMenuOpen);
+    uint8_t ocarina_opening = gb_read(gb, wOcarinaMenuOpening);
+    uint8_t ocarina_closing = gb_read(gb, wOcarinaMenuClosing);
+    if ((ocarina_open | ocarina_opening | ocarina_closing) != 0) {
+        goto inventory_fully_closed2;
+    }
+
+    /* Open subscreen */
+    gb_write(gb, wInventoryAppearing, 0x01);
+    gb_write(gb, wInventoryShouldScroll, 0x01);
+    gb_write_hram(gb, hJingle, JINGLE_CLOSE_INVENTORY);
+
+    /* Flip wSubscreenScrollIncrement (two's complement) */
+    uint8_t scroll_inc = gb_read(gb, wSubscreenScrollIncrement);
+    scroll_inc = (uint8_t)(~scroll_inc + 1);
+    gb_write(gb, wSubscreenScrollIncrement, scroll_inc);
+
+    /* Check if subscreen should close (scroll_inc positive) */
+    if ((scroll_inc & 0x80) == 0) {
+        /* Subscreen closing - never executed on DX */
+        gb_write_hram(gb, hVolumeRight, 0x07);
+        gb_write_hram(gb, hVolumeLeft, 0x70);
+        return;
+    }
+
+    /* Subscreen opening */
+    gb_write(gb, wTransitionSequenceCounter, 0x00);
+    gb_write(gb, wC16C, 0x00);
+    gb_write_hram(gb, hPressedButtonsMask, 0x00);
+    gb_write_hram(gb, hJoypadState, 0x00);
+    gb_write(gb, wGameplaySubtype, GAMEPLAY_INVENTORY_INITIAL);
+    gb_write(gb, wGameplayType, GAMEPLAY_INVENTORY);
+    gb_write_hram(gb, hJingle, JINGLE_OPEN_INVENTORY);
+    gb_write(gb, wInventoryShouldScroll, 0x00);
+    gb_write(gb, wC154, 0x0B);
+
+    /* Determine tileset to load */
+    uint8_t is_indoor = gb_read(gb, wIsIndoor);
+    uint8_t tileset = TILESET_LOAD_INVENTORY;
+
+    if (is_indoor != 0) {
+        uint8_t map_id = gb_read_hram(gb, hMapId);
+        if (map_id == MAP_COLOR_DUNGEON) {
+            tileset = TILESET_LOAD_DUNGEON_MINIMAP;
+        } else if (map_id < MAP_WINDFISHS_EGG) {
+            tileset = TILESET_LOAD_INVENTORY;
+        } else {
+            tileset = TILESET_LOAD_DUNGEON_MINIMAP;
+        }
+    }
+
+    if (tileset == TILESET_LOAD_DUNGEON_MINIMAP) {
+        LoadMinimap(gb);
+    }
+    gb_write_hram(gb, hNeedsUpdatingBGTiles, tileset);
+    return;
+
+inventory_fully_closed2:
+    /* Check dialog state */
+    {
+        uint8_t dialog_state = gb_read(gb, wDialogState) & ~DIALOG_BOX_BOTTOM_FLAG;
+        if (dialog_state == 0 || dialog_state == DIALOG_END) {
+            UpdateRupeesCount(gb);
+            UpdateHealth(gb);
+            return;
+        }
+        if (dialog_state == DIALOG_CHOICE) {
+            return;
+        }
+        return;
+    }
 }

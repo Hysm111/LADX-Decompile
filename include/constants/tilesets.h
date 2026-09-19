@@ -8,6 +8,11 @@
 
 /* BG tile update triggers */
 #define TILESET_LOAD_WORLD           0x01
+#define TILESET_LOAD_DUNGEON_MINIMAP 0x02
+#define TILESET_LOAD_INVENTORY       0x07
+#define TILESET_LOAD_INVENTORY_SONG_1 0x08
+#define TILESET_LOAD_INVENTORY_SONG_2 0x09
+#define TILESET_LOAD_INVENTORY_SONG_3 0x0A
 
 /* Tables in Bank $20 */
 #define IndoorsTilesetsTable_Addr            0x6EB3

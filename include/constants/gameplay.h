@@ -35,6 +35,7 @@
 #define GAMEPLAY_PHOTO_BRIDGE           0x1A
 
 /* Values for wGameplaySubtype */
+#define GAMEPLAY_INVENTORY_INITIAL      0x00
 #define GAMEPLAY_INTRO_SEA              0x03
 #define GAMEPLAY_INTRO_LINK_FACE        0x04
 #define GAMEPLAY_INTRO_LIGHTNING        0x05
@@ -47,6 +48,7 @@
 #define LINK_MOTION_DEFAULT             0x00
 #define LINK_MOTION_SWIMMING            0x01
 #define LINK_MOTION_UNSTUCKING          0x02
+#define LINK_MOTION_TYPE_NON_INTERACTIVE LINK_MOTION_UNSTUCKING
 #define LINK_MOTION_MAP_FADE_OUT        0x03
 #define LINK_MOTION_MAP_FADE_IN         0x04
 #define LINK_MOTION_REVOLVING_DOOR      0x05
@@ -126,7 +128,10 @@
 #define USING_SPIN_ATTACK_MAX           0x20
 #define PIT_MAX_SLIPPING                24
 #define TRANSITION_GFX_MANBO_IN         0x02
-#define TRANSITION_GFX_MANBO_IN         0x02
+
+#define ONE_HEART                       0x08
+#define MAX_HEARTS                      0x0E
+#define DAMAGE_COOLDOWN_TIME            0xA0
 
 /* Values for wSwordDirection */
 #define SWORD_DIRECTION_RIGHT           0x00

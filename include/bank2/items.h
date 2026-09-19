@@ -108,4 +108,26 @@ void label_002_538B(GBState *gb);
  */
 void ClampItemCount(GBState *gb, uint16_t hl, uint16_t de);
 
+/**
+ * Inventory and subscreen handler (02:60E0-02:61E7).
+ *
+ * Clamps item counts (magic powder, bombs, arrows), checks if Link is in an
+ * interactive state, handles subscreen opening/closing, inventory scrolling,
+ * and calls UpdateRupeesCount/UpdateHealth when appropriate.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_60E0(GBState *gb);
+
+/* Forward declarations for functions in other bank 2 modules */
+void LoadMinimap(GBState *gb);
+void func_002_755B(GBState *gb);
+
+/* Forward declarations for functions in this file */
+void UpdateRupeesCount(GBState *gb);
+void UpdateHealth(GBState *gb);
+void LoadRupeesDigits(GBState *gb);
+void LoadHeartsCount(GBState *gb);
+void func_002_61BA(GBState *gb);
+
 #endif /* LADX_BANK2_ITEMS_H */

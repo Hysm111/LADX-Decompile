@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~61.12%
-* **Number of Verified Functions**: 734
-* **Number of Decompiled Functions**: 557
-* **Number Remaining**: ~466 functions
+* **Current Overall Progress**: ~61.16%
+* **Number of Verified Functions**: 737
+* **Number of Decompiled Functions**: 560
+* **Number Remaining**: ~463 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 69: `ClampItemCount` (`02:60D8`-`02:60DF`) decompiled and verified
-* **Last Completed Task**: Verified `ClampItemCount` (`02:60D8`-`02:60DF`) with independent assembly-derived tests; `func_002_60E0` (`02:60E0`, inventory logic) scoped for a separate later batch
-* **Next Task**: Decompile and verify `func_002_60E0` (`02:60E0`-`02:61E7`, inventory/subscreen logic) in a small batch
-* **Last Update Timestamp**: 2026-09-19T22:40:17+03:00
+* **Current Task**: Batch 70: `func_002_60E0` (`02:60E0`-`02:6206`) decompiled and verified
+* **Last Completed Task**: Verified `func_002_60E0` (`02:60E0`-`02:6206`, inventory/subscreen handler) with independent assembly-derived tests; includes ClampItemCount calls, subscreen open/close logic, inventory scrolling, rupee/health display updates
+* **Next Task**: Decompile and verify `LoadMinimap` (`02:6709`) and `func_002_755B` (`02:755B`) in a small batch
+* **Last Update Timestamp**: 2026-09-19T23:40:17+03:00
 
 ---
 
@@ -32,6 +32,14 @@
 - **Tests:** `tests/bank2/test_clamp_item.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). Covers all relational cases: current < max (no write), current == max (no change, clamp path taken), current > max (clamped to max), zero max (clamped to zero), boundary values 0xFF, repeated calls, cross-item addresses (bomb, arrow counts), and NULL safety.
 - **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled; full `./build/ladx_tests` output inspected with no failure messages. Strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
 - **Verification scope:** Source-level memory behavior within `GBState`. The `inc hl` register side-effect is documented but not exposed in the C signature; CPU flags/registers/cycles/stack behavior not emulated. No guessed behavior or substitute logic introduced.
+
+## Batch 70 Verification — func_002_60E0 Inventory and Subscreen Handler
+
+- **Source of truth:** `LADX-Disassembly/src/code/bank2.asm:4853-5072` (`02:60E0`-`02:6206`). Functions added in `src/bank2/items.c` with declarations in `include/bank2/items.h`: `func_002_60E0`, `func_002_61BA`, `UpdateRupeesCount`, `UpdateHealth`, `LoadRupeesDigits`, `LoadHeartsCount`, plus helper `bcd_add`/`bcd_sub`. Stub declarations for `LoadMinimap` and `func_002_755B`. Existing VERIFIED function bodies and production callers unchanged.
+- **Semantics:** Main inventory/subscreen handler. Clamps magic powder/bomb/arrow counts via `ClampItemCount`. Returns early if Link non-interactive, dialog active, or room transitioning. If inventory already appearing, handles subscreen scrolling (updates wWindowY with wSubscreenScrollIncrement, tracks open/close state via volume registers). If SELECT pressed, jumps to map opening path. If START pressed and all conditions met (window at top, no ocarina menu, interactive), opens subscreen: sets wGameplayType=GAMEPLAY_INVENTORY, wGameplaySubtype=GAMEPLAY_INVENTORY_INITIAL, flips wSubscreenScrollIncrement, loads appropriate tileset (inventory or dungeon minimap for color dungeon/indoors). At inventory_fully_closed2, calls UpdateRupeesCount and UpdateHealth when dialog closed. UpdateRupeesCount processes add/subtract rupee buffers with BCD arithmetic, caps at 999, plays sounds. UpdateHealth handles low health warning, health regeneration/reduction buffers, heart display.
+- **Tests:** `tests/bank2/test_func_60E0.c` (registered in `CMakeLists.txt`, `tests/bank2/test_bank2.h`, `tests/test_bank2.c`). Covers item clamping, early returns, subscreen scroll/open/close, map opening, rupee/health updates, BCD arithmetic, NULL safety.
+- **Validation:** Baseline and integrated full Debug build/CTest PASS with assertions enabled; full `./build/ladx_tests` output inspected with no failure messages. Strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior within `GBState`. `LoadMinimap` and `func_002_755B` are stubbed (forward declarations only); their implementations remain for a future batch. CPU flags/registers/cycles/stack behavior not emulated. BCD arithmetic implemented per assembly `daa` instruction semantics. No guessed behavior or substitute logic introduced.
 
 ## Batch 67 Verification — Room Trigger Checkers
 
@@ -189,6 +197,12 @@
 | `UseOcarina` | VERIFIED | PASS | PASS | Link ocarina action handler, verifies air/hookshot state, resets positions, selects ballad/mambo/frog/offkey SFX (`02:41FC`) |
 | `FireHookshot` | VERIFIED | PASS | PASS | Fires hookshot chain projectile, assigns lifetime countdown 0x2A and directional speed vector (`02:4254`) |
 | `ClampItemCount` | VERIFIED | PASS | PASS | Clamps item count at DE to maximum at HL; if current >= max, sets current = max; increments HL (`02:60D8`-`02:60DF`, Batch 69) |
+| `func_002_60E0` | VERIFIED | PASS | PASS | Inventory/subscreen handler: clamps items, handles subscreen open/close/scroll, map opening, rupee/health updates (`02:60E0`-`02:6206`, Batch 70) |
+| `func_002_61BA` | VERIFIED | PASS | PASS | Subscreen scroll helper: calls func_002_755B, ApplyLinkMotionState, DrawLinkSpriteAndReturn, AnimateEntitiesAndRestoreBank02 (`02:61BA`, Batch 70) |
+| `UpdateRupeesCount` | VERIFIED | PASS | PASS | Processes rupee add/sub buffers with BCD arithmetic, caps at 999, plays sounds, loads digits (`02:6209`-`02:62CB`, Batch 70) |
+| `UpdateHealth` | VERIFIED | PASS | PASS | Low health warning, health regen/reduction buffers, heart display (`02:6317`-`02:63D8`, Batch 70) |
+| `LoadRupeesDigits` | VERIFIED | PASS | PASS | Loads rupee digit tiles into draw command buffer (`02:62CE`-`02:6413`, Batch 70) |
+| `LoadHeartsCount` | VERIFIED | PASS | PASS | Loads heart count display tiles (`02:6414`-`02:64FF`, Batch 70) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |
