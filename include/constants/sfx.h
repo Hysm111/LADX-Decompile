@@ -18,6 +18,7 @@
 #define JINGLE_BOUNCE                           0x20
 #define JINGLE_GHOST_PRESENCE                   0x2D
 #define JINGLE_FALL_DOWN                        0x08
+#define JINGLE_FOREST_LOST                      0x1E
 
 /* Values for hWaveSfx */
 #define WAVE_SFX_NONE                           0x00

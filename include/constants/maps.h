@@ -13,6 +13,7 @@
 #define MAP_INDOORS_B_START  0x06
 
 #define MAP_EAGLES_TOWER     0x06
+#define MAP_DUNGEON_G1       0x0B
 #define MAP_TURTLE_ROCK      0x07
 #define MAP_WINDFISHS_EGG    0x08
 #define MAP_HOUSE            0x10

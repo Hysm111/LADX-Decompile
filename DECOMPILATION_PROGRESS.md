@@ -3,15 +3,31 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~62.5%
-* **Number of Verified Functions**: 747
-* **Number of Decompiled Functions**: 570
-* **Number Remaining**: ~453 functions
-* **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 72: `func_002_7587`, `func_002_75B2`, `ApplyLinkGroundPhysics`, `HurtBySpikes`, `ApplyLinkGroundPhysics_part2`, `label_002_76C0`, `ApplyLinkGroundPhysics_Default`, `label_002_787D` (`02:7587`-`02:78D7`) decompiled and verified
-* **Last Completed Task**: Verified Link ground physics handlers (`02:7587`-`02:78D7`: airborne OAM setup, ground physics dispatcher, spike damage, pit/conveyor/tractor handling, dialog/transition physics, default ground physics with ocean switch blocks/switch buttons, grass VFX) with independent assembly-derived tests
+* **Current Overall Progress**: ~63.5%
+* **Number of Verified Functions**: 755
+* **Number of Decompiled Functions**: 578
+* **Number Remaining**: ~445 functions
+* **Current Subsystem**: ROM Bank 2 (Room Transition Subsystem, 02:78E8+)
+* **Current Task**: Batch 73: `ApplyRoomTransition`, `RoomTransitionPrepareHandler`, `RoomTransitionLoadTiles`, `RoomTransitionConfigureScrollTargets`, `RoomTransitionFirstHalfHandler`, `RoomTransitionSecondHalfHandler`, `label_002_7C14`, `label_002_7C50` (`02:78E8`-`02:7C9E`) decompiled and verified
+* **Last Completed Task**: Verified room transition handlers (`02:78E8`-`02:7C9E`: sliding transition state machine, Wind Fish's Egg maze logic, indoor/overworld room increment, tileset loading, scroll target configuration, BG region update, conveyor belt physics, lava/deep water/river rapids physics) with independent assembly-derived tests
 * **Next Task**: Decompile and verify next unfinished functions in ROM Bank 2
-* **Last Update Timestamp**: 2026-09-20T16:30:00+03:00
+* **Last Update Timestamp**: 2026-09-20T17:30:00+03:00
+
+---
+
+## Batch 73 Verification — Room Transition Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/room_transition.asm` (`02:78E8`-`02:7C9E`). Eight functions implemented in `src/bank2/room_transition.c` with declarations in `include/bank2/room_transition.h`. Data tables (`RoomTransitionLinkXIncrement`, `RoomTransitionLinkYIncrement`, `RoomTransitionXIncrement`, `RoomTransitionYIncrement`, `WindFishEggMazeSequence`, `OverworldRoomIncrement`, `IndoorRoomIncrement`, `RoomTransitionBGOriginHigh`, `RoomTransitionBGOriginLow`, `RoomTransitionBGInitialUpdateRegionHigh`, `RoomTransitionBGInitialUpdateRegionLow`, `RoomUpdateTileAmount`, `RoomTransitionFramesToMidScreen`, `RoomTransitionOffset`, `RoomTransitionTargetScrollX`, `RoomTransitionTargetScrollY`, `Data_002_7C04`, `Data_002_7C0C`, `Data_002_7C40`, `Data_002_7C48`) defined as constant arrays. Existing VERIFIED function bodies and production callers unchanged.
+- **`ApplyRoomTransition` (`02:78E8`-`02:79D9`):** Main room transition state machine. Returns early if `wRoomTransitionState == ROOM_TRANSITION_NONE`. For states >= `ROOM_TRANSITION_FIRST_HALF` (4), applies scroll offset to Link speed and base scroll position, checks if target scroll reached. On completion: changes music track if configured, clears variables, saves Link's map entry position, handles bottom-direction ledge jump and unstuck logic, plays pending jingle, creates following NPC, resets animated tiles frame, handles compass SFX for indoors. For states < 4, dispatches to jump table.
+- **`RoomTransitionPrepareHandler` (`02:79FA`-`02:7ADB`):** Prepares room transition. Indoor: handles Wind Fish's Egg maze sequence validation (increments `wEggMazeProgress`, checks direction against sequence, clears progress on mismatch, triggers puzzle solved jingle at progress >= 7), Face Shrine room $1D hack (pretends map $35), increments indoor room via `IndoorRoomIncrement`. Overworld: Mysterious Woods lost logic (triggers forest lost jingle, forces room $63), increments overworld room via `OverworldRoomIncrement`. Marks Tail Cave key room ($41) as visited on first entry from top. Loads room, handles Color Dungeon tile update and object replacement, loads entities, draws Link, applies motion state, selects music track based on `wC1CF`, tunic type, active power-up, or overworld music table.
+- **`RoomTransitionLoadTiles` (`02:7B3E`-`02:7B4B`):** Calls `SelectRoomTilesets`. If room has mobile switch blocks, sets `hSwitchBlockNeedingUpdate = 2`.
+- **`RoomTransitionConfigureScrollTargets` (`02:7B7F`-`02:7BFC`):** Returns early if `hSwitchBlockNeedingUpdate != 0`. Computes target scroll X/Y by adding direction-specific offsets. Configures BG update region origin (low/high) with carry handling via `d` register simulation. Saves post-transition BG origin. Sets `wBGUpdateRegionTilesCount`, `wRoomTransitionFramesBeforeMidScreen`, `wTransitionOffset`, clears `wTransitionZeroNeverUsed`.
+- **`RoomTransitionFirstHalfHandler` (`02:7C00`-`02:7C02`):** Calls `UpdateBGRegion` to update BG map region.
+- **`RoomTransitionSecondHalfHandler` (`02:7C03`):** No-op (scroll increment already applied in main handler).
+- **`label_002_7C14` (`02:7C14`-`02:7C3F`):** Conveyor belt physics. Returns early if frame counter & 3, `wC167`, `hLinkInteractiveMotionBlocked`, or `wDialogGotItem` non-zero. Indexes `Data_002_7C04`/`Data_002_7C0C` by `wLinkObjectPhysics - OBJ_PHYSICS_CONVEYOR` to get X/Y deltas, adds to Link position.
+- **`label_002_7C50` (`02:7C50`-`02:7C9E`):** Lava/deep water/river rapids physics. Returns early if transition/dialog/inventory active. For object $0E (river rapids), selects speed index based on room ($3E/$3D/$3C/$3F). For other objects, index = object - $E7. Loads X/Y speeds from `Data_002_7C40`/`Data_002_7C48`, updates position, calls background collision handler.
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All existing tests continue to pass.
+- **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (LoadRoom, LoadRoomEntities, DrawLinkSprite, ApplyLinkMotionState, SelectRoomTilesets, ReplaceObjects56and57, UpdateBGRegion, BackgroundCollisionHandler, CreateFollowingNpcEntity, SetWorldMusicTrack, ResetMusicFadeTimer) are callback-modeled. Wind Fish's Egg maze sequence logic verified against assembly flow. River rapids room-specific behavior matched to assembly branching.
 
 ---
 
@@ -235,6 +251,14 @@
 | `label_002_76C0` | VERIFIED | PASS | PASS | Dialog/transition physics: raised/lowered/lava/water/grass/shallow water handlers (`02:76C0`-`02:786E`, Batch 72) |
 | `ApplyLinkGroundPhysics_Default` | VERIFIED | PASS | PASS | Default solid ground: ocean switch blocks, switch buttons, room position tracking (`02:77A2`-`02:78D7`, Batch 72) |
 | `label_002_787D` | VERIFIED | PASS | PASS | Grass VFX: two sprites at (Y+$08, X-1/+7), tile $1A, outdoor room $32 palette 6 (`02:787D`-`02:78D7`, Batch 72) |
+| `ApplyRoomTransition` | VERIFIED | PASS | PASS | Main room transition state machine: scroll offset, target check, music, jingle, NPC, compass (`02:78E8`-`02:79D9`, Batch 73) |
+| `RoomTransitionPrepareHandler` | VERIFIED | PASS | PASS | Wind Fish Egg maze, indoor/overworld room increment, room load, music selection (`02:79FA`-`02:7ADB`, Batch 73) |
+| `RoomTransitionLoadTiles` | VERIFIED | PASS | PASS | Selects room tilesets, marks switch blocks for update (`02:7B3E`-`02:7B4B`, Batch 73) |
+| `RoomTransitionConfigureScrollTargets` | VERIFIED | PASS | PASS | Configures scroll targets, BG update region, transition timing (`02:7B7F`-`02:7BFC`, Batch 73) |
+| `RoomTransitionFirstHalfHandler` | VERIFIED | PASS | PASS | Updates BG region during first half of transition (`02:7C00`-`02:7C02`, Batch 73) |
+| `RoomTransitionSecondHalfHandler` | VERIFIED | PASS | PASS | No-op; scroll already applied (`02:7C03`, Batch 73) |
+| `label_002_7C14` | VERIFIED | PASS | PASS | Conveyor belt physics: moves Link per direction table (`02:7C14`-`02:7C3F`, Batch 73) |
+| `label_002_7C50` | VERIFIED | PASS | PASS | Lava/deep water/river rapids physics: speed from tables, collision (`02:7C50`-`02:7C9E`, Batch 73) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

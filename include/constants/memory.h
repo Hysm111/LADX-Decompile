@@ -12,6 +12,7 @@
 
 /* WRAM Gameplay Variables */
 #define wMusicTrackTiming       0xC10B
+#define wShouldGetLostInMysteriousWoods 0xC10C
 #define wEntityTilesSpriteslotIndexB 0xC10D
 #define wNeedsUpdatingEntityTilesB 0xC10E
 #define wLinkMotionState        0xC11C
@@ -240,6 +241,7 @@
 #define hMultiPurposeG               0xFFE8
 #define hRoomBank                    0xFFE8
 #define hMultiPurposeH               0xFFE9
+#define hSwitchBlockNeedingUpdate    0xFFBB
 #define hActiveEntityStatus                   0xFFEA
 #define hActiveEntityType                     0xFFEB
 #define hActiveEntityVisualPosY               0xFFEC
@@ -288,6 +290,7 @@
 #define wIsUsingShield                  0xC15B
 #define wIsCarryingLiftedObject         0xC15C
 #define wC160                           0xC160
+#define wNextJingle                     0xC169
 #define wC16A                           0xC16A
 #define wLinkAttackStepAnimationCountdown 0xC19B
 #define wIsUsingHookshot                0xC1A4
@@ -346,6 +349,8 @@
 #define wSwitchBlocksState              0xD6FB
 #define wSpawnLocationData              0xDB5F
 #define wHasInstrument7                 0xDB6B
+#define wEggMazeProgress                0xC5AA
+#define wWindFishEggMazeSequenceOffset  0xDB7C
 #define wMapEntranceRoom                0xDB9C
 #define wMapEntrancePositionX           0xDB9D
 #define wMapEntrancePositionY           0xDB9E
@@ -407,7 +412,15 @@
 #define wInventoryItems                 0xDB00
 #define wHasFlippers                    0xDB0C
 #define wBGUpdateRegionOriginLow        0xC127
+#define wBGUpdateRegionOriginHigh       0xC126
 #define wBGUpdateRegionTilesCount       0xC128
+#define wRoomTransitionFramesBeforeMidScreen 0xC129
+#define wTransitionOffset               0xC12A
+#define wTransitionZeroNeverUsed        0xC12B
+#define wRoomTransitionTargetScrollX    0xC12C
+#define wRoomTransitionTargetScrollY    0xC12D
+#define wBGOriginHigh                   0xC12E
+#define wBGOriginLow                    0xC12F
 #define wGoldenLeavesCount              0xDB15
 #define wWreckingBallRoom                       0xDB6F
 #define wWreckingBallPosX                       0xDB70

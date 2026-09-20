@@ -105,6 +105,13 @@
 #define UNKNOWN_ROOM_C4              0xC4
 #define UNKNOWN_ROOM_32              0x32
 #define ROOM_INDOOR_B_KANALET_GATE_SWITCH 0xC3
+#define UNKNOWN_ROOM_3C                   0x3C
+#define UNKNOWN_ROOM_3D                   0x3D
+#define UNKNOWN_ROOM_3E                   0x3E
+#define UNKNOWN_ROOM_3F                   0x3F
+#define UNKNOWN_ROOM_41                   0x41
+#define UNKNOWN_ROOM_63                   0x63
+#define UNKNOWN_ROOM_71                   0x71
 
 /* Bank 0 Macro Tables ROM Addresses */
 #define KeyDoorTopObjectIds_Addr             0x35F8

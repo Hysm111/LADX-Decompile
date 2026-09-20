@@ -129,6 +129,14 @@
 #define PIT_MAX_SLIPPING                24
 #define TRANSITION_GFX_MANBO_IN         0x02
 
+/* Values for wRoomTransitionState */
+#define ROOM_TRANSITION_NONE             0x00
+#define ROOM_TRANSITION_LOAD_ROOM        0x01
+#define ROOM_TRANSITION_LOAD_SPRITES     0x02
+#define ROOM_TRANSITION_CONFIGURE_SCROLL 0x03
+#define ROOM_TRANSITION_FIRST_HALF       0x04
+#define ROOM_TRANSITION_SECOND_HALF      0x05
+
 #define ONE_HEART                       0x08
 #define MAX_HEARTS                      0x0E
 #define DAMAGE_COOLDOWN_TIME            0xA0
