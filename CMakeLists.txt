@@ -52,6 +52,7 @@ set(LADX_CORE_SOURCES
     src/bank2/shovel.c
     src/bank2/swimming.c
     src/bank2/vfx.c
+    src/bank3/entities.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})

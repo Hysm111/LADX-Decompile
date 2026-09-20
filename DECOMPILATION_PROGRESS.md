@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~64.0%
-* **Number of Verified Functions**: 767
-* **Number of Decompiled Functions**: 584
-* **Number Remaining**: ~439 functions
-* **Current Subsystem**: ROM Bank 2 (Link Motion & Object Interaction, 02:7468-02:755A)
-* **Current Task**: Batch 74: `func_002_753A`, `func_002_754F`, `label_002_74AD`, `func_002_7468`, `OpenDialogInTable0AndClearIncrement`, `OpenDialogInTable2AndClearIncrement`, `Data_002_750A`, `Data_002_750E` (`02:7468`-`02:755A`) decompiled and verified
-* **Last Completed Task**: Verified link motion helper functions and object interaction handlers (`02:7468`-`02:755A`: swimming physics modifier, hookshot state handler, Pegasus boots collision, revolving door/special object interaction, dialog wrappers, direction-based speed tables) with independent assembly-derived tests
-* **Next Task**: Decompile and verify next unfinished functions in ROM Bank 2
+* **Current Overall Progress**: ~64.5%
+* **Number of Verified Functions**: 785
+* **Number of Decompiled Functions**: 595
+* **Number Remaining**: ~427 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:49C6)
+* **Current Task**: Batch 75: `ConfigureNewEntity`, `ConfigureEntityHealth`, `EntityInitHandler`, `MasterStalfosDefeated`, `EntityInitHorsePiece`, `EntityInitMarinAtTalTalHeights` (`03:485B`-`03:493C`) decompiled and verified
+* **Last Completed Task**: Verified entity initialization core functions and first entity-specific init handlers (`03:485B`-`03:493C`: entity configuration, health setup, boss/master stalfos handling, horse piece variant, Marin position adjustment) with independent assembly-derived tests
+* **Next Task**: Decompile and verify next entity init functions in ROM Bank 3
 * **Last Update Timestamp**: 2026-09-20T17:30:00+03:00
 
 ---
@@ -43,6 +43,20 @@
 - **`Data_002_750A` / `Data_002_750E` (`02:750A`-`02:750D`):** Direction-based speed tables for swimming physics (right/left/up/down X and Y speeds).
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All existing tests continue to pass.
 - **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (OpenDialogInTable0, OpenDialogInTable2, ClearLinkPositionIncrement, ResetSpinAttack, func_1828, ApplyMapFadeOutTransitionWithNoise) are callback-modeled. Pegasus boots collision physics (speed reversal with arithmetic shift) verified against assembly flow.
+
+---
+
+## Batch 75 Verification — Bank 3 Entity Initialization Core
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:485B`-`03:493C`). Six functions implemented in `src/bank3/entities.c` with declarations in `include/bank3/entities.h`. Data tables (`PhysicsFlagsForEntity`, `HitboxFlagsForEntity`, `HealthGroupForEntity`, `InitialHealthForGroup`, `Options1ForEntity`, `Data_003_4924`) defined as constants or ROM lookups. Existing VERIFIED function bodies and production callers unchanged.
+- **`ConfigureNewEntity` (`03:485B`-`03:4891`):** Configures a newly created entity. Calls `ResetEntity_trampoline`, stores entity room ID in `wEntitiesRoomTable`, sets load order to $FF, loads physics flags, hitbox flags, health, options1 from ROM tables indexed by entity type, then jumps to `ConfigureEntityHitbox`.
+- **`ConfigureEntityHealth` (`03:4895`-`03:48AC`):** Sets up entity health. Reads health group from `HealthGroupForEntity` table, stores in `wEntitiesHealthGroup`, then reads initial health from `InitialHealthForGroup` table and stores in `wEntitiesHealthTable`.
+- **`EntityInitHandler` (`03:48B5`-`03:4923`):** Main entity initialization dispatcher. Checks if entity is a boss and room boss is defeated (unloads if so). Special handling for Master Stalfos (checks three specific room statuses in `wIndoorARoomStatus`). For indoor mini-bosses, sets `wC1CF`. Calls `label_27F2`, initializes boss battle state (`wDidBossIntro=0`, `wInBossBattle=1`, `wBossIntroDelay=$20`), marks entity as active (`ENTITY_STATUS_ACTIVE`), then dispatches to entity-specific init handler via `GetEntityInitHandler_trampoline`.
+- **`MasterStalfosDefeated` (`03:48AD`-`03:48BE`):** Sets `wRoomEventEffectExecuted=1` and unloads entity via `UnloadEntityAndReturn`.
+- **`EntityInitHorsePiece` (`03:4926`-`03:4931`):** Sets sprite variant from `Data_003_4924` table indexed by load order.
+- **`EntityInitMarinAtTalTalHeights` (`03:4934`-`03:493C`):** Adjusts entity Y position up by 3 pixels.
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All existing tests continue to pass.
+- **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (ResetEntity_trampoline, ConfigureEntityHitbox, label_27F2, GetEntityInitHandler_trampoline, UnloadEntityAndReturn, SetEntitySpriteVariant) are callback-modeled. Master Stalfos room status check logic verified against assembly flow.
 
 ---
 
@@ -281,6 +295,12 @@
 | `OpenDialogInTable0AndClearIncrement` | VERIFIED | PASS | PASS | Opens table 0 dialog then clears link position increment (`02:74FE`-`02:7501`, Batch 74) |
 | `OpenDialogInTable2AndClearIncrement` | VERIFIED | PASS | PASS | Opens table 2 dialog then clears link position increment (`02:7504`-`02:7507`, Batch 74) |
 | `Data_002_750A` / `Data_002_750E` | VERIFIED | PASS | PASS | Direction-based swimming speed tables (`02:750A`-`02:750D`, Batch 74) |
+| `ConfigureNewEntity` | VERIFIED | PASS | PASS | Entity configuration: room ID, load order, physics/hitbox flags, health, options1 (`03:485B`-`03:4891`, Batch 75) |
+| `ConfigureEntityHealth` | VERIFIED | PASS | PASS | Sets entity health group and initial health from ROM tables (`03:4895`-`03:48AC`, Batch 75) |
+| `EntityInitHandler` | VERIFIED | PASS | PASS | Boss/defeated check, Master Stalfos handling, mini-boss setup, boss battle init (`03:48B5`-`03:4923`, Batch 75) |
+| `MasterStalfosDefeated` | VERIFIED | PASS | PASS | Marks room event executed and unloads entity (`03:48AD`-`03:48BE`, Batch 75) |
+| `EntityInitHorsePiece` | VERIFIED | PASS | PASS | Sets sprite variant from load order table (`03:4926`-`03:4931`, Batch 75) |
+| `EntityInitMarinAtTalTalHeights` | VERIFIED | PASS | PASS | Adjusts entity Y position up by 3 pixels (`03:4934`-`03:493C`, Batch 75) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

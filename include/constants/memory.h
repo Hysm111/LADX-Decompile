@@ -160,6 +160,10 @@
 #define wEntitiesLoadOrderTable               0xC460
 #define wEntitiesPowerRecoilingTable          0xC4A0
 #define wEntitiesClearedRooms                 0xCF00
+#define wEntitiesRoomTable                    0xC3E0
+#define wEntitiesHealthTable                  0xC360
+#define wEntitiesHealthGroup                  0xC4D0
+#define wEntitiesHitboxPositionTable          0xD580
 #define wEnemyWasKilled                       0xC113
 #define wInventoryAppearing                   0xC14F
 #define wD46B                                 0xD46B
@@ -176,6 +180,7 @@
 #define wBossIntroDelay                       0xC165
 #define wTransitionSequenceCounter           0xC16B
 #define wDidBossIntro                         0xC1BD
+#define wInBossBattle                         0xC1BE
 #define wEntitiesStatusTable                  0xC280
 #define wEntitiesTypeTable                    0xC3A0
 #define wActiveEntityIndex                    0xC123

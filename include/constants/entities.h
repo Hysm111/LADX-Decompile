@@ -29,6 +29,12 @@
 
 #define ENTITY_RAFT_RAFT_OWNER   0x6A
 
+#define PhysicsFlagsForEntity      0x4000
+#define HitboxFlagsForEntity       0x40FB
+#define HealthGroupForEntity       0x41F6
+#define InitialHealthForGroup      0x47BC
+#define Options1ForEntity          0x42F1
+
 #define EntityHandlersTable      0x4000
 
 #define ENTITY_ARROW                 0x00
@@ -53,7 +59,12 @@
 #define ENTITY_ROOSTER               0xD5
 #define ENTITY_SWORD_BEAM            0xDF
 #define ENTITY_MUSICAL_NOTE          0xC9
-#define ENTITY_MUSICAL_NOTE          0xC9
+#define ENTITY_MASTER_STALFOS        0x5F
+
+#define ENTITY_OPT1_IS_BOSS          0x80
+#define ENTITY_OPT1_IS_MINI_BOSS     0x04
+#define ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL 0x02
+
 #define ENTITIES_END                 0xFF
 
 #define BANK_OverworldEntitiesPointersTable     0x16
