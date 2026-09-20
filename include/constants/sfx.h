@@ -9,6 +9,8 @@
 #define JINGLE_PUZZLE_SOLVED                    0x02
 #define JINGLE_BUMP                             0x09
 #define JINGLE_MOVE_SELECTION                   0x0A
+#define JINGLE_STRONG_BUMP                      0x0B
+#define JINGLE_REVOLVING_DOOR                   0x0C
 #define JINGLE_DIALOG_BREAK     0x15
 #define JINGLE_SWORD_POKING                     0x07
 #define JINGLE_VALIDATE                         0x13

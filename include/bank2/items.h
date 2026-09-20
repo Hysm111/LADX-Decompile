@@ -121,6 +121,8 @@ void func_002_60E0(GBState *gb);
 
 /* Forward declarations for functions in other bank 2 modules */
 void LoadMinimap(GBState *gb);
+void func_002_753A(GBState *gb);
+void func_002_754F(GBState *gb);
 void func_002_755B(GBState *gb);
 
 /* Forward declarations for functions in this file */

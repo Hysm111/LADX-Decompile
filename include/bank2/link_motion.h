@@ -178,4 +178,30 @@ void ApplyLinkGroundPhysics_Default(GBState *gb);
  */
 void label_002_787D(GBState *gb);
 
+/**
+ * Handles Pegasus boots collision behavior (02:74AD-02:74FB).
+ * Called when Link collides with a wall while running with Pegasus boots.
+ * Reverses speed, sets airborne state, and triggers screen shake.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_74AD(GBState *gb);
+
+/**
+ * Handles special object interactions: revolving door ($B1, $B2),
+ * and objects $C1, $C2, $BB, $BC.
+ * Called from collision handling when specific objects are detected (02:7468-02:74AC).
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_7468(GBState *gb);
+
+/* Data tables for swimming physics (02:750A-02:750D) */
+extern const int8_t Data_002_750A[4];
+extern const int8_t Data_002_750E[4];
+
+/* Dialog wrapper functions (02:74FE-02:7507) */
+void OpenDialogInTable0AndClearIncrement(GBState *gb, uint8_t dialog_index);
+void OpenDialogInTable2AndClearIncrement(GBState *gb, uint8_t dialog_index);
+
 #endif /* LADX_BANK2_LINK_MOTION_H */

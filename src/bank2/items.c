@@ -450,6 +450,50 @@ void LoadMinimap(GBState *gb) {
     }
 }
 
+/* func_002_753A (02:753A-02:754E)
+ * Updates wC13B when Link is swimming, then checks hookshot state
+ * and falls through to func_002_754F.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_753A(GBState *gb) {
+    if (!gb) return;
+
+    /* ld a, [wLinkMotionState]; cp LINK_MOTION_SWIMMING; jr nz, .jr_7549 */
+    if (gb_read(gb, wLinkMotionState) == LINK_MOTION_SWIMMING) {
+        /* ld a, [wC13B]; add $04; ld [wC13B], a */
+        uint8_t c13b = gb_read(gb, wC13B);
+        gb_write(gb, wC13B, (uint8_t)(c13b + 0x04));
+    }
+
+    /* ld a, [wIsUsingHookshot]; and a; jr z, jr_002_7587 */
+    if (gb_read(gb, wIsUsingHookshot) != 0) {
+        func_002_754F(gb);
+    }
+}
+
+/* func_002_754F (02:754F-02:755A)
+ * Checks if Link is in the air or using Pegasus boots, clears position
+ * increment if not, then falls through to func_002_755B.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_754F(GBState *gb) {
+    if (!gb) return;
+
+    /* ld hl, wIsLinkInTheAir; ld a, [wIsRunningWithPegasusBoots]; or [hl]; jr nz, func_002_755B */
+    if (gb_read(gb, wIsLinkInTheAir) != 0 || gb_read(gb, wIsRunningWithPegasusBoots) != 0) {
+        func_002_755B(gb);
+        return;
+    }
+
+    /* call ClearLinkPositionIncrement */
+    ClearLinkPositionIncrement(gb);
+
+    /* fallthrough to func_002_755B */
+    func_002_755B(gb);
+}
+
 /* func_002_755B (02:755B-02:7586)
  * Gets the object under Link and determines a value for wC13B
  * based on the object type and Link's state. Called when getting an item

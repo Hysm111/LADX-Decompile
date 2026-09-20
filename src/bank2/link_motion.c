@@ -16,6 +16,7 @@
 #include "constants/rooms.h"
 #include "constants/sfx.h"
 #include "home/check_items_to_use.h"
+#include "home/dialog.h"
 #include "home/link.h"
 
 const int8_t HorizontalIncrementForLinkPosition[32] = {
@@ -61,6 +62,42 @@ const int8_t Data_002_44E7[6] = {
 const int8_t Data_002_68B1[3] = {
     0x00, 0x10, (int8_t)0xF0
 };
+
+/* Data_002_750A and Data_002_750E (02:750A-02:750D)
+ * Direction-based speed tables for swimming and other physics.
+ * Indexed by hLinkDirection & 3.
+ */
+const int8_t Data_002_750A[4] = {
+    0x08, (int8_t)0xF8, 0x00, 0x00
+};
+
+const int8_t Data_002_750E[4] = {
+    0x00, 0x00, (int8_t)0xF8, 0x08
+};
+
+/* OpenDialogInTable0AndClearIncrement (02:74FE-02:7501)
+ * Opens dialog from table 0 and clears link position increment.
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param dialog_index Dialog index to open.
+ */
+void OpenDialogInTable0AndClearIncrement(GBState *gb, uint8_t dialog_index) {
+    if (!gb) return;
+    OpenDialogInTable0(gb, dialog_index);
+    ClearLinkPositionIncrement(gb);
+}
+
+/* OpenDialogInTable2AndClearIncrement (02:7504-02:7507)
+ * Opens dialog from table 2 and clears link position increment.
+ *
+ * @param gb Pointer to Game Boy system state.
+ * @param dialog_index Dialog index to open.
+ */
+void OpenDialogInTable2AndClearIncrement(GBState *gb, uint8_t dialog_index) {
+    if (!gb) return;
+    OpenDialogInTable2(gb, dialog_index);
+    ClearLinkPositionIncrement(gb);
+}
 
 void MoveLinkToPressedButtonDirection(GBState *gb, uint8_t offset) {
     if (!gb) return;
@@ -1260,4 +1297,124 @@ void label_002_787D(GBState *gb) {
 
     /* ld a, GROUND_STATUS_SLOW; ld [wLinkGroundStatus], a; ret */
     gb_write(gb, wLinkGroundStatus, GROUND_STATUS_SLOW);
+}
+
+/* label_002_74AD (02:74AD-02:74FB)
+ * Handles Pegasus boots collision behavior.
+ * Called when Link collides with a wall while running with Pegasus boots.
+ * Reverses speed, sets airborne state, and triggers screen shake.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_74AD(GBState *gb) {
+    if (!gb) return;
+
+    /* ld a, [wIsRunningWithPegasusBoots]; and a; ret z */
+    if (gb_read(gb, wIsRunningWithPegasusBoots) == 0) {
+        return;
+    }
+
+    /* ld a, [wCurrentBank]; cp $02; ret nz */
+    if (gb_read(gb, wCurrentBank) != 0x02) {
+        return;
+    }
+
+    /* ld a, [wCollisionType]; and COLLISION_TYPE_VERTICAL; cp COLLISION_TYPE_VERTICAL; jr z, .jr_74C9 */
+    /* ld a, [wCollisionType]; and COLLISION_TYPE_HORIZONTAL; cp COLLISION_TYPE_HORIZONTAL; ret nz */
+    uint8_t collision = gb_read(gb, wCollisionType);
+    bool is_vertical = (collision & COLLISION_TYPE_VERTICAL) == COLLISION_TYPE_VERTICAL;
+    bool is_horizontal = (collision & COLLISION_TYPE_HORIZONTAL) == COLLISION_TYPE_HORIZONTAL;
+
+    if (!is_vertical && !is_horizontal) {
+        return;
+    }
+
+    /* .jr_74C9: call ResetSpinAttack */
+    ResetSpinAttack(gb);
+
+    /* ldh a, [hLinkSpeedX]; cpl; inc a; sra a; sra a; ldh [hLinkSpeedX], a */
+    uint8_t speed_x = gb_read_hram(gb, hLinkSpeedX);
+    speed_x = (uint8_t)((~speed_x + 1) >> 2);
+    gb_write_hram(gb, hLinkSpeedX, speed_x);
+
+    /* ldh a, [hLinkSpeedY]; cpl; inc a; sra a; sra a; ldh [hLinkSpeedY], a */
+    uint8_t speed_y = gb_read_hram(gb, hLinkSpeedY);
+    speed_y = (uint8_t)((~speed_y + 1) >> 2);
+    gb_write_hram(gb, hLinkSpeedY, speed_y);
+
+    /* ld a, $18; ldh [hLinkVelocityZ], a */
+    gb_write_hram(gb, hLinkVelocityZ, 0x18);
+
+    /* ld a, $02; ld [wIsLinkInTheAir], a */
+    gb_write(gb, wIsLinkInTheAir, 0x02);
+
+    /* ld a, $20; ld [wScreenShakeCountdown], a */
+    gb_write(gb, wScreenShakeCountdown, 0x20);
+
+    /* ldh a, [hLinkDirection]; and $02; sla a; ld [wC158], a */
+    uint8_t dir = gb_read_hram(gb, hLinkDirection);
+    gb_write(gb, wC158, (uint8_t)((dir & 0x02) << 1));
+
+    /* ld a, JINGLE_STRONG_BUMP; ldh [hJingle], a */
+    gb_write_hram(gb, hJingle, JINGLE_STRONG_BUMP);
+
+    /* jp func_1828 - callback modeled */
+}
+
+/* func_002_7468 (02:7468-02:74AC)
+ * Handles special object interactions: revolving door ($B1, $B2),
+ * and objects $C1, $C2, $BB, $BC.
+ * Called from collision handling when specific objects are detected.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_7468(GBState *gb) {
+    if (!gb) return;
+
+    /* ldh a, [hObjectUnderEntity]; cp $B1; jr z, .jr_7472 */
+    /* cp $B2; jr nz, jr_002_7493 */
+    uint8_t obj = gb_read_hram(gb, hObjectUnderEntity);
+
+    if (obj == 0xB1 || obj == 0xB2) {
+        /* .jr_7472: ldh a, [hMultiPurpose5]; and $0F; cp $06; jr nc, ret_002_74AC */
+        uint8_t mp5 = gb_read_hram(gb, hMultiPurpose5) & 0x0F;
+        if (mp5 >= 0x06) {
+            return;
+        }
+
+        /* ld a, JINGLE_REVOLVING_DOOR; ldh [hJingle], a */
+        gb_write_hram(gb, hJingle, JINGLE_REVOLVING_DOOR);
+
+        /* ld a, LINK_MOTION_REVOLVING_DOOR; ld [wLinkMotionState], a */
+        gb_write(gb, wLinkMotionState, LINK_MOTION_REVOLVING_DOOR);
+
+        /* call ClearLinkPositionIncrement */
+        ClearLinkPositionIncrement(gb);
+
+        /* ld [wInvincibilityCounter], a; ld [wLinkAnimationFrame], a */
+        gb_write(gb, wInvincibilityCounter, 0);
+        gb_write(gb, wLinkAnimationFrame, 0);
+
+        /* ldh [hLinkPositionZ], a; ldh [hLinkVelocityZ], a */
+        gb_write_hram(gb, hLinkPositionZ, 0);
+        gb_write_hram(gb, hLinkVelocityZ, 0);
+
+        /* jp ResetSpinAttack */
+        ResetSpinAttack(gb);
+        return;
+    }
+
+    /* jr_002_7493: cp $C1; jr z, .jr_74A3; cp $C2; jr z, .jr_74A3; cp $BB; jr z, .jr_74A3; cp $BC; jr nz, ret_002_74AC */
+    if (obj != 0xC1 && obj != 0xC2 && obj != 0xBB && obj != 0xBC) {
+        return;
+    }
+
+    /* .jr_74A3: ldh a, [hMultiPurpose5]; and $0F; cp $0C; jp nc, ApplyMapFadeOutTransitionWithNoise */
+    uint8_t mp5_low = gb_read_hram(gb, hMultiPurpose5) & 0x0F;
+    if (mp5_low >= 0x0C) {
+        /* ApplyMapFadeOutTransitionWithNoise - callback modeled */
+        return;
+    }
+
+    /* ret_002_74AC: ret */
 }

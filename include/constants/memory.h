@@ -308,6 +308,7 @@
 #define wIsShootingArrow            0xC14C
 #define wC152                       0xC152
 #define wC153                       0xC153
+#define wC158                       0xC158
 #define wC16D                       0xC16D
 #define wDialogGotItem              0xC1A9
 #define wDialogGotItemCountdown     0xC1AA

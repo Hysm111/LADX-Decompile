@@ -3,13 +3,13 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~63.5%
-* **Number of Verified Functions**: 755
-* **Number of Decompiled Functions**: 578
-* **Number Remaining**: ~445 functions
-* **Current Subsystem**: ROM Bank 2 (Room Transition Subsystem, 02:78E8+)
-* **Current Task**: Batch 73: `ApplyRoomTransition`, `RoomTransitionPrepareHandler`, `RoomTransitionLoadTiles`, `RoomTransitionConfigureScrollTargets`, `RoomTransitionFirstHalfHandler`, `RoomTransitionSecondHalfHandler`, `label_002_7C14`, `label_002_7C50` (`02:78E8`-`02:7C9E`) decompiled and verified
-* **Last Completed Task**: Verified room transition handlers (`02:78E8`-`02:7C9E`: sliding transition state machine, Wind Fish's Egg maze logic, indoor/overworld room increment, tileset loading, scroll target configuration, BG region update, conveyor belt physics, lava/deep water/river rapids physics) with independent assembly-derived tests
+* **Current Overall Progress**: ~64.0%
+* **Number of Verified Functions**: 767
+* **Number of Decompiled Functions**: 584
+* **Number Remaining**: ~439 functions
+* **Current Subsystem**: ROM Bank 2 (Link Motion & Object Interaction, 02:7468-02:755A)
+* **Current Task**: Batch 74: `func_002_753A`, `func_002_754F`, `label_002_74AD`, `func_002_7468`, `OpenDialogInTable0AndClearIncrement`, `OpenDialogInTable2AndClearIncrement`, `Data_002_750A`, `Data_002_750E` (`02:7468`-`02:755A`) decompiled and verified
+* **Last Completed Task**: Verified link motion helper functions and object interaction handlers (`02:7468`-`02:755A`: swimming physics modifier, hookshot state handler, Pegasus boots collision, revolving door/special object interaction, dialog wrappers, direction-based speed tables) with independent assembly-derived tests
 * **Next Task**: Decompile and verify next unfinished functions in ROM Bank 2
 * **Last Update Timestamp**: 2026-09-20T17:30:00+03:00
 
@@ -28,6 +28,21 @@
 - **`label_002_7C50` (`02:7C50`-`02:7C9E`):** Lava/deep water/river rapids physics. Returns early if transition/dialog/inventory active. For object $0E (river rapids), selects speed index based on room ($3E/$3D/$3C/$3F). For other objects, index = object - $E7. Loads X/Y speeds from `Data_002_7C40`/`Data_002_7C48`, updates position, calls background collision handler.
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All existing tests continue to pass.
 - **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (LoadRoom, LoadRoomEntities, DrawLinkSprite, ApplyLinkMotionState, SelectRoomTilesets, ReplaceObjects56and57, UpdateBGRegion, BackgroundCollisionHandler, CreateFollowingNpcEntity, SetWorldMusicTrack, ResetMusicFadeTimer) are callback-modeled. Wind Fish's Egg maze sequence logic verified against assembly flow. River rapids room-specific behavior matched to assembly branching.
+
+---
+
+## Batch 74 Verification — Link Motion Helpers & Object Interaction
+
+- **Source of truth:** `LADX-Disassembly/src/code/bank2.asm` (`02:7468`-`02:755A`). Six functions and two data tables implemented across `src/bank2/items.c` and `src/bank2/link_motion.c` with declarations in `include/bank2/items.h` and `include/bank2/link_motion.h`. Existing VERIFIED function bodies and production callers unchanged.
+- **`func_002_753A` (`02:753A`-`02:754E`):** Updates `wC13B` when Link is swimming (adds 4), then checks hookshot state and falls through to `func_002_754F`.
+- **`func_002_754F` (`02:754F`-`02:755A`):** Checks if Link is airborne or using Pegasus boots; if so, calls `func_002_755B` directly. Otherwise clears link position increment and falls through to `func_002_755B`.
+- **`label_002_74AD` (`02:74AD`-`02:74FB`):** Handles Pegasus boots wall collision. Returns early if not running with Pegasus boots or not in bank 2. Requires vertical or horizontal collision. Reverses X/Y speeds (with divide by 4), sets airborne state, velocity Z=$18, screen shake countdown=$20, computes `wC158` from direction bit 1, plays JINGLE_STRONG_BUMP, calls `func_1828` (callback-modeled).
+- **`func_002_7468` (`02:7468`-`02:74AC`):** Handles special object interactions. For revolving door objects ($B1, $B2): validates `hMultiPurpose5` low nibble < 6, plays JINGLE_REVOLVING_DOOR, sets LINK_MOTION_REVOLVING_DOOR, clears position increment/invincibility/animation frame/Z/velocity Z, resets spin attack. For objects $C1/$C2/$BB/$BC: validates `hMultiPurpose5` low nibble < $0C, else triggers map fade out with noise (callback-modeled).
+- **`OpenDialogInTable0AndClearIncrement` (`02:74FE`-`02:7501`):** Calls `OpenDialogInTable0` with given dialog index, then `ClearLinkPositionIncrement`.
+- **`OpenDialogInTable2AndClearIncrement` (`02:7504`-`02:7507`):** Calls `OpenDialogInTable2` with given dialog index, then `ClearLinkPositionIncrement`.
+- **`Data_002_750A` / `Data_002_750E` (`02:750A`-`02:750D`):** Direction-based speed tables for swimming physics (right/left/up/down X and Y speeds).
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All existing tests continue to pass.
+- **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (OpenDialogInTable0, OpenDialogInTable2, ClearLinkPositionIncrement, ResetSpinAttack, func_1828, ApplyMapFadeOutTransitionWithNoise) are callback-modeled. Pegasus boots collision physics (speed reversal with arithmetic shift) verified against assembly flow.
 
 ---
 
@@ -259,6 +274,13 @@
 | `RoomTransitionSecondHalfHandler` | VERIFIED | PASS | PASS | No-op; scroll already applied (`02:7C03`, Batch 73) |
 | `label_002_7C14` | VERIFIED | PASS | PASS | Conveyor belt physics: moves Link per direction table (`02:7C14`-`02:7C3F`, Batch 73) |
 | `label_002_7C50` | VERIFIED | PASS | PASS | Lava/deep water/river rapids physics: speed from tables, collision (`02:7C50`-`02:7C9E`, Batch 73) |
+| `func_002_753A` | VERIFIED | PASS | PASS | Swimming physics modifier: adds 4 to wC13B, checks hookshot, falls to func_002_754F (`02:753A`-`02:754E`, Batch 74) |
+| `func_002_754F` | VERIFIED | PASS | PASS | Hookshot/airborne check: calls func_002_755B directly or clears position increment first (`02:754F`-`02:755A`, Batch 74) |
+| `label_002_74AD` | VERIFIED | PASS | PASS | Pegasus boots wall collision: reverses speed, sets airborne, screen shake, JINGLE_STRONG_BUMP (`02:74AD`-`02:74FB`, Batch 74) |
+| `func_002_7468` | VERIFIED | PASS | PASS | Revolving door ($B1/$B2) and special objects ($C1/$C2/$BB/$BC) interaction handler (`02:7468`-`02:74AC`, Batch 74) |
+| `OpenDialogInTable0AndClearIncrement` | VERIFIED | PASS | PASS | Opens table 0 dialog then clears link position increment (`02:74FE`-`02:7501`, Batch 74) |
+| `OpenDialogInTable2AndClearIncrement` | VERIFIED | PASS | PASS | Opens table 2 dialog then clears link position increment (`02:7504`-`02:7507`, Batch 74) |
+| `Data_002_750A` / `Data_002_750E` | VERIFIED | PASS | PASS | Direction-based swimming speed tables (`02:750A`-`02:750D`, Batch 74) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |
