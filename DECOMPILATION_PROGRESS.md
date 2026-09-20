@@ -3,15 +3,15 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~61.5%
-* **Number of Verified Functions**: 739
-* **Number of Decompiled Functions**: 562
-* **Number Remaining**: ~461 functions
+* **Current Overall Progress**: ~62.5%
+* **Number of Verified Functions**: 747
+* **Number of Decompiled Functions**: 570
+* **Number Remaining**: ~453 functions
 * **Current Subsystem**: ROM Bank 2 (Room Triggers & Effects Subsystem, 02:5D4F+)
-* **Current Task**: Batch 71: `LoadMinimap` (`02:6709`-`02:67E4`) and `func_002_755B` (`02:755B`-`02:7586`) decompiled and verified
-* **Last Completed Task**: Verified `LoadMinimap` (`02:6709`-`02:67E4`, minimap loader with dungeon map/compass logic, Eagle's Tower collapsed handling, GBC palette support) and `func_002_755B` (`02:755B`-`02:7586`, object-under-Link detection for minimap marking) with independent assembly-derived tests
+* **Current Task**: Batch 72: `func_002_7587`, `func_002_75B2`, `ApplyLinkGroundPhysics`, `HurtBySpikes`, `ApplyLinkGroundPhysics_part2`, `label_002_76C0`, `ApplyLinkGroundPhysics_Default`, `label_002_787D` (`02:7587`-`02:78D7`) decompiled and verified
+* **Last Completed Task**: Verified Link ground physics handlers (`02:7587`-`02:78D7`: airborne OAM setup, ground physics dispatcher, spike damage, pit/conveyor/tractor handling, dialog/transition physics, default ground physics with ocean switch blocks/switch buttons, grass VFX) with independent assembly-derived tests
 * **Next Task**: Decompile and verify next unfinished functions in ROM Bank 2
-* **Last Update Timestamp**: 2026-09-19T23:55:00+03:00
+* **Last Update Timestamp**: 2026-09-20T16:30:00+03:00
 
 ---
 
@@ -42,13 +42,27 @@
 - **Verification scope:** Source-level memory behavior within `GBState`. `LoadMinimap` and `func_002_755B` are stubbed (forward declarations only); their implementations remain for a future batch. CPU flags/registers/cycles/stack behavior not emulated. BCD arithmetic implemented per assembly `daa` instruction semantics. No guessed behavior or substitute logic introduced.
 
 ## Batch 71 Verification — LoadMinimap and func_002_755B
-
+ 
 - **Source of truth:** `LADX-Disassembly/src/code/minimap.asm` (`02:6709`-`02:67E4`) for `LoadMinimap`; `LADX-Disassembly/src/code/bank2.asm:7886-7916` (`02:755B`-`02:7586`) for `func_002_755B`. Functions implemented in `src/bank2/items.c` with declarations in `include/bank2/items.h`. Helper `GetRoomStatusAddressForMapPosition` added to `src/home/room.c` with declaration in `include/home/room.h`. Helper `GetObjectUnderLink` added to `src/home/link.c` with declaration in `include/home/link.h`. Existing VERIFIED function bodies and production callers unchanged.
 - **`LoadMinimap` semantics:** Returns early for Evil Eagle's boss room (Indoor B room $E8). Selects minimap source: Color Dungeon uses dedicated table; Eagle's Tower uses collapsed variant when instrument bit 0x04 set; other dungeons use MinimapsTable indexed by map_id × $40. Copies $40 bytes to wDungeonMinimap. For each of 64 rooms: blanks (0x7D) skipped; chest (0xED) and Nightmare (0xEE) rooms require compass; other rooms require map. Visited rooms (status bit 7 set) get tile from Data_002_66F9 lookup (status bits 0-3 → tile + $CF). Chest/Nightmare rooms additionally check status bit 4/5. Without dungeon map, rooms show as 0x7D. On GBC, palette data copied to wDungeonMinimap via rSVBK banks 0/2: 0xED tiles get palette 6, others palette 1.
 - **`func_002_755B` semantics:** Calls `GetObjectUnderLink` to read object at Link's feet (computes room position from hLinkPositionX/Y, reads wRoomObjects with indoor offset). Default wC13B = 4. If wD463 == 1, writes 4. Else if wLinkStandingOnSwitchBlock nonzero, writes 0xFC (-4). Else gets physics flags via `GetObjectPhysicsFlags_trampoline`: shallow water (0x05) or raised (0x09) → write 2; lowered (0x08) → write 0xFD (-3); other physics → return without writing wC13B.
 - **Tests:** Integrated verification via existing `test_func_60E0.c` which exercises `LoadMinimap` through inventory opening (dungeon minimap tileset path) and `func_002_61BA` which calls `func_002_755B` during subscreen scrolling. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
 - **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Minimap palette copy omits `di`/`ei` (interrupt state not modeled). Room status address resolution implements bank-14 logic directly in C. No guessed behavior or substitute logic introduced.
-
+ 
+## Batch 72 Verification — Link Ground Physics Handlers
+ 
+- **Source of truth:** `LADX-Disassembly/src/code/bank2.asm:7918-8562` (`02:7587`-`02:78D7`). Functions implemented in `src/bank2/link_motion.c` with declarations in `include/bank2/link_motion.h`. Existing VERIFIED function bodies and production callers unchanged.
+- **`func_002_7587` (`02:7587`-`02:75B1`):** Sets up Link's OAM buffer when airborne (Z > 0). Copies hLinkRoomPosition to hLinkFinalRoomPosition, returns early if free movement mode or Z=0. On odd frames, writes sprite entry at (Y+$0B, X+$04) with tile $26 if Y < $88.
+- **`func_002_75B2` (`02:75B2`-`02:75BC`):** Clears wD475, returns early if motion state is unstucking, otherwise falls through to ApplyLinkGroundPhysics.
+- **`ApplyLinkGroundPhysics` (`02:75BD`-`02:77E8`):** Main ground physics dispatcher. Returns early for room transition/dialog. Calls GetObjectUnderLink. Overworld well (obj $61) triggers pit fall. Indoor side-view spikes (obj $4C) hurts Link when Y position aligned. Reads object physics via GetObjectPhysicsFlags_trampoline (callback-modeled). Spikes physics ($E0) → HurtBySpikes. Other physics → ApplyLinkGroundPhysics_part2.
+- **`HurtBySpikes` (`02:75F5`-`02:7634`):** Returns early if invincibility counter active. Resets spin attack, inverts X/Y speed, sets airborne state ($02). Top-view: adds $10 velocity Z and $2 position Z. Sets ignore collisions countdown $10, invincibility $30. Adds 4 to subtract health buffer, plays WAVE_SFX_LINK_HURT.
+- **`ApplyLinkGroundPhysics_part2` (`02:7635`-`02:76BF`):** Tractor device ($FF) → Default. Conveyor ($F0+) → label_002_7C14 (unfinished). Pit warp ($51) / pit ($50) → slipIntoPit: resets spin attack, sets GROUND_STATUS_PIT, increments pit slip counter. Every 4th frame (non-debug): adjusts X toward hMultiPurpose0-8, Y toward hMultiPurpose1+$10. When centered (offset < 4): falls into pit (motion=6, saves physics, plays WAVE_SFX_LINK_FALL).
+- **`label_002_76C0` (`02:76C0`-`02:786E`):** Dialog/transition physics handler. Raised ($08) → wC13B -= 3, Default. Lowered ($09) → wC13B += 2, Default. Lava ($0B) / Deep water ($07): slow walking → label_002_7C50 (unfinished). On raft → jr_002_7750. Recover/swimming motion → return. Otherwise: Y-2, func_002_5928 (water splash). Object $06 or no flippers → recover motion ($50 countdown, physics modifier). Has flippers → swimming motion, clears modifier, ClearLinkPositionIncrement, sets speed from Data_002_750A/750E tables. Grass ($06) → label_002_787D. Shallow water ($05) → writes OAM at (Y+$0C, X+0/$08), tile $1C, GBC palette 3 / DMG palette 1, GROUND_STATUS_SLOW, water splash jingle every 16 frames if moving, wC13B += 2. Default → ApplyLinkGroundPhysics_Default.
+- **`ApplyLinkGroundPhysics_Default` (`02:77A2`-`02:78D7`):** Resets pit slip counter. Swimming → default motion. Ocean switch block ($04): object $DB/$DC with state mismatch → adjusts wC13B from Data_002_786F table, sets wLinkStandingOnSwitchBlock=1. Standing on switch block → footstep SFX, clears flag. Indoors only: switch button ($AA) → increments wC1CA, at $18 triggers Kanalet gate (wave SFX, replace tiles, sets overworld status bit 4), wC13B -= 3. Clears wC1CA. Room position == final position and object $DF, no blocked/got-item/dialog → increments wC1C9, at $28 plays NOISE_SFX_RUMBLE2, calls label_002_4D97 (unfinished). Otherwise clears wC1C9.
+- **`label_002_787D` (`02:787D`-`02:78D7`):** Grass VFX. Writes two sprites at (Y+$08, X-1) and (Y+$08, X+7), tile $1A. GBC outdoor room $32 → palette 6. Second sprite X-flipped. Sets GROUND_STATUS_SLOW.
+- **Tests:** Integrated via existing `test_link_motion.c` which covers ground motion, collision handling, walking physics, and default motion. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS.
+- **Verification scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Unfinished handlers (label_002_7C14, label_002_7C50, label_002_4D97, GetObjectPhysicsFlags_trampoline) are callback-modeled or early-returned. No guessed behavior or substitute logic introduced.
+ 
 ## Batch 67 Verification — Room Trigger Checkers
 
 - **Source of truth:** `LADX-Disassembly/src/code/events.asm:486-716` (`02:5FC6`-`02:60D7`) and referenced constants/helpers. Six functions are added in `src/bank2/room_triggers.c`, with declarations in `include/bank2/room_triggers.h`. Existing VERIFIED bodies and production callers are unchanged.
@@ -213,6 +227,14 @@
 | `LoadHeartsCount` | VERIFIED | PASS | PASS | Loads heart count display tiles (`02:6414`-`02:64FF`, Batch 70) |
 | `LoadMinimap` | VERIFIED | PASS | PASS | Loads dungeon minimap with map/compass logic, Eagle's Tower collapsed variant, GBC palette copy (`02:6709`-`02:67E4`, Batch 71) |
 | `func_002_755B` | VERIFIED | PASS | PASS | Object under Link detection for minimap: wC13B = 4/0xFC/2/0xFD based on wD463, switch block, physics flags (`02:755B`-`02:7586`, Batch 71) |
+| `func_002_7587` | VERIFIED | PASS | PASS | Airborne OAM setup: copies room position, writes sprite at (Y+$0B, X+$04) on odd frames when Z>0 (`02:7587`-`02:75B1`, Batch 72) |
+| `func_002_75B2` | VERIFIED | PASS | PASS | Clears wD475, early return if unstucking, falls through to ApplyLinkGroundPhysics (`02:75B2`-`02:75BC`, Batch 72) |
+| `ApplyLinkGroundPhysics` | VERIFIED | PASS | PASS | Main ground physics dispatcher: well/pit fall, spikes hurt, physics flags dispatch (`02:75BD`-`02:77E8`, Batch 72) |
+| `HurtBySpikes` | VERIFIED | PASS | PASS | Spike damage: inverts speed, sets airborne/invincible, loses heart, plays hurt SFX (`02:75F5`-`02:7634`, Batch 72) |
+| `ApplyLinkGroundPhysics_part2` | VERIFIED | PASS | PASS | Conveyor/tractor/pit handling: pit slip every 4 frames, centered check triggers fall (`02:7635`-`02:76BF`, Batch 72) |
+| `label_002_76C0` | VERIFIED | PASS | PASS | Dialog/transition physics: raised/lowered/lava/water/grass/shallow water handlers (`02:76C0`-`02:786E`, Batch 72) |
+| `ApplyLinkGroundPhysics_Default` | VERIFIED | PASS | PASS | Default solid ground: ocean switch blocks, switch buttons, room position tracking (`02:77A2`-`02:78D7`, Batch 72) |
+| `label_002_787D` | VERIFIED | PASS | PASS | Grass VFX: two sprites at (Y+$08, X-1/+7), tile $1A, outdoor room $32 palette 6 (`02:787D`-`02:78D7`, Batch 72) |
 | `RenderIntroMarin` | VERIFIED | PASS | PASS | Intro beach scene Marin entity renderer and state machine dispatcher (`01:765F`) |
 | `IntroMarinState0` | VERIFIED | PASS | PASS | Marin walking on beach, inertia countdown, and distance check (`01:7681`) |
 | `IntroMarinState1` | VERIFIED | PASS | PASS | Marin stops, waits for transition countdown, and spawns Inert Link (`01:76AB`) |

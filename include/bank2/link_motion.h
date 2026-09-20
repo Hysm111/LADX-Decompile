@@ -114,4 +114,68 @@ void ApplyLinkGroundMotion_noChecks(GBState *gb, void (*apply_ground_physics)(GB
  */
 void LinkMotionUnstuckingHandler(GBState *gb, void (*bg_collision_handler)(GBState *));
 
+/**
+ * Sets up Link's OAM buffer when airborne (02:7587-02:75B1).
+ * Writes sprite entry for Link at adjusted position when Z position > 0.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_7587(GBState *gb);
+
+/**
+ * Clears wD475 and checks motion state (02:75B2-02:75BC).
+ * Returns early if Link is in unsticking motion state.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void func_002_75B2(GBState *gb);
+
+/**
+ * Main ground physics handler for Link (02:75BD-02:77E8).
+ * Handles collision with various object types: wells, spikes, pits, water, lava, etc.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void ApplyLinkGroundPhysics(GBState *gb);
+
+/**
+ * Hurts Link when bumping into spikes (02:75F5-02:7634).
+ * Makes Link recoil, lose a heart, and become temporarily invincible.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void HurtBySpikes(GBState *gb);
+
+/**
+ * Second part of ground physics handling (02:7635-02:76BF).
+ * Handles tractor device, conveyor, pit, and pit warp physics.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void ApplyLinkGroundPhysics_part2(GBState *gb);
+
+/**
+ * Ground physics handler during dialog or room transitions (02:76C0-02:786E).
+ * Handles raised/lowered objects, lava, deep water, grass, shallow water, switch buttons.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_76C0(GBState *gb);
+
+/**
+ * Default ground physics for solid ground (02:77A2-02:78D7).
+ * Resets pit slipping, handles ocean switch blocks, switch buttons, and grass VFX.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void ApplyLinkGroundPhysics_Default(GBState *gb);
+
+/**
+ * Grass VFX handler (02:787D-02:78D7).
+ * Emits grass cutting transient VFX sprites into Link's OAM buffer.
+ *
+ * @param gb Pointer to Game Boy system state.
+ */
+void label_002_787D(GBState *gb);
+
 #endif /* LADX_BANK2_LINK_MOTION_H */

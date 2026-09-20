@@ -68,6 +68,13 @@
 #define OBJECT_BOMBABLE_BLOCK        0xA9
 #define OBJECT_SWITCH_BUTTON         0xAA
 #define OBJECT_TORCH_UNLIT           0xAB
+#define OAM_GBC_PAL_0                0
+#define OAM_GBC_PAL_1                1
+#define OAM_GBC_PAL_2                2
+#define OAM_GBC_PAL_3                3
+#define OAM_GBC_PAL_5                5
+#define OAM_GBC_PAL_6                6
+#define OAM_GBC_PAL_7                7
 #define OBJECT_BOMBABLE_CAVE_DOOR    0xBA
 #define OBJECT_STAIRS_DOWN           0xBE
 #define OBJECT_HIDDEN_STAIRS_DOWN    0xBF

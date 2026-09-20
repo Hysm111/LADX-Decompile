@@ -6,12 +6,14 @@
 #include "constants/directions.h"
 #include "constants/entities.h"
 #include "constants/gameplay.h"
+#include "constants/gfx.h"
 #include "constants/hardware.h"
 #include "constants/inventory.h"
 #include "constants/joypad.h"
 #include "constants/link.h"
 #include "constants/memory.h"
 #include "constants/physics.h"
+#include "constants/rooms.h"
 #include "constants/sfx.h"
 #include "home/check_items_to_use.h"
 #include "home/link.h"
@@ -691,4 +693,571 @@ void LinkMotionUnstuckingHandler(GBState *gb, void (*bg_collision_handler)(GBSta
 
     /* jp ApplyLinkMotionState */
     ApplyLinkMotionState(gb, NULL, NULL, NULL);
+}
+
+void func_002_7587(GBState *gb) {
+    if (!gb) return;
+
+    /* ldh a, [hLinkRoomPosition] */
+    /* ldh [hLinkFinalRoomPosition], a */
+    uint8_t room_pos = gb_read_hram(gb, hLinkRoomPosition);
+    gb_write_hram(gb, hLinkFinalRoomPosition, room_pos);
+
+    /* ld a, [wFreeMovementMode]; and a; ret nz */
+    if (gb_read(gb, wFreeMovementMode) != 0) {
+        return;
+    }
+
+    /* ldh a, [hLinkPositionZ]; and a; jr z, jr_002_75B2 */
+    uint8_t pos_z = gb_read_hram(gb, hLinkPositionZ);
+    if (pos_z == 0) {
+        return;
+    }
+
+    /* ldh a, [hFrameCounter]; and $01; jr nz, ret_002_75B1 */
+    uint8_t frame = gb_read_hram(gb, hFrameCounter);
+    if ((frame & 0x01) != 0) {
+        return;
+    }
+
+    /* ld hl, wLinkOAMBuffer */
+    /* ldh a, [hLinkPositionY]; add $0B; cp $88; jr nc, ret_002_75B1 */
+    uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x0B);
+    if (pos_y >= 0x88) {
+        return;
+    }
+
+    /* ld [hl+], a */
+    gb_write(gb, wLinkOAMBuffer + 0, pos_y);
+
+    /* ldh a, [hLinkPositionX]; add $04; ld [hl+], a */
+    uint8_t pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + 0x04);
+    gb_write(gb, wLinkOAMBuffer + 1, pos_x);
+
+    /* ld a, $26; ld [hl+], a; ld [hl], $00 */
+    gb_write(gb, wLinkOAMBuffer + 2, 0x26);
+    gb_write(gb, wLinkOAMBuffer + 3, 0x00);
+}
+
+void func_002_75B2(GBState *gb) {
+    if (!gb) return;
+
+    /* xor a; ld [wD475], a */
+    gb_write(gb, wD475, 0);
+
+    /* ld a, [wLinkMotionState]; cp LINK_MOTION_UNSTUCKING; jr z, ret_002_75B1 */
+    if (gb_read(gb, wLinkMotionState) == LINK_MOTION_UNSTUCKING) {
+        return;
+    }
+
+    /* Fall through to ApplyLinkGroundPhysics */
+    ApplyLinkGroundPhysics(gb);
+}
+
+void HurtBySpikes(GBState *gb) {
+    if (!gb) return;
+
+    /* ld a, [wInvincibilityCounter]; and a; jr nz, .return */
+    if (gb_read(gb, wInvincibilityCounter) != 0) {
+        return;
+    }
+
+    /* call ResetSpinAttack */
+    ResetSpinAttack(gb);
+
+    /* Invert Link speed X */
+    uint8_t speed_x = gb_read_hram(gb, hLinkSpeedX);
+    speed_x = (uint8_t)(~speed_x + 1);
+    gb_write_hram(gb, hLinkSpeedX, speed_x);
+
+    /* Invert Link speed Y */
+    uint8_t speed_y = gb_read_hram(gb, hLinkSpeedY);
+    speed_y = (uint8_t)(~speed_y + 1);
+    gb_write_hram(gb, hLinkSpeedY, speed_y);
+
+    /* Mark Link as in the air */
+    gb_write(gb, wIsLinkInTheAir, 0x02);
+
+    /* If in top-view... */
+    if (gb_read_hram(gb, hIsSideScrolling) == 0) {
+        /* ... move Link slightly above the ground */
+        gb_write_hram(gb, hLinkVelocityZ, 0x10);
+        uint8_t pos_z = (uint8_t)(gb_read_hram(gb, hLinkPositionZ) + 0x02);
+        gb_write_hram(gb, hLinkPositionZ, pos_z);
+    }
+
+    /* Make Link invincible for 48 frames */
+    gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x10);
+    gb_write(gb, wInvincibilityCounter, 0x30);
+
+    /* Lose one full heart (4 half-hearts) */
+    uint8_t health_sub = (uint8_t)(gb_read(gb, wSubtractHealthBuffer) + 0x04);
+    gb_write(gb, wSubtractHealthBuffer, health_sub);
+
+    /* Play the "hurt" sfx */
+    gb_write_hram(gb, hWaveSfx, WAVE_SFX_LINK_HURT);
+}
+
+void ApplyLinkGroundPhysics_part2(GBState *gb) {
+    if (!gb) return;
+
+    /* ld a, [wLinkObjectPhysics]; cp OBJ_PHYSICS_TRACTOR_DEVICE; jp z, ApplyLinkGroundPhysics_Default */
+    uint8_t obj_physics = gb_read(gb, wLinkObjectPhysics);
+    if (obj_physics == OBJ_PHYSICS_TRACTOR_DEVICE) {
+        ApplyLinkGroundPhysics_Default(gb);
+        return;
+    }
+
+    /* cp OBJ_PHYSICS_CONVEYOR; jr c, .jr_002_7644; jp label_002_7C14 */
+    if (obj_physics >= OBJ_PHYSICS_CONVEYOR) {
+        /* label_002_7C14 is not yet implemented - callback modeled */
+        return;
+    }
+
+    /* cp OBJ_PHYSICS_PIT_WARP; jr z, .slipIntoPit */
+    if (obj_physics == OBJ_PHYSICS_PIT_WARP) {
+        goto slipIntoPit;
+    }
+
+    /* cp OBJ_PHYSICS_PIT; jr nz, label_002_76C0 */
+    if (obj_physics == OBJ_PHYSICS_PIT) {
+        goto slipIntoPit;
+    }
+
+    /* label_002_76C0 is handled separately */
+    label_002_76C0(gb);
+    return;
+
+slipIntoPit:
+    /* call ResetSpinAttack */
+    ResetSpinAttack(gb);
+
+    /* ld a, GROUND_STATUS_PIT; ld [wLinkGroundStatus], a */
+    gb_write(gb, wLinkGroundStatus, GROUND_STATUS_PIT);
+
+    /* ld hl, wPitSlippingCounter; inc [hl] */
+    uint8_t pit_slip = (uint8_t)(gb_read(gb, wPitSlippingCounter) + 1);
+    gb_write(gb, wPitSlippingCounter, pit_slip);
+
+    /* If in free-movement debug mode, or not every 4th frame, return. */
+    uint8_t frame = gb_read_hram(gb, hFrameCounter);
+    if (gb_read(gb, wFreeMovementMode) != 0 || (frame & 0x03) != 0) {
+        return;
+    }
+
+    /* Adjust Link X position (using content of hMultiPurpose1) */
+    uint8_t mp0 = gb_read_hram(gb, hMultiPurpose0);
+    uint8_t pos_x = gb_read_hram(gb, hLinkPositionX);
+    uint8_t target_x = (uint8_t)(pos_x - 0x08);
+    uint8_t diff_x = (uint8_t)(target_x - mp0);
+    if ((diff_x & 0x80) == 0) {
+        target_x = (uint8_t)(target_x - 1);
+    } else {
+        target_x = (uint8_t)(target_x + 1);
+    }
+    gb_write_hram(gb, hLinkPositionX, target_x);
+
+    /* Adjust Link Y position (using content of hMultiPurpose1) */
+    uint8_t mp1 = gb_read_hram(gb, hMultiPurpose1);
+    uint8_t pos_y = gb_read_hram(gb, hLinkPositionY);
+    uint8_t target_y = (uint8_t)(pos_y - (mp1 + 0x10));
+    if ((target_y & 0x80) != 0) {
+        target_y = (uint8_t)(target_y + 1);
+    } else {
+        target_y = (uint8_t)(target_y - 1);
+    }
+    gb_write_hram(gb, hLinkPositionY, target_y);
+
+    /* If Link is close from pit center (?), make it fall down */
+    pos_x = gb_read_hram(gb, hLinkPositionX);
+    pos_y = gb_read_hram(gb, hLinkPositionY);
+
+    uint8_t rel_x = (uint8_t)((pos_x - 0x08) + 0x02) & 0x0F;
+    if (rel_x >= 0x04) {
+        return;
+    }
+
+    uint8_t rel_y = (uint8_t)((pos_y - 0x10) + 0x02) & 0x0F;
+    if (rel_y >= 0x04) {
+        return;
+    }
+
+    /* Make Link fall down the pit */
+    gb_write_hram(gb, hLinkPositionY, (uint8_t)(pos_y + 0x03));
+    gb_write(gb, wLinkMotionState, LINK_MOTION_FALLING_DOWN);
+    ResetSpinAttack(gb);
+    gb_write(gb, wLinkAnimationFrame, 0);
+    gb_write(gb, wLinkFallingDownObjectPhysics, obj_physics);
+    gb_write_hram(gb, hWaveSfx, WAVE_SFX_LINK_FALL);
+}
+
+void ApplyLinkGroundPhysics(GBState *gb) {
+    if (!gb) return;
+
+    /* ld a, [wRoomTransitionState]; ld hl, wDialogState; or [hl]; jp nz, label_002_76C0 */
+    if (gb_read(gb, wRoomTransitionState) != 0 || gb_read(gb, wDialogState) != 0) {
+        label_002_76C0(gb);
+        return;
+    }
+
+    /* Store id of the object under Link's feet into a */
+    uint8_t obj_under = GetObjectUnderLink(gb);
+
+    /* If over an overworld well, fall immediately into it */
+    uint8_t is_indoor = gb_read(gb, wIsIndoor);
+    if (is_indoor == 0) {
+        if (obj_under == OBJECT_WELL) {
+            /* ApplyLinkGroundPhysics_part2.makeLinkFallInPit */
+            ApplyLinkGroundPhysics_part2(gb);
+            return;
+        }
+    } else {
+        /* If over side-view spikes, hurt the player immediately */
+        if (obj_under == OBJECT_SIDE_VIEW_SPIKES) {
+            uint8_t pos_y = gb_read_hram(gb, hLinkPositionY);
+            pos_y = (uint8_t)((pos_y - 1) & 0x0F);
+            if (pos_y < 0x0C) {
+                HurtBySpikes(gb);
+            }
+        }
+    }
+
+    /* call GetObjectPhysicsFlags_trampoline; ld [wLinkObjectPhysics], a */
+    /* GetObjectPhysicsFlags_trampoline is not yet implemented - using callback model */
+    /* For now, we read the already-set wLinkObjectPhysics */
+    uint8_t obj_physics = gb_read(gb, wLinkObjectPhysics);
+    if (obj_physics == 0) {
+        ApplyLinkGroundPhysics_Default(gb);
+        return;
+    }
+
+    /* cp OBJ_PHYSICS_SPIKES; jr nz, ApplyLinkGroundPhysics_part2 */
+    if (obj_physics == OBJ_PHYSICS_SPIKES) {
+        HurtBySpikes(gb);
+        return;
+    }
+
+    /* Fall through to part2 */
+    ApplyLinkGroundPhysics_part2(gb);
+}
+
+void label_002_76C0(GBState *gb) {
+    if (!gb) return;
+
+    uint8_t obj_physics = gb_read(gb, wLinkObjectPhysics);
+
+    /* cp OBJ_PHYSICS_RAISED; jr nz, .jr_76D5 */
+    if (obj_physics == OBJ_PHYSICS_RAISED) {
+        /* ld a, [wC13B]; add $FD; ld [wC13B], a; jp ApplyLinkGroundPhysics_Default */
+        uint8_t c13b = (uint8_t)(gb_read(gb, wC13B) + 0xFD);
+        gb_write(gb, wC13B, c13b);
+        ApplyLinkGroundPhysics_Default(gb);
+        return;
+    }
+
+    /* .jr_76D5: cp OBJ_PHYSICS_LOWERED; jr nz, .jr_76E4 */
+    if (obj_physics == OBJ_PHYSICS_LOWERED) {
+        /* ld a, [wC13B]; add $02; ld [wC13B], a; jp ApplyLinkGroundPhysics_Default */
+        uint8_t c13b = (uint8_t)(gb_read(gb, wC13B) + 0x02);
+        gb_write(gb, wC13B, c13b);
+        ApplyLinkGroundPhysics_Default(gb);
+        return;
+    }
+
+    /* .jr_76E4: cp OBJ_PHYSICS_LAVA; jr z, .jr_76EC */
+    /* cp OBJ_PHYSICS_DEEP_WATER; jr nz, jr_002_7750 */
+    if (obj_physics == OBJ_PHYSICS_LAVA || obj_physics == OBJ_PHYSICS_DEEP_WATER) {
+        /* .jr_76EC: ldh a, [hLinkSlowWalkingSpeed]; and a; jr z, .jr_76F4; jp label_002_7C50 */
+        if (gb_read_hram(gb, hLinkSlowWalkingSpeed) != 0) {
+            /* label_002_7C50 not implemented */
+            return;
+        }
+
+        /* .jr_76F4: ld a, [wItemUsageContext]; cp ITEM_USAGE_ON_RAFT; jr z, jr_002_7750 */
+        if (gb_read(gb, wItemUsageContext) == ITEM_USAGE_ON_RAFT) {
+            goto jr_002_7750;
+        }
+
+        /* ld a, [wLinkMotionState]; cp LINK_MOTION_RECOVER; jr z, ret_002_774F */
+        /* cp LINK_MOTION_SWIMMING; jr z, ret_002_774F */
+        uint8_t motion = gb_read(gb, wLinkMotionState);
+        if (motion == LINK_MOTION_RECOVER || motion == LINK_MOTION_SWIMMING) {
+            return;
+        }
+
+        /* ldh a, [hLinkPositionY]; add $FE; call func_002_5928 */
+        uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0xFE);
+        /* func_002_5928 generates water splash VFX - stub for now */
+
+        /* ldh a, [hObjectUnderEntity]; cp $06; jr z, label_002_7719 */
+        if (gb_read_hram(gb, hObjectUnderEntity) == 0x06) {
+            goto label_002_7719;
+        }
+
+        /* ld a, [wHasFlippers]; and a; jr nz, jr_002_7732 */
+        if (gb_read(gb, wHasFlippers) != 0) {
+            goto jr_002_7732;
+        }
+
+label_002_7719:
+        /* ld a, $50; ldh [hLinkCountdown], a */
+        gb_write_hram(gb, hLinkCountdown, 0x50);
+
+        /* ld a, LINK_MOTION_RECOVER; ld [wLinkMotionState], a */
+        gb_write(gb, wLinkMotionState, LINK_MOTION_RECOVER);
+
+        /* ldh a, [hObjectUnderEntity]; ldh [hLinkPhysicsModifier], a */
+        gb_write_hram(gb, hLinkPhysicsModifier, gb_read_hram(gb, hObjectUnderEntity));
+        /* ldh a, [hLinkPositionY]; add $02; ldh [hLinkPositionY], a */
+        pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x02);
+        gb_write_hram(gb, hLinkPositionY, pos_y);
+        /* ld a, $01; ld [wC167], a; ret */
+        gb_write(gb, wC167, 0x01);
+        return;
+
+jr_002_7732:
+        /* ld a, $01; ld [wLinkMotionState], a */
+        gb_write(gb, wLinkMotionState, LINK_MOTION_SWIMMING);
+        /* xor a; ldh [hLinkPhysicsModifier], a */
+        gb_write_hram(gb, hLinkPhysicsModifier, 0);
+        /* call ClearLinkPositionIncrement */
+        ClearLinkPositionIncrement(gb);
+        /* ldh a, [hLinkDirection]; ld e, a; ld d, b; ld hl, Data_002_750A; add hl, de; ld a, [hl]; ldh [hLinkSpeedX], a */
+        uint8_t dir = gb_read_hram(gb, hLinkDirection) & 0x03;
+        /* Data_002_750A and Data_002_750E are direction-based speed tables */
+        static const int8_t Data_002_750A[4] = { 0x00, 0x10, (int8_t)0xF0, 0x00 };
+        static const int8_t Data_002_750E[4] = { (int8_t)0xF0, 0x00, 0x00, 0x10 };
+        gb_write_hram(gb, hLinkSpeedX, (uint8_t)Data_002_750A[dir]);
+        gb_write_hram(gb, hLinkSpeedY, (uint8_t)Data_002_750E[dir]);
+        return;
+
+ret_002_774F:
+        return;
+
+jr_002_7750:
+        /* Falls through to ApplyLinkGroundPhysics_Default for GRASS and SHALLOW_WATER */
+        ;
+    }
+
+    /* cp OBJ_PHYSICS_GRASS; jp z, label_002_787D */
+    if (obj_physics == OBJ_PHYSICS_GRASS) {
+        label_002_787D(gb);
+        return;
+    }
+
+    /* cp OBJ_PHYSICS_SHALLOW_WATER; jr nz, ApplyLinkGroundPhysics_Default */
+    if (obj_physics == OBJ_PHYSICS_SHALLOW_WATER) {
+        /* Write transient vfx position to wLinkOAMBuffer */
+        uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x0C);
+        gb_write(gb, wLinkOAMBuffer + 0, pos_y);
+        uint8_t pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + 0x00);
+        gb_write(gb, wLinkOAMBuffer + 1, pos_x);
+        gb_write(gb, wLinkOAMBuffer + 2, 0x1C);
+
+        /* GBC palette handling - simplified */
+        if (gb_read_hram(gb, hIsGBC) != 0) {
+            uint8_t frame = gb_read_hram(gb, hFrameCounter);
+            uint8_t attr = (uint8_t)((frame & 0x02) << 3) | (OAMF_PAL0 | OAM_GBC_PAL_3);
+            gb_write(gb, wLinkOAMBuffer + 3, attr);
+        } else {
+            uint8_t frame = gb_read_hram(gb, hFrameCounter);
+            uint8_t attr = (uint8_t)(((frame << 1) & 0x10) | OAMF_PAL1);
+            gb_write(gb, wLinkOAMBuffer + 3, attr);
+        }
+
+        /* Second sprite */
+        pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x0C);
+        gb_write(gb, wLinkOAMBuffer + 4, pos_y);
+        pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + 0x08);
+        gb_write(gb, wLinkOAMBuffer + 5, pos_x);
+        gb_write(gb, wLinkOAMBuffer + 6, 0x1C);
+        uint8_t attr2 = gb_read(gb, wLinkOAMBuffer + 3);
+        gb_write(gb, wLinkOAMBuffer + 7, (uint8_t)(attr2 | 0x20));
+
+        gb_write(gb, wLinkGroundStatus, GROUND_STATUS_SLOW);
+
+        /* Play water splash jingle every 16 frames when moving */
+        if ((gb_read_hram(gb, hFrameCounter) & 0x0F) == 0) {
+            if (gb_read_hram(gb, hPressedButtonsMask) != 0) {
+                if (gb_read(gb, wDialogState) == 0) {
+                    gb_write_hram(gb, hJingle, JINGLE_WATER_SPLASH);
+                }
+            }
+        }
+
+        /* ld a, [wC13B]; add $02; ld [wC13B], a */
+        uint8_t c13b = (uint8_t)(gb_read(gb, wC13B) + 0x02);
+        gb_write(gb, wC13B, c13b);
+        return;
+    }
+
+    /* Default case */
+    ApplyLinkGroundPhysics_Default(gb);
+}
+
+void ApplyLinkGroundPhysics_Default(GBState *gb) {
+    if (!gb) return;
+
+    /* Reset wPitSlippingCounter */
+    gb_write(gb, wPitSlippingCounter, 0);
+
+    /* If Link was swimming, mark it as no longer swimming */
+    if (gb_read(gb, wLinkMotionState) == LINK_MOTION_SWIMMING) {
+        gb_write(gb, wLinkMotionState, LINK_MOTION_DEFAULT);
+    }
+
+    uint8_t obj_physics = gb_read(gb, wLinkObjectPhysics);
+    uint8_t under = gb_read_hram(gb, hObjectUnderEntity);
+
+    /* cp OBJ_PHYSICS_OCEAN_SWITCH_BLOCK; jr nz, .grassVfxEnd */
+    if (obj_physics == OBJ_PHYSICS_OCEAN_SWITCH_BLOCK) {
+        /* ldh a, [hObjectUnderEntity]; cp $DB; jr c, .grassVfxEnd; cp $DD; jr nc, .grassVfxEnd */
+        if (under >= 0xDB && under < 0xDD) {
+            /* sub $DB; ld e, a; ld d, $00; ld hl, SwitchBlocksStateTable; add hl, de */
+            uint8_t idx = under - 0xDB;
+            static const uint8_t SwitchBlocksStateTable[2] = { 0x00, 0x02 };
+            uint8_t table_val = SwitchBlocksStateTable[idx];
+            uint8_t switch_state = gb_read(gb, wSwitchBlocksState);
+            if ((switch_state ^ table_val) != 0) {
+                /* ld a, [wSwitchableObjectAnimationStage]; ld e, a; ld d, $00; ld hl, Data_002_786F; add hl, de */
+                uint8_t anim_stage = gb_read(gb, wSwitchableObjectAnimationStage);
+                static const int8_t Data_002_786F[12] = { -4, -1, -1, -2, -2, -2, -3, -3, -3, -4, -4, -4 };
+                int8_t adj = Data_002_786F[anim_stage & 0x0F];
+                uint8_t c13b = (uint8_t)(gb_read(gb, wC13B) + adj);
+                gb_write(gb, wC13B, c13b);
+                gb_write(gb, wLinkStandingOnSwitchBlock, 0x01);
+                return;
+            }
+        }
+    }
+
+grassVfxEnd:
+    /* ld a, [wLinkStandingOnSwitchBlock]; and a; jr z, .jr_002_77F7 */
+    if (gb_read(gb, wLinkStandingOnSwitchBlock) != 0) {
+        /* ld a, NOISE_SFX_FOOTSTEP; ldh [hNoiseSfx], a */
+        gb_write_hram(gb, hNoiseSfx, NOISE_SFX_FOOTSTEP);
+        /* xor a; ld [wLinkStandingOnSwitchBlock], a */
+        gb_write(gb, wLinkStandingOnSwitchBlock, 0);
+    }
+
+    /* .jr_002_77F7: ld a, [wIsIndoor]; and a; jp z, .return */
+    if (gb_read(gb, wIsIndoor) == 0) {
+        return;
+    }
+
+    /* ld a, [wRoomTransitionState]; and a; jr nz, .return */
+    if (gb_read(gb, wRoomTransitionState) != 0) {
+        return;
+    }
+
+    /* When stepping over a switch button, activate it */
+    if (under == OBJECT_SWITCH_BUTTON) {
+        if (gb_read(gb, wSwitchButtonPressed) == 0) {
+            uint8_t c1ca = (uint8_t)(gb_read(gb, wC1CA) + 1);
+            gb_write(gb, wC1CA, c1ca);
+            if (c1ca == 0x18) {
+                /* Kanalet gate switch */
+                gb_write(gb, wSwitchButtonPressed, 0x60);
+                gb_write_hram(gb, hWaveSfx, WAVE_SFX_FLOOR_SWITCH);
+                gb_write_hram(gb, hReplaceTiles, REPLACE_TILES_BUTTON_PRESSED);
+
+                if (gb_read_hram(gb, hMapRoom) == ROOM_INDOOR_B_KANALET_GATE_SWITCH) {
+                    /* set OW_ROOM_STATUS_FLAG_CHANGED, [hl] at wOverworldRoomStatus + ROOM_OW_KANALET_GATE */
+                    uint16_t addr = wOverworldRoomStatus + 0x79;
+                    uint8_t val = gb_read(gb, addr) | 0x10;
+                    gb_write(gb, addr, val);
+                }
+            }
+
+            /* ld a, [wC13B]; add $FD; ld [wC13B], a; ret */
+            uint8_t c13b = (uint8_t)(gb_read(gb, wC13B) + 0xFD);
+            gb_write(gb, wC13B, c13b);
+            return;
+        }
+    }
+
+    /* .switchButtonEnd: xor a; ld [wC1CA], a */
+    gb_write(gb, wC1CA, 0);
+
+    /* ldh a, [hLinkRoomPosition]; ld hl, hLinkFinalRoomPosition; cp [hl] */
+    uint8_t room_pos = gb_read_hram(gb, hLinkRoomPosition);
+    uint8_t final_room_pos = gb_read_hram(gb, hLinkFinalRoomPosition);
+    uint8_t c1c9 = gb_read(gb, wC1C9);
+
+    if (room_pos == final_room_pos) {
+        /* ldh a, [hObjectUnderEntity]; cp $DF; jr nz, .jr_002_786C */
+        if (under == 0xDF) {
+            /* ldh a, [hLinkInteractiveMotionBlocked]; ld e, a */
+            /* ld a, [wDialogGotItem]; ld d, a */
+            /* ld a, [wDialogState]; or e; or d; jr nz, .jr_002_786C */
+            if (gb_read_hram(gb, hLinkInteractiveMotionBlocked) == 0 &&
+                gb_read(gb, wDialogGotItem) == 0 &&
+                gb_read(gb, wDialogState) == 0) {
+                /* inc [hl]; ld a, [hl]; cp $28; jr c, .return */
+                c1c9++;
+                gb_write(gb, wC1C9, c1c9);
+                if (c1c9 < 0x28) {
+                    return;
+                }
+                /* ld a, NOISE_SFX_RUMBLE2; ldh [hNoiseSfx], a; jp label_002_4D97 */
+                gb_write_hram(gb, hNoiseSfx, NOISE_SFX_RUMBLE2);
+                /* label_002_4D97 not implemented - callback modeled */
+                return;
+            }
+        }
+    }
+
+    /* .jr_002_786C: ld [hl], $00 */
+    gb_write(gb, wC1C9, 0);
+
+    return;
+}
+
+void label_002_787D(GBState *gb) {
+    if (!gb) return;
+
+    /* Write transient vfx position to wLinkOAMBuffer */
+    uint8_t pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x08);
+    gb_write(gb, wLinkOAMBuffer + 0, pos_y);
+
+    uint8_t pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) - 1);
+    gb_write(gb, wLinkOAMBuffer + 1, pos_x);
+
+    gb_write(gb, wLinkOAMBuffer + 2, 0x1A);
+
+    /* GBC palette handling */
+    uint8_t attr = 0;
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        if (gb_read(gb, wIsIndoor) == 0) {
+            if (gb_read_hram(gb, hMapRoom) == UNKNOWN_ROOM_32) {
+                attr = OAMF_PAL0 | OAM_GBC_PAL_6;
+            }
+        }
+    }
+    gb_write(gb, wLinkOAMBuffer + 3, attr);
+
+    /* Second sprite */
+    pos_y = (uint8_t)(gb_read_hram(gb, hLinkPositionY) + 0x08);
+    gb_write(gb, wLinkOAMBuffer + 4, pos_y);
+
+    pos_x = (uint8_t)(gb_read_hram(gb, hLinkPositionX) + 0x07);
+    gb_write(gb, wLinkOAMBuffer + 5, pos_x);
+
+    gb_write(gb, wLinkOAMBuffer + 6, 0x1A);
+
+    /* GBC palette for second sprite */
+    uint8_t attr2 = 0;
+    if (gb_read_hram(gb, hIsGBC) != 0) {
+        if (gb_read(gb, wIsIndoor) == 0) {
+            if (gb_read_hram(gb, hMapRoom) == UNKNOWN_ROOM_32) {
+                attr2 = OAMF_PAL0 | OAM_GBC_PAL_6;
+            }
+        }
+    }
+    /* pop af; xor $20; ld [hl], a */
+    attr2 ^= 0x20;
+    gb_write(gb, wLinkOAMBuffer + 7, attr2);
+
+    /* ld a, GROUND_STATUS_SLOW; ld [wLinkGroundStatus], a; ret */
+    gb_write(gb, wLinkGroundStatus, GROUND_STATUS_SLOW);
 }

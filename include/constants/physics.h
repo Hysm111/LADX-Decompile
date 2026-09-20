@@ -24,6 +24,8 @@
 #define OBJ_PHYSICS_LOWERED            0x09
 #define OBJ_PHYSICS_WIDE_STAIRS        0x0A
 #define OBJ_PHYSICS_LAVA               0x0B
+#define OBJ_PHYSICS_CONVEYOR           0xF0
+#define OBJ_PHYSICS_SPIKES             0xE0
 #define OBJ_PHYSICS_LEDGE_OVERWORLD    0x10 /* jumpable, only downwards */
 #define OBJ_PHYSICS_REMOVABLE_OBSTACLE 0x30 /* bush/rock/keyblock/cracked block/sword-crystals */
 #define OBJ_PHYSICS_PIT                0x50
@@ -35,5 +37,10 @@
 #define OBJ_PHYSICS_WATER_SIDESCROLL   0xB0
 #define OBJ_PHYSICS_LADDER_SIDESCROLL  0xB1
 #define OBJ_PHYSICS_TRACTOR_DEVICE     0xFF
+
+/* Ground status values */
+#define GROUND_STATUS_NONE          0x00
+#define GROUND_STATUS_SLOW          0x03
+#define GROUND_STATUS_PIT           0x07
 
 #endif /* LADX_CONSTANTS_PHYSICS_H */

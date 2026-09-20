@@ -326,6 +326,8 @@
 #define wSwordDirection             0xC136
 #define wLinkObjectPhysics          0xC181
 #define wC1C4                       0xC1C4
+#define wC1C9                       0xC1C9
+#define wC1CA                       0xC1CA
 #define wEntitiesSpeedZTable        0xC320
 #define wC139                           0xC139
 #define wC13A                           0xC13A
@@ -403,6 +405,7 @@
 #define wOcarinaSongFlags               0xDB49
 #define wRoomEvent                      0xC18E
 #define wInventoryItems                 0xDB00
+#define wHasFlippers                    0xDB0C
 #define wBGUpdateRegionOriginLow        0xC127
 #define wBGUpdateRegionTilesCount       0xC128
 #define wGoldenLeavesCount              0xDB15

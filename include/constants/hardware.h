@@ -140,5 +140,6 @@
 #define hObjectUnderLink             0xFFB8
 #define hObjectUnderEntity           0xFFAF
 #define hLinkRoomPosition            0xFFFA
+#define hLinkFinalRoomPosition       0xFFFB
 
 #endif /* LADX_CONSTANTS_HARDWARE_H */

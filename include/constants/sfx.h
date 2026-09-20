@@ -29,6 +29,8 @@
 #define WAVE_SFX_OCARINA_BALLAD                 0x09
 #define WAVE_SFX_OCARINA_FROG                   0x0A
 #define WAVE_SFX_OCARINA_MAMBO                  0x0B
+#define WAVE_SFX_LINK_FALL                      0x0C
+#define WAVE_SFX_FLOOR_SWITCH                   0x0E
 #define WAVE_SFX_TEXT_PRINT                     0x0F
 #define WAVE_SFX_BOSS_DEATH_CRY                 0x10
 #define WAVE_SFX_OCARINA_NOSONG                 0x15
@@ -56,6 +58,7 @@
 #define NOISE_SFX_SWORD_SWING_D                 0x18
 #define NOISE_SFX_PING                          0x19
 #define NOISE_SFX_OPEN_KEY_CAVERN               0x2A
+#define NOISE_SFX_RUMBLE2                       0x2B
 
 #define LOW_HEALTH_SFX_PAUSE                    0x30
 
