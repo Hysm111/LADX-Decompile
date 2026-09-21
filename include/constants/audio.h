@@ -48,4 +48,12 @@
 
 #define MUSIC_FADE_OUT_TIMER_MAX        0x38
 
+/* Jingle constants */
+#define JINGLE_BUMP                      0x09
+#define JINGLE_ITEM_FALLING              0x18
+
+/* Noise SFX constants */
+#define NOISE_SFX_ENEMY_DESTROYED        0x13
+#define NOISE_SFX_CLINK                  0x17
+
 #endif /* LADX_CONSTANTS_AUDIO_H */

@@ -607,6 +607,72 @@ void label_3E8E(GBState *gb, uint16_t entity_index);
 void StopEntityRecoilOnCollision(GBState *gb, uint16_t entity_index);
 
 /**
+ * ReturnIfNonInteractive_03 (03:7F78)
+ * Returns early if entity is not active or game is in dialog/transition.
+ * Has an entry point .allowInactiveEntity that skips the entity status check.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param allow_inactive_entity If true, skip the entity status check
+ * @return true if should return early, false to continue
+ */
+bool ReturnIfNonInteractive_03(GBState *gb, bool allow_inactive_entity);
+
+/**
+ * ApplyRecoilIfNeeded_03 (03:7FA9)
+ * If entity has ignore-hits countdown, applies recoil velocity and handles collision.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ApplyRecoilIfNeeded_03(GBState *gb, uint16_t entity_index);
+
+/**
+ * BouncingEntityPhysics (03:60B3)
+ * Updates entity position with speed, handles bouncing physics for side-scrolling and top-down.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void BouncingEntityPhysics(GBState *gb, uint16_t entity_index);
+
+/**
+ * SetEntityVariantForDirection_03 (03:58FC)
+ * Sets entity sprite variant based on direction and inertia.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void SetEntityVariantForDirection_03(GBState *gb, uint16_t entity_index);
+
+/**
+ * UpdateEntityPosWithSpeed_03 (03:7F25)
+ * Updates entity position using speed values.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t entity_index);
+
+/**
+ * ApplyEntityInteractionWithBackground (03:7893)
+ * Applies entity interaction with background tiles.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index);
+
+/**
+ * func_003_6B7B (03:6B7B)
+ * Helper function used by BouncingEntityPhysics.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_6B7B(GBState *gb, uint16_t entity_index);
+
+
+/**
  * BossIntro (00:3EE8)
  * Handles boss/miniboss music trigger and intro dialog playback.
  *

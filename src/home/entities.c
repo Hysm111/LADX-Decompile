@@ -1099,10 +1099,10 @@ uint8_t LoadEntityFromDefinition(GBState *gb, uint16_t *def_ptr,
 }
 
 void LoadRoomEntities(GBState *gb,
-                      void (*update_recent_rooms_list)(GBState *),
-                      uint16_t (*spawn_new_entity)(GBState *, uint8_t entity_type),
-                      void (*configure_new_entity)(GBState *, uint8_t slot),
-                      void (*prepare_entity_position)(GBState *, uint8_t slot)) {
+                       void (*update_recent_rooms_list)(GBState *),
+                       uint16_t (*spawn_new_entity)(GBState *, uint8_t entity_type),
+                       void (*configure_new_entity)(GBState *, uint8_t slot),
+                       void (*prepare_entity_position)(GBState *, uint8_t slot)) {
     if (!gb) return;
 
     if (update_recent_rooms_list) {
@@ -1148,4 +1148,191 @@ void LoadRoomEntities(GBState *gb,
     }
 
     ReloadSavedBank(gb);
+}
+
+/* Bank 3 entity helper callbacks */
+
+bool ReturnIfNonInteractive_03(GBState *gb, bool allow_inactive_entity) {
+    if (!gb) return true;
+
+    if (!allow_inactive_entity) {
+        uint8_t status = gb_read_hram(gb, hActiveEntityStatus);
+        if (status != ENTITY_STATUS_ACTIVE) {
+            return true;
+        }
+    }
+
+    uint8_t gameplay_type = gb_read(gb, wGameplayType);
+    if (gameplay_type == GAMEPLAY_WORLD_MAP) {
+        return true;
+    }
+    if (gameplay_type == GAMEPLAY_CREDITS) {
+        return false;
+    }
+    if (gameplay_type != GAMEPLAY_WORLD) {
+        return true;
+    }
+
+    if (gb_read(gb, wTransitionSequenceCounter) != 0x04) {
+        return true;
+    }
+
+    uint8_t dialog_state = gb_read(gb, wDialogState);
+    uint8_t c1a8 = gb_read(gb, wC1A8);
+    uint8_t inventory_appearing = gb_read(gb, wInventoryAppearing);
+    if ((dialog_state | c1a8 | inventory_appearing) != 0) {
+        return true;
+    }
+
+    uint8_t room_transition = gb_read(gb, wRoomTransitionState);
+    if (room_transition != 0) {
+        return true;
+    }
+
+    return false;
+}
+
+void ApplyRecoilIfNeeded_03(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+
+    uint8_t countdown = gb_read(gb, (uint16_t)(wEntitiesIgnoreHitsCountdownTable + entity_index));
+    if (countdown == 0) {
+        return;
+    }
+
+    countdown--;
+    gb_write(gb, (uint16_t)(wEntitiesIgnoreHitsCountdownTable + entity_index), countdown);
+
+    label_3E8E(gb, entity_index);
+
+    /* Save original speed */
+    uint8_t orig_speed_x = gb_read(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index));
+    uint8_t orig_speed_y = gb_read(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index));
+
+    /* Replace with recoil velocity */
+    uint8_t recoil_x = gb_read(gb, (uint16_t)(wEntitiesRecoilVelocityX + entity_index));
+    uint8_t recoil_y = gb_read(gb, (uint16_t)(wEntitiesRecoilVelocityY + entity_index));
+    gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), recoil_x);
+    gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), recoil_y);
+
+    /* Update position with recoil speed */
+    UpdateEntityPosWithSpeed_03(gb, entity_index);
+
+    /* Check if entity allows out of bounds */
+    uint8_t options1 = gb_read(gb, (uint16_t)(wEntitiesOptions1Table + entity_index));
+    if ((options1 & ENTITY_OPT1_ALLOW_OUT_OF_BOUNDS) == 0) {
+        ApplyEntityInteractionWithBackground(gb, entity_index);
+    }
+
+    /* Restore original speed */
+    gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), orig_speed_y);
+    gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), orig_speed_x);
+
+    StopEntityRecoilOnCollision(gb, entity_index);
+}
+
+void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+
+    /* Update X position */
+    int16_t pos_x = (int16_t)gb_read(gb, (uint16_t)(wEntitiesPosXSignTable + entity_index)) << 8;
+    pos_x |= gb_read(gb, (uint16_t)(wEntitiesPosXTable + entity_index));
+    int8_t speed_x = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index));
+    pos_x += speed_x;
+    gb_write(gb, (uint16_t)(wEntitiesPosXTable + entity_index), (uint8_t)pos_x);
+    gb_write(gb, (uint16_t)(wEntitiesPosXSignTable + entity_index), (uint8_t)(pos_x >> 8));
+
+    /* Update Y position */
+    int16_t pos_y = (int16_t)gb_read(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index)) << 8;
+    pos_y |= gb_read(gb, (uint16_t)(wEntitiesPosYTable + entity_index));
+    int8_t speed_y = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index));
+    pos_y += speed_y;
+    gb_write(gb, (uint16_t)(wEntitiesPosYTable + entity_index), (uint8_t)pos_y);
+    gb_write(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index), (uint8_t)(pos_y >> 8));
+}
+
+void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: Background interaction is complex, just clear the speed for now */
+    (void)entity_index;
+}
+
+void func_003_6B7B(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: Helper function for BouncingEntityPhysics */
+    (void)entity_index;
+}
+
+void BouncingEntityPhysics(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+
+    UpdateEntityPosWithSpeed_03(gb, entity_index);
+    func_003_6B7B(gb, entity_index);
+    ApplyEntityInteractionWithBackground(gb, entity_index);
+
+    /* Side-scrolling bounce */
+    if (gb_read_hram(gb, hIsSideScrolling) != 0) {
+        uint8_t collisions = gb_read(gb, (uint16_t)(wEntitiesCollisionsTable + entity_index));
+        if ((collisions & 0x08) != 0) {
+            /* Bounce off ground */
+            uint8_t pos_y = gb_read(gb, (uint16_t)(wEntitiesPosYTable + entity_index));
+            pos_y = (pos_y & 0xF0) + 0x05;
+            gb_write(gb, (uint16_t)(wEntitiesPosYTable + entity_index), pos_y);
+
+            int8_t speed_y = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index));
+            speed_y = (int8_t)(~speed_y);  /* cpl */
+            speed_y >>= 1;  /* sra */
+            if (speed_y < -8) {  /* cp $F8 */
+                gb_write_hram(gb, hNoiseSfx, NOISE_SFX_CLINK);
+            } else {
+                speed_y = 0;
+            }
+            gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), (uint8_t)speed_y);
+            return;
+        }
+        return;
+    }
+
+    /* Top-down bounce */
+    uint8_t pos_z = gb_read(gb, (uint16_t)(wEntitiesPosZTable + entity_index));
+    if ((pos_z & 0x80) == 0) {
+        return;
+    }
+
+    /* Clear Z position */
+    gb_write(gb, (uint16_t)(wEntitiesPosZTable + entity_index), 0);
+
+    uint8_t ground_status = gb_read(gb, (uint16_t)(wEntitiesGroundStatusTable + entity_index));
+    if (ground_status == ENTITY_GROUND_STATUS_SHALLOW_WATER) {
+        /* Clear speeds for shallow water */
+        gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), 0);
+        gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), 0);
+        return;
+    }
+
+    int8_t speed_z = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedZTable + entity_index));
+    speed_z >>= 1;  /* sra */
+    speed_z = (int8_t)~speed_z;  /* cpl */
+    if (speed_z >= 7) {
+        gb_write_hram(gb, hNoiseSfx, NOISE_SFX_CLINK);
+    } else {
+        gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), 0);
+        gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), 0);
+    }
+}
+
+void SetEntityVariantForDirection_03(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+
+    uint8_t direction = gb_read(gb, (uint16_t)(wEntitiesDirectionTable + entity_index));
+    static const uint8_t EntityVariantForDirection_03[4] = { 6, 4, 2, 0 };
+    uint8_t base_variant = EntityVariantForDirection_03[direction & 0x03];
+
+    uint8_t inertia = gb_read(gb, (uint16_t)(wEntitiesInertiaTable + entity_index));
+    inertia++;
+    gb_write(gb, (uint16_t)(wEntitiesInertiaTable + entity_index), inertia);
+    uint8_t inertia_bit = (inertia >> 3) & 0x01;
+    uint8_t final_variant = base_variant | inertia_bit;
+
+    SetEntitySpriteVariant(gb, entity_index, final_variant);
 }

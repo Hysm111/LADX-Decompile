@@ -65,4 +65,26 @@ void EntityInitNoop(GBState *gb);
 void EntityShiftPosition(GBState *gb, uint16_t bc);
 void EntityShiftPosition_shiftBy8(GBState *gb, uint16_t bc, uint16_t sign_table, uint16_t pos_table);
 
+/* Entity Init Functions (03:4B57+) */
+void EntityInitSouthFaceShrineDoor(GBState *gb);
+void EntityInitLeever(GBState *gb);
+void EntityInitZora(GBState *gb);
+void EntityInitWithRightDirection(GBState *gb);
+uint8_t GetColorDungeonRoomStatus(GBState *gb);
+void EntityInitRotoswitchRed(GBState *gb);
+void EntityInitRotoswitchYellow(GBState *gb);
+void EntityInitRotoswitchBlue(GBState *gb);
+void EntityInitHopper(GBState *gb);
+void EntityInitFlyingHopperBombs(GBState *gb);
+void EntityInitHardHitBeetle(GBState *gb);
+void EntityInitAvalaunch(GBState *gb);
+void EntityInitColorGuardianBlue(GBState *gb);
+void EntityInitColorGuardianRed(GBState *gb);
+void EntityInitColorDungeonBook(GBState *gb);
+void EntityInitGiantBuzzBlob(GBState *gb);
+
+/* Entity Handlers */
+void EntityBurningHandler(GBState *gb, uint16_t bc);
+void EntityFallHandler(GBState *gb, uint16_t bc);
+
 #endif /* LADX_BANK3_ENTITIES_H */

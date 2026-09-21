@@ -167,6 +167,9 @@
 #define wEntitiesOptions1Table                0xC430
 #define wEntitiesLoadOrderTable               0xC460
 #define wEntitiesPowerRecoilingTable          0xC4A0
+#define wEntitiesGroundStatusTable            0xC470
+#define wEntitiesSpeedZTable                  0xC320
+#define wEntitiesSpeedZAccTable               0xC330
 #define wEntitiesClearedRooms                 0xCF00
 #define wEntitiesRoomTable                    0xC3E0
 #define wEntitiesHealthTable                  0xC360
@@ -460,6 +463,8 @@
 #define wTextDebuggerDialogId                   0xC109
 #define wEntitiesPrivateState1Table             0xC2B0
 #define wEntitiesPrivateState2Table             0xC2C0
+#define wEntitiesPrivateState3Table             0xC2D0
+#define wEntitiesPrivateState4Table             0xC440
 #define wHasInstrument4                         0xDB68
 #define wPowerBraceletLevel                     0xDB43
 #define wOBJ0Palette                            0xDB98

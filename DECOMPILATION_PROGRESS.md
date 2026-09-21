@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~68.5%
-* **Number of Verified Functions**: 860
-* **Number of Decompiled Functions**: 660
-* **Number Remaining**: ~352 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:4AC5)
-* **Current Task**: Batch 77: Bank 3 entity initialization functions (EntityInitSnake through EntityInitNoop)
-* **Last Completed Task**: Decompile and verify entity init functions in ROM Bank 3 (EntityInitSnake, EntityInitSideViewPlatformVertical, EntityInitZol, EntityInitMarinAtTheShore, EntityInitBomber, EntityInitBushCrawler, EntityInitTarinBeekeeper, EntityInitTelephone, EntityInitRichard, SetMusicTrackIfHasSword, SetMusicTrack, EntityInitFinalNightmare, EntityInitDreamShrineBed, EntityInitFishermanUnderBridge, EntityInitKikiTheMonkey, EntityInitFireballShooter, EntityInitAntiKirby, EntityInitMovingBlockMover, EntityInitDesertLanmola, EntityInitFloatingItem2, EntityInitFloatingItem, SetZPosForFloatingItem, EntityInitKid71, EntityInitKid72, EntityInitMrWrite, EntityInitBigFairy, EntityInitBowWow, EntityInitOwlEvent, EntityInitSword, UnloadEntityIfRoomStatusSet, EntityInitMarin, EntityInitTarin, EntityInitMadamMeowMeow, EntityInitRaftRaftOwner, EntityInitNpcFacingDown, EntityInitStoreOwner, EntityInitWitch, EntityInitShopOwner, EntityInitWithRandomDirection, SetEntityDirection, EntityInitNoop, and helper functions EntityShiftPosition/EntityShiftPosition_shiftBy8)
-* **Last Update Timestamp**: 2026-09-21T10:00:00+03:00
+* **Current Overall Progress**: ~69.2%
+* **Number of Verified Functions**: 880
+* **Number of Decompiled Functions**: 680
+* **Number Remaining**: ~332 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:4CB6)
+* **Current Task**: Batch 78: Bank 3 entity initialization functions (EntityInitSouthFaceShrineDoor through EntityInitGiantBuzzBlob) and entity handlers (EntityBurningHandler, EntityFallHandler, SetEntityVariantForDirection_03)
+* **Last Completed Task**: Decompile and verify entity init functions in ROM Bank 3 (EntityInitSouthFaceShrineDoor, EntityInitLeever, EntityInitZora, EntityInitWithRightDirection, GetColorDungeonRoomStatus, EntityInitRotoswitchRed, EntityInitRotoswitchYellow, EntityInitRotoswitchBlue, EntityInitHopper, EntityInitFlyingHopperBombs, EntityInitHardHitBeetle, EntityInitAvalaunch, EntityInitColorGuardianBlue, EntityInitColorGuardianRed, EntityInitColorDungeonBook, EntityInitGiantBuzzBlob, EntityBurningHandler, EntityFallHandler, SetEntityVariantForDirection_03)
+* **Last Update Timestamp**: 2026-09-21T10:30:00+03:00
 
 ---
 
@@ -393,3 +393,44 @@
 | `IntroStage6Handler` | VERIFIED | PASS | PASS | Intro stage 6: sea waves sfx, fade timer, palette updates, beach entity setup (`01:7158`) |
 | `IntroBeachHandler` | VERIFIED | PASS | PASS | Intro stage 7: renders beach entities (`01:71C3`) |
 | `func_001_71C7` | VERIFIED | PASS | PASS | Intro periodic sea waves audio trigger (`01:71C7`) |
+
+---
+
+## Batch 78 Verification — Bank 3 Entity Initialization Functions (Extended 2) & Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:4B57`-`03:4D97`). Implemented 17 entity init functions and 3 handler/helper functions in `src/bank3/entities.c` with declarations in `include/bank3/entities.h`. Added missing constants to `include/constants/entities.h`, `include/constants/audio.h`, `include/constants/memory.h`, and `include/constants/rooms.h`. Added callback declarations and stub implementations in `include/home/entities.h` and `src/home/entities.c` for `ReturnIfNonInteractive_03`, `ApplyRecoilIfNeeded_03`, `BouncingEntityPhysics`, `UpdateEntityPosWithSpeed_03`, `ApplyEntityInteractionWithBackground`, `func_003_6B7B`, `SetEntityVariantForDirection_03`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Entity Init Functions Implemented:**
+  - `EntityInitSouthFaceShrineDoor` (`03:4B57`-`03:4B5B`): Sets rIE register to enable STAT and VBLANK interrupts.
+  - `EntityInitLeever` (`03:4B5C`-`03:4B5F`): Sets sprite variant to 0xFF.
+  - `EntityInitZora` (`03:4B61`-`03:4B7F`): Conditional initialization - only in indoor room DA with Magnifying Lens trade item and Photos2 bit 0 set; sets sprite variant to 0x03.
+  - `EntityInitWithRightDirection` (`03:4B81`-`03:4B83`): Sets entity direction to RIGHT (0).
+  - `GetColorDungeonRoomStatus` (`03:4B84`-`03:4B8E`): Reads color dungeon room status from wColorDungeonRoomStatus table.
+  - `EntityInitRotoswitchRed` (`03:4B8F`-`03:4B99`): Checks color dungeon room status bit 4; if set, sets state to 0x80; else sets sprite variant to 0x00.
+  - `EntityInitRotoswitchYellow` (`03:4B9A`-`03:4BA5`): Checks color dungeon room status bit 4; if set, sets state to 0x80; else sets sprite variant to 0x04.
+  - `EntityInitRotoswitchBlue` (`03:4BA6`-`03:4BB7`): Checks color dungeon room status bit 4; if clear, sets sprite variant to 0x08; if set, sets state to 0x80 and variant to 0x08.
+  - `EntityInitHopper` (`03:4BB8`-`03:4BBF`): Sets state to 0x03, falls through to set Z pos to 0x10 and sprite variant to 0x04.
+  - `EntityInitFlyingHopperBombs` (`03:4BC0`-`03:4BCA`): Sets Z pos to 0x10 and sprite variant to 0x04.
+  - `EntityInitHardHitBeetle` (`03:4BCB`-`03:4BDA`): Sets health to 0x10, decreases X position by 0x08.
+  - `EntityInitAvalaunch` (`03:4BDC`-`03:4BEB`): Sets X position to 0x50, private state 3 to 0x00.
+  - `EntityInitColorGuardianBlue` (`03:4BEB`-`03:4C00`): GBC only; checks color dungeon status bit 4; sets X pos to 0x3C and state to 0x04.
+  - `EntityInitColorGuardianRed` (`03:4C01`-`03:4C1E`): GBC only; checks color dungeon status bit 4; sets X pos to 0x63 and state to 0x04.
+  - `EntityInitColorDungeonBook` (`03:4C1F`-`03:4C2C`): Increases Y pos by 2, sets Z pos to 0x04, falls through to GiantBuzzBlob init.
+  - `EntityInitGiantBuzzBlob` (`03:4C2D`-`03:4C44`): Sets health to 0x0C, clears private state 3, increases X pos by 0x08.
+
+- **Entity Handlers Implemented:**
+  - `EntityBurningHandler` (`03:4C4C`-`03:4CA3`): Animates burning entity with fire sprites; if Gibdo, replaces with Stalfos; otherwise marks as dying with countdown, physics flags, and enemy destroyed noise.
+  - `EntityFallHandler` (`03:4CB6`-`03:4D97`): Handles falling entities; color dungeon shell animation; transition countdown handling; wrecking ball cleanup; Octorok/Moblin direction variant updates; sprite variant animation with Data_003_4CA4/4CA8/4CAC tables; jingle on countdown 0x3F.
+  - `SetEntityVariantForDirection_03` (`03:58FC`-`03:5914`): Sets sprite variant based on direction table (Right=6, Left=4, Up=2, Down=0) with inertia bit from wEntitiesInertiaTable.
+
+- **Data Tables Added:**
+  - `FireSpriteVariants` (`03:4C44`-`03:4C4B`): 4 variants for burning animation.
+  - `Unknown020SpriteVariants` (`03:4CB2`-`03:4CB5`): 2 variants for entity type 0x20.
+  - `Data_003_4CA4` (`03:4CA4`-`03:4CA7`): Visual Y offsets per variant.
+  - `Data_003_4CA8` (`03:4CA8`-`03:4CAB`): Visual Y offsets per variant (secondary).
+  - `Data_003_4CAC` (`03:4CAC`-`03:4CB1`): Sprite data for falling entities.
+  - `EntityVariantForDirection_03` (`03:5823`-`03:5826`): Direction-to-variant mapping table.
+
+- **Tests:** Extended `tests/bank3/test_entities.c` with 17 new test functions covering all new entity init functions. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 880 verified functions across Batches 1-78 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision) are callback-modeled or directly implemented. Color dungeon room status logic verified against assembly flow. GBC-specific conditional logic matched to assembly branching.

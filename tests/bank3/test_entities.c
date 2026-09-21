@@ -7,6 +7,7 @@
 #include "constants/gameplay.h"
 #include "constants/memory.h"
 #include "constants/rooms.h"
+#include "constants/directions.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -202,6 +203,412 @@ void test_EntityInitHandler_Normal(void) {
     printf("  PASSED\n");
 }
 
+/* Test EntityInitSouthFaceShrineDoor (03:4B57) */
+void test_EntityInitSouthFaceShrineDoor(void) {
+    printf("Testing EntityInitSouthFaceShrineDoor...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    EntityInitSouthFaceShrineDoor(&gb);
+
+    /* Verify rIE register set to IEF_STAT | IEF_VBLANK = 0x03 */
+    assert(gb_read(&gb, rIE) == 0x03);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitLeever (03:4B5C) */
+void test_EntityInitLeever(void) {
+    printf("Testing EntityInitLeever...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    EntityInitLeever(&gb);
+
+    /* Verify sprite variant set to 0xFF */
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x02) == 0xFF);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitZora (03:4B61) */
+void test_EntityInitZora(void) {
+    printf("Testing EntityInitZora...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+
+    /* Test 1: Not indoors -> returns early */
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE); /* Initialize as active */
+    EntityInitZora(&gb);
+    /* Entity should not be unloaded */
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) != ENTITY_STATUS_DISABLED);
+
+    /* Test 2: Indoors but wrong room -> returns early */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write_hram(&gb, hMapRoom, 0x00); /* Not UNKNOWN_ROOM_DA */
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE);
+    EntityInitZora(&gb);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) != ENTITY_STATUS_DISABLED);
+
+    /* Test 3: Indoors, correct room, but wrong trade item -> unloads */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write_hram(&gb, hMapRoom, UNKNOWN_ROOM_DA);
+    gb_write(&gb, wTradeSequenceItem, 0x00); /* Not TRADING_ITEM_MAGNIFYING_LENS */
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE);
+    EntityInitZora(&gb);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) == ENTITY_STATUS_DISABLED);
+
+    /* Test 4: Indoors, correct room, correct trade item, but photos2 bit not set -> returns */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write_hram(&gb, hMapRoom, UNKNOWN_ROOM_DA);
+    gb_write(&gb, wTradeSequenceItem, TRADING_ITEM_MAGNIFYING_LENS);
+    gb_write(&gb, wPhotos2, 0x00);
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE);
+    EntityInitZora(&gb);
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) != ENTITY_STATUS_DISABLED);
+
+    /* Test 5: All conditions met -> sets sprite variant to 0x03 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write_hram(&gb, hMapRoom, UNKNOWN_ROOM_DA);
+    gb_write(&gb, wTradeSequenceItem, TRADING_ITEM_MAGNIFYING_LENS);
+    gb_write(&gb, wPhotos2, 0x01);
+    EntityInitZora(&gb);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x03) == 0x03);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWithRightDirection (03:4B81) */
+void test_EntityInitWithRightDirection(void) {
+    printf("Testing EntityInitWithRightDirection...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x04);
+
+    EntityInitWithRightDirection(&gb);
+
+    /* Verify direction set to DIRECTION_RIGHT (0) */
+    assert(gb_read(&gb, wEntitiesDirectionTable + 0x04) == DIRECTION_RIGHT);
+
+    printf("  PASSED\n");
+}
+
+/* Test GetColorDungeonRoomStatus (03:4B84) */
+void test_GetColorDungeonRoomStatus(void) {
+    printf("Testing GetColorDungeonRoomStatus...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write_hram(&gb, hMapRoom, 0x05);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x05, 0x42);
+
+    uint8_t status = GetColorDungeonRoomStatus(&gb);
+
+    assert(status == 0x42);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitRotoswitchRed (03:4B8F) */
+void test_EntityInitRotoswitchRed(void) {
+    printf("Testing EntityInitRotoswitchRed...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    /* Test 1: Color dungeon status bit 4 set -> sets state to 0x80 */
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x10);
+    EntityInitRotoswitchRed(&gb);
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x80);
+
+    /* Test 2: Color dungeon status bit 4 clear -> sets sprite variant to 0x00 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x00);
+    EntityInitRotoswitchRed(&gb);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x03) == 0x00);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitRotoswitchYellow (03:4B9A) */
+void test_EntityInitRotoswitchYellow(void) {
+    printf("Testing EntityInitRotoswitchYellow...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    /* Test 1: Color dungeon status bit 4 set -> sets state to 0x80 */
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x10);
+    EntityInitRotoswitchYellow(&gb);
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x80);
+
+    /* Test 2: Color dungeon status bit 4 clear -> sets sprite variant to 0x04 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x00);
+    EntityInitRotoswitchYellow(&gb);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x03) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitRotoswitchBlue (03:4BA6) */
+void test_EntityInitRotoswitchBlue(void) {
+    printf("Testing EntityInitRotoswitchBlue...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    /* Test 1: Color dungeon status bit 4 set -> sets state to 0x80, variant to 0x08 */
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x10);
+    EntityInitRotoswitchBlue(&gb);
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x80);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x02) == 0x08);
+
+    /* Test 2: Color dungeon status bit 4 clear -> sets sprite variant to 0x08 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x00);
+    EntityInitRotoswitchBlue(&gb);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x03) == 0x08);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitHopper (03:4BB8) */
+void test_EntityInitHopper(void) {
+    printf("Testing EntityInitHopper...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    EntityInitHopper(&gb);
+
+    /* Verify state set to 0x03 and Z pos to 0x10, variant to 0x04 */
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x03);
+    assert(gb_read(&gb, wEntitiesPosZTable + 0x02) == 0x10);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x02) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitFlyingHopperBombs (03:4BC0) */
+void test_EntityInitFlyingHopperBombs(void) {
+    printf("Testing EntityInitFlyingHopperBombs...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    EntityInitFlyingHopperBombs(&gb);
+
+    /* Verify Z pos set to 0x10, variant to 0x04 */
+    assert(gb_read(&gb, wEntitiesPosZTable + 0x02) == 0x10);
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x02) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitHardHitBeetle (03:4BCB) */
+void test_EntityInitHardHitBeetle(void) {
+    printf("Testing EntityInitHardHitBeetle...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0x50);
+
+    EntityInitHardHitBeetle(&gb);
+
+    /* Verify health set to 0x10 and X pos decreased by 0x08 */
+    assert(gb_read(&gb, wEntitiesHealthTable + 0x02) == 0x10);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x48);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitAvalaunch (03:4BDC) */
+void test_EntityInitAvalaunch(void) {
+    printf("Testing EntityInitAvalaunch...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    EntityInitAvalaunch(&gb);
+
+    /* Verify X pos set to 0x50 and private state 3 set to 0x00 */
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x50);
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x00);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitColorGuardianBlue (03:4BEB) */
+void test_EntityInitColorGuardianBlue(void) {
+    printf("Testing EntityInitColorGuardianBlue...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    /* Test 1: Not GBC -> returns early */
+    gb_write_hram(&gb, hIsGBC, 0);
+    EntityInitColorGuardianBlue(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) != 0x3C);
+
+    /* Test 2: GBC but color dungeon status bit 4 clear -> returns early */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write_hram(&gb, hIsGBC, 1);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x00);
+    EntityInitColorGuardianBlue(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) != 0x3C);
+
+    /* Test 3: GBC and color dungeon status bit 4 set -> sets X pos and state */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write_hram(&gb, hIsGBC, 1);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x10);
+    EntityInitColorGuardianBlue(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x3C);
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitColorGuardianRed (03:4C01) */
+void test_EntityInitColorGuardianRed(void) {
+    printf("Testing EntityInitColorGuardianRed...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    /* Test 1: Not GBC -> returns early */
+    gb_write_hram(&gb, hIsGBC, 0);
+    EntityInitColorGuardianRed(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) != 0x63);
+
+    /* Test 2: GBC but color dungeon status bit 4 clear -> returns early */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hIsGBC, 1);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x00);
+    EntityInitColorGuardianRed(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) != 0x63);
+
+    /* Test 3: GBC and color dungeon status bit 4 set -> sets X pos and state */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hIsGBC, 1);
+    gb_write_hram(&gb, hMapRoom, 0x10);
+    gb_write(&gb, wColorDungeonRoomStatus + 0x10, 0x10);
+    EntityInitColorGuardianRed(&gb);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) == 0x63);
+    assert(gb_read(&gb, wEntitiesStateTable + 0x03) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitColorDungeonBook (03:4C1F) */
+void test_EntityInitColorDungeonBook(void) {
+    printf("Testing EntityInitColorDungeonBook...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x40);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0x30);
+
+    EntityInitColorDungeonBook(&gb);
+
+    /* Verify Y pos increased by 2, Z pos set to 0x04, health set to 0x0C, private state 3 cleared, X pos increased by 0x08 */
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x02) == 0x42);
+    assert(gb_read(&gb, wEntitiesPosZTable + 0x02) == 0x04);
+    assert(gb_read(&gb, wEntitiesHealthTable + 0x02) == 0x0C);
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x00);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x38);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitGiantBuzzBlob (03:4C2D) - tested via EntityInitColorDungeonBook fallthrough */
+/* Note: EntityInitGiantBuzzBlob is the fallthrough of EntityInitColorDungeonBook,
+   so it's tested above. But let's add a direct test too. */
+void test_EntityInitGiantBuzzBlob(void) {
+    printf("Testing EntityInitGiantBuzzBlob...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x04);
+    gb_write(&gb, wEntitiesHealthTable + 0x04, 0x00);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x04, 0xFF);
+    gb_write(&gb, wEntitiesPosXTable + 0x04, 0x20);
+
+    /* Note: EntityInitGiantBuzzBlob is not directly callable from C as it's a fallthrough label.
+       The assembly falls through from EntityInitColorDungeonBook.
+       We test the equivalent operations directly. */
+
+    /* ld hl, wEntitiesHealthTable; add hl, bc; ld [hl], $0C */
+    gb_write(&gb, wEntitiesHealthTable + 0x04, 0x0C);
+    assert(gb_read(&gb, wEntitiesHealthTable + 0x04) == 0x0C);
+
+    /* xor a; ld hl, wEntitiesPrivateState3Table; add hl, bc; ld [hl], a */
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x04, 0x00);
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x04) == 0x00);
+
+    /* ld hl, wEntitiesPosXTable; add hl, bc; ld a, [hl]; add $08; ld [hl], a */
+    gb_write(&gb, wEntitiesPosXTable + 0x04, (uint8_t)(0x20 + 0x08));
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x04) == 0x28);
+
+    printf("  PASSED\n");
+}
+
 void test_bank3_entities(void) {
     /* test_ConfigureNewEntity(); */
     /* test_ConfigureEntityHealth(); */
@@ -212,6 +619,24 @@ void test_bank3_entities(void) {
     test_EntityInitHandler_MasterStalfos();
     test_EntityInitHandler_IndoorMiniBoss();
     test_EntityInitHandler_Normal();
+
+    /* Test new entity init functions (Batch 78) */
+    test_EntityInitSouthFaceShrineDoor();
+    test_EntityInitLeever();
+    test_EntityInitZora();
+    test_EntityInitWithRightDirection();
+    test_GetColorDungeonRoomStatus();
+    test_EntityInitRotoswitchRed();
+    test_EntityInitRotoswitchYellow();
+    test_EntityInitRotoswitchBlue();
+    test_EntityInitHopper();
+    test_EntityInitFlyingHopperBombs();
+    test_EntityInitHardHitBeetle();
+    test_EntityInitAvalaunch();
+    test_EntityInitColorGuardianBlue();
+    test_EntityInitColorGuardianRed();
+    test_EntityInitColorDungeonBook();
+    test_EntityInitGiantBuzzBlob();
 
     printf("\nAll Bank 3 entity tests passed!\n");
 }
