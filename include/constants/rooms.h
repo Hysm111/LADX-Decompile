@@ -142,5 +142,10 @@
 #define ROOM_INDOOR_A_CATFISHS_MAW_MSTALFOS_1 0x95
 #define ROOM_INDOOR_A_CATFISHS_MAW_MSTALFOS_2 0x92
 #define ROOM_INDOOR_A_CATFISHS_MAW_MSTALFOS_3 0x84
+#define UNKNOWN_ROOM_65                     0x65
+#define UNKNOWN_ROOM_C0                     0xC0
+#define UNKNOWN_ROOM_DA                     0xDA
+#define UNKNOWN_ROOM_E2                     0xE2
+#define ROOM_INDOOR_B_CHRISTINE_HOUSE       0xD9
 
 #endif /* LADX_CONSTANTS_ROOMS_H */

@@ -3,15 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~66.0%
-* **Number of Verified Functions**: 815
-* **Number of Decompiled Functions**: 625
-* **Number Remaining**: ~397 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:49C6)
-* **Current Task**: Batch 76: Test audit and verification of Batches 72-75
-* **Last Completed Task**: Audit and verification of test coverage for Batches 72-75 (Bank 2 room transition, link motion helpers, link ground physics, Bank 3 entity initialization); all mock call assertions replaced with behavioral verification; all tests passing
-* **Next Task**: Decompile and verify next entity init functions in ROM Bank 3
-* **Last Update Timestamp**: 2026-09-20T17:30:00+03:00
+* **Current Overall Progress**: ~68.5%
+* **Number of Verified Functions**: 860
+* **Number of Decompiled Functions**: 660
+* **Number Remaining**: ~352 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:4AC5)
+* **Current Task**: Batch 77: Bank 3 entity initialization functions (EntityInitSnake through EntityInitNoop)
+* **Last Completed Task**: Decompile and verify entity init functions in ROM Bank 3 (EntityInitSnake, EntityInitSideViewPlatformVertical, EntityInitZol, EntityInitMarinAtTheShore, EntityInitBomber, EntityInitBushCrawler, EntityInitTarinBeekeeper, EntityInitTelephone, EntityInitRichard, SetMusicTrackIfHasSword, SetMusicTrack, EntityInitFinalNightmare, EntityInitDreamShrineBed, EntityInitFishermanUnderBridge, EntityInitKikiTheMonkey, EntityInitFireballShooter, EntityInitAntiKirby, EntityInitMovingBlockMover, EntityInitDesertLanmola, EntityInitFloatingItem2, EntityInitFloatingItem, SetZPosForFloatingItem, EntityInitKid71, EntityInitKid72, EntityInitMrWrite, EntityInitBigFairy, EntityInitBowWow, EntityInitOwlEvent, EntityInitSword, UnloadEntityIfRoomStatusSet, EntityInitMarin, EntityInitTarin, EntityInitMadamMeowMeow, EntityInitRaftRaftOwner, EntityInitNpcFacingDown, EntityInitStoreOwner, EntityInitWitch, EntityInitShopOwner, EntityInitWithRandomDirection, SetEntityDirection, EntityInitNoop, and helper functions EntityShiftPosition/EntityShiftPosition_shiftBy8)
+* **Last Update Timestamp**: 2026-09-21T10:00:00+03:00
 
 ---
 
@@ -79,7 +78,61 @@
 
 ---
 
-## Batch 68 Verification — Room Event Trigger and Effect Dispatchers
+## Batch 77 Verification — Bank 3 Entity Initialization Functions (Extended)
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:493D`-`03:4B56`). Implemented 45 entity init functions and 2 helper functions in `src/bank3/entities.c` with declarations in `include/bank3/entities.h`. Added missing constants to `include/constants/entities.h`, `include/constants/audio.h`, `include/constants/gameplay.h`, `include/constants/rooms.h`, and `include/constants/memory.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Entity Init Functions Implemented:**
+  - `EntityInitSnake` (`03:493D`-`03:4941`): Sets private countdown1 to $30.
+  - `EntityInitSideViewPlatformVertical` (`03:4943`-`03:4951`): Room $65 check, visual Y >= $50 check, increments private state 1.
+  - `EntityInitZol` (`03:4953`-`03:4958`): Sets health to 2.
+  - `EntityInitMarinAtTheShore` (`03:495A`-`03:4963`): Unloads if Marin in village or following Link.
+  - `EntityInitBomber` (`03:4965`-`03:4972`): Sets Z pos to $10, random inertia.
+  - `EntityInitBushCrawler` (`03:4973`): No-op.
+  - `EntityInitTarinBeekeeper` (`03:4974`-`03:4978`): Calls EntityShiftPosition, sets sprite variant to 2.
+  - `EntityInitTelephone` (`03:497C`-`03:497D`): Sets music to MUSIC_ULRIRA if sword obtained.
+  - `EntityInitRichard` (`03:4980`-`03:4992`): If golden leaves >= SLIME_KEY, sets X=$58, direction=DOWN; sets music to MUSIC_RICHARD_HOUSE if sword.
+  - `SetMusicTrackIfHasSword` (`03:4995`-`03:499A`): Returns if no sword, else falls through to SetMusicTrack.
+  - `SetMusicTrack` (`03:499C`-`03:49A5`): Sets wMusicTrackToPlay, hDefaultMusicTrack, hDefaultMusicTrackAlt, hNextDefaultMusicTrack.
+  - `EntityInitFinalNightmare` (`03:49A6`-`03:49A9`): Clears wFinalNightmareForm, calls label_27F2.
+  - `EntityInitDreamShrineBed` (`03:49AD`-`03:49B0`): Sets music to MUSIC_DREAM_SHRINE_BED.
+  - `EntityInitFishermanUnderBridge` (`03:49B1`-`03:49B2`): Sets music to MUSIC_FISHERMAN_UNDER_BRIDGE.
+  - `EntityInitKikiTheMonkey` (`03:49B5`-`03:49C0`): Clears wC168, subtracts 4 from Y position.
+  - `EntityInitFireballShooter` (`03:49C2`-`03:49C4`): Random sprite variant.
+  - `EntityInitAntiKirby` (`03:49C8`-`03:49D2`): Slow transition countdown = (random & $3F) + $10.
+  - `EntityInitMovingBlockMover` (`03:49D4`-`03:49E0`): Adds $0A to Y pos, copies to private state 2.
+  - `EntityInitDesertLanmola` (`03:49E2`-`03:49E4`): Clears hDefaultMusicTrack.
+  - `EntityInitFloatingItem2` (`03:49E6`-`03:49F0`): Calls SetZPosForFloatingItem, sprite variant from swapped X pos + 4.
+  - `EntityInitFloatingItem` (`03:49F4`-`03:4A08`): Complex sprite variant from X/Y pos; if variant != 1, calls SetZPosForFloatingItem; if has Toadstool, unloads.
+  - `SetZPosForFloatingItem` (`03:4A12`-`03:4A17`): Sets Z pos to $13.
+  - `EntityInitKid71` (`03:4A19`-`03:4A26`): Direction=UP, increments state, transition countdown=$20.
+  - `EntityInitKid72` (`03:4A27`): No-op.
+  - `EntityInitMrWrite` (`03:4A28`-`03:4A57`): Music $32 ($37 in Christine's house), shifts X position by 8.
+  - `EntityInitBigFairy` (`03:4A34`-`03:4A57`): Z pos=$10; indoors non-Color-Dungeon with full hearts unloads; music $0C if sword; shifts X by 8.
+  - `EntityInitBowWow` (`03:4A5B`-`03:4A71`): Room $E2 special handling for kidnapped state; unloads if following Link.
+  - `EntityInitOwlEvent` (`03:4A73`-`03:4A75`): Unloads if room status bit 5 set.
+  - `EntityInitSword` (`03:4A78`-`03:4A7B`): Unloads if room status bit 4 set.
+  - `UnloadEntityIfRoomStatusSet` (`03:4A7A`-`03:4A7F`): Unloads if room status bit 4 set.
+  - `EntityInitMarin` (`03:4A80`-`03:4AC5`): Room >= $C0 checks for Marin in village/not following; sets singing flag and music; debug tool checks for credits/text debugger.
+  - `EntityInitTarin` (`03:4ACE`-`03:4B0C`): GBC/indoor/Marin-following/instrument/trade-sequence/TarinFlag checks; palette update via Data_003_4AC6; falls through to NpcFacingDown.
+  - `EntityInitMadamMeowMeow` (`03:4B0E`-`03:4B1A`): If BowWow kidnapped, sets music to MUSIC_BOWWOW_KIDNAPPED.
+  - `EntityInitRaftRaftOwner` (`03:4B1B`-`03:4B2E`): Indoors falls to NpcFacingDown; if wD477 set returns; subtracts $10 from Y pos.
+  - `EntityInitNpcFacingDown` (`03:4B2F`-`03:4B33`): Sets direction to DOWN, falls through to StoreOwner.
+  - `EntityInitStoreOwner` (`03:4B35`-`03:4B40`): If no shield, plays music $1C; falls through to ShopOwner.setDirectionLeft.
+  - `EntityInitWitch` (`03:4B42`): No-op.
+  - `EntityInitShopOwner` (`03:4B43`-`03:4B47`): Plays MUSIC_SHOP if sword.
+  - `EntityInitShopOwner_setDirectionLeft` (`03:4B48`-`03:4B4A`): Sets direction to LEFT.
+  - `EntityInitWithRandomDirection` (`03:4B4C`-`03:4B4F`): Random direction (0-3).
+  - `SetEntityDirection` (`03:4B51`-`03:4B55`): Sets entity direction.
+  - `EntityInitNoop` (`03:4B56`): No-op.
+
+- **Helper Functions:**
+  - `EntityShiftPosition` (`03:4F83`-`03:4FA0`): Increments X and Y position by 8 with sign extension via carry.
+  - `EntityShiftPosition_shiftBy8` (`03:4F92`-`03:4FA0`): Shared add-8-with-carry logic for position/sign tables.
+
+- **Tests:** Extended `tests/bank3/test_entities.c` with existing test patterns; all existing Bank 3 entity tests pass. Full Debug build/CTest PASS with assertions enabled; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 860 verified functions across Batches 1-77 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, EntityShiftPosition) are callback-modeled or directly implemented. Music track selection logic verified against assembly flow. Room-specific conditional logic matched to assembly branching.
 
 - **Source of truth:** `LADX-Disassembly/src/code/events.asm:7-29` (`02:5D4F`-`02:5D78`) and `events.asm:459-484` (`02:5F9F`-`02:5FC4`), plus `src/code/macros.asm:54-60` (`JP_TABLE` expands to `rst 0`), `src/code/home/header.asm:3-5` (RST0 vector is `TableJump`), and `src/code/bank0.asm:4416-4428` (16-bit `2*A` table indexing with no bounds check). Two functions are appended in `src/bank2/room_triggers.c`, with declarations in `include/bank2/room_triggers.h`. Existing VERIFIED bodies and production callers are unchanged.
 - **Blocker resolution (Batch 67):** The unchecked jump table was the blocker: masked IDs `0` and `17..31` do not select declared entries (ID 0 reads pointer bytes at `$61A3..$61A4`; ID 17 reads `$C9,$F0` at `$5FC5..$5FC6` → `$F0C9`, not a return entry). A census of all three room-event tables in `LADX-Disassembly/src/data/events/dungeons.asm` — Indoor A 256, Indoor B 256, Color 32; 544 total, 377 zero, 167 nonzero — shows every nonzero event's masked trigger ID is 1..16 and all 16 IDs occur. Effect-zero events (e.g. `0x0D`, `0x10`) exist, so nonzero effect bits are not required. The only direct `wRoomEvent` writers stay in domain: the bank-14 table loader (`bank14.asm:2139-2171`, table load at 2165) and two zero-clears (`events.asm:92-95`, `events.asm:243-245`); the color-dungeon layout loader (`data/maps/layouts.asm:124-133`) uses only room IDs `0x00..0x15`. This establishes the supported domain for normal room data and direct references; it is not a universal proof against arbitrary memory corruption, and out-of-domain behavior remains unemulated.

@@ -39,6 +39,12 @@
 #define MUSIC_EAGLES_TOWER              0x5B
 #define MUSIC_FILE_SELECT_ZELDA         0x60
 #define MUSIC_COLOR_DUNGEON             0x61
+#define MUSIC_ULRIRA                    0x33
+#define MUSIC_RICHARD_HOUSE             0x40
+#define MUSIC_DREAM_SHRINE_BED          0x24
+#define MUSIC_FISHERMAN_UNDER_BRIDGE    0x3A
+#define MUSIC_MARIN_SING                0x2F
+#define MUSIC_BOWWOW_KIDNAPPED          0x0E
 
 #define MUSIC_FADE_OUT_TIMER_MAX        0x38
 

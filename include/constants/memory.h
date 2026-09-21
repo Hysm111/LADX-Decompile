@@ -71,6 +71,7 @@
 #define wC176                         0xC176
 #define wDialogIsWaitingForButtonPress 0xC1CC
 #define wDialogNextChar               0xC3C3
+#define wIsMarinSinging               0xC3C8
 #define wName                         0xDB4F
 #define wIsThief                      0xDB6E
 #define wLinkAnimationFrame           0xC198
@@ -78,7 +79,8 @@
 #define wDialogInteractionLocked      0xC1AB
 #define wBGPaletteEffectAddress       0xC3CC
 #define wDialogSFX                    0xC5AB
-#define wC1CF                   0xC1CF
+#define wC168                         0xC168
+#define wC1CF                         0xC1CF
 #define wDoorXPositions              0xC1D0
 #define wDoorYPositions              0xC1E0
 #define wDoorPositions               0xC1F0
@@ -91,6 +93,7 @@
 #define wD460                   0xD460
 #define wD464                   0xD464
 #define wD474                   0xD474
+#define wD477                   0xD477
 #define wD478                   0xD478
 #define wD47F                   0xD47F
 #define wD500                   0xD500
@@ -100,6 +103,11 @@
 #define wIndoorBRoomStatus           0xDA00
 #define wTradeSequenceItem           0xDB0E
 #define wHasStolenFromShop           0xDB46
+#define wTarinFlag                   0xDB48
+#define wHasInstrument3              0xDB67
+#define wIsBowWowFollowingLink       0xDB56
+#define wIsMarinFollowingLink        0xDB73
+#define wIsMarinInAnimalVillage      0xDB74
 #define wKillCount                   0xDBB5
 #define wKillOrder                   0xDBB6
 #define wTorchesCount                0xDBC9
@@ -451,6 +459,7 @@
 #define wFreeMovementMode                       0xC17B
 #define wTextDebuggerDialogId                   0xC109
 #define wEntitiesPrivateState1Table             0xC2B0
+#define wEntitiesPrivateState2Table             0xC2C0
 #define wHasInstrument4                         0xDB68
 #define wPowerBraceletLevel                     0xDB43
 #define wOBJ0Palette                            0xDB98

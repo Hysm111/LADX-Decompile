@@ -58,6 +58,9 @@
 #define LINK_MOTION_TELEPORT            0x09
 
 #define SLIME_KEY                       0x06
+#define TRADING_ITEM_BANANAS            0x04
+#define TRADING_ITEM_MAGNIFYING_LENS    0x0E
+#define BOW_WOW_KIDNAPPED               0x80
 #define BOW_WOW_FOLLOWING 0x01
 
 

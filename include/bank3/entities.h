@@ -27,8 +27,8 @@ void EntityInitBushCrawler(GBState *gb);
 void EntityInitTarinBeekeeper(GBState *gb);
 void EntityInitTelephone(GBState *gb);
 void EntityInitRichard(GBState *gb);
-void SetMusicTrackIfHasSword(GBState *gb);
-void SetMusicTrack(GBState *gb);
+void SetMusicTrackIfHasSword(GBState *gb, uint8_t music_track);
+void SetMusicTrack(GBState *gb, uint8_t music_track);
 void EntityInitFinalNightmare(GBState *gb);
 void EntityInitDreamShrineBed(GBState *gb);
 void EntityInitFishermanUnderBridge(GBState *gb);
@@ -39,7 +39,7 @@ void EntityInitMovingBlockMover(GBState *gb);
 void EntityInitDesertLanmola(GBState *gb);
 void EntityInitFloatingItem2(GBState *gb);
 void EntityInitFloatingItem(GBState *gb);
-void SetZPosForFloatingItem(GBState *gb);
+void SetZPosForFloatingItem(GBState *gb, uint16_t bc);
 void EntityInitKid71(GBState *gb);
 void EntityInitKid72(GBState *gb);
 void EntityInitMrWrite(GBState *gb);
@@ -52,11 +52,17 @@ void EntityInitMarin(GBState *gb);
 void EntityInitTarin(GBState *gb);
 void EntityInitMadamMeowMeow(GBState *gb);
 void EntityInitRaftRaftOwner(GBState *gb);
-void EntityInitNpcFacingDown(GBState *gb);
-void EntityInitStoreOwner(GBState *gb);
+void EntityInitNpcFacingDown(GBState *gb, uint16_t bc);
+void EntityInitStoreOwner(GBState *gb, uint16_t bc);
 void EntityInitWitch(GBState *gb);
 void EntityInitShopOwner(GBState *gb);
+void EntityInitShopOwner_setDirectionLeft(GBState *gb, uint16_t bc);
 void EntityInitWithRandomDirection(GBState *gb);
-void SetEntityDirection(GBState *gb);
+void SetEntityDirection(GBState *gb, uint16_t bc, uint8_t direction);
+void EntityInitNoop(GBState *gb);
+
+/* Helper Functions */
+void EntityShiftPosition(GBState *gb, uint16_t bc);
+void EntityShiftPosition_shiftBy8(GBState *gb, uint16_t bc, uint16_t sign_table, uint16_t pos_table);
 
 #endif /* LADX_BANK3_ENTITIES_H */

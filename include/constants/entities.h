@@ -60,6 +60,7 @@
 #define ENTITY_SWORD_BEAM            0xDF
 #define ENTITY_MUSICAL_NOTE          0xC9
 #define ENTITY_MASTER_STALFOS        0x5F
+#define ENTITY_TEXT_DEBUGGER         0x6B
 
 #define ENTITY_OPT1_IS_BOSS          0x80
 #define ENTITY_OPT1_IS_MINI_BOSS     0x04
