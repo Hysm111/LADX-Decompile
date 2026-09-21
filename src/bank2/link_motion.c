@@ -1036,7 +1036,7 @@ void label_002_76C0(GBState *gb) {
             goto jr_002_7732;
         }
 
-label_002_7719:
+    label_002_7719:
         /* ld a, $50; ldh [hLinkCountdown], a */
         gb_write_hram(gb, hLinkCountdown, 0x50);
 
@@ -1068,10 +1068,7 @@ jr_002_7732:
         gb_write_hram(gb, hLinkSpeedY, (uint8_t)Data_002_750E[dir]);
         return;
 
-ret_002_774F:
-        return;
-
-jr_002_7750:
+    jr_002_7750:
         /* Falls through to ApplyLinkGroundPhysics_Default for GRASS and SHALLOW_WATER */
         ;
     }
@@ -1168,7 +1165,6 @@ void ApplyLinkGroundPhysics_Default(GBState *gb) {
         }
     }
 
-grassVfxEnd:
     /* ld a, [wLinkStandingOnSwitchBlock]; and a; jr z, .jr_002_77F7 */
     if (gb_read(gb, wLinkStandingOnSwitchBlock) != 0) {
         /* ld a, NOISE_SFX_FOOTSTEP; ldh [hNoiseSfx], a */

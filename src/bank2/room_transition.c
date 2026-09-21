@@ -424,19 +424,6 @@ void ApplyRoomTransition(GBState *gb,
         return;
     }
 
-    uint8_t d = gb_read(gb, wIsIndoor);
-
-    /* If hMapId == MAP_COLOR_DUNGEON, d = 0 */
-    if (gb_read_hram(gb, hMapId) == MAP_COLOR_DUNGEON) {
-        d = 0;
-    } else if (gb_read_hram(gb, hMapId) < 0x1A && gb_read_hram(gb, hMapId) >= MAP_FACE_SHRINE) {
-        /* else if (hMapId >= MAP_FACE_SHRINE && hMapId < $1A), d += 1 */
-        d++;
-    }
-
-    /* e = hMapRoom */
-    uint8_t e = gb_read_hram(gb, hMapRoom);
-
     /* call GetChestsStatusForRoom_trampoline - stub for now */
     /* If chest status is not some key, and room trigger != EFFECT_DROP_KEY, return. */
     /* For now, we skip this check */
@@ -603,25 +590,26 @@ loadRoom:
         apply_link_motion_state(gb, NULL, NULL, NULL);
     }
 
-    /* Get the music track to apply later */
+/* Get the music track to apply later */
     if (gb_read(gb, wC1CF) != 0) {
         gb_write(gb, wC1CF, 0);
 
 #ifndef PATCH_0
         if (gb_read(gb, wTunicType) != 0) {
             uint8_t music = gb_read_hram(gb, hDefaultMusicTrack);
-            goto setMusicTrack;
+            gb_write_hram(gb, hNextMusicTrackToFadeInto, music);
+            goto setMusicTrackDone;
         }
 #endif
 
         if (gb_read(gb, wActivePowerUp) != 0) {
             uint8_t music = gb_read_hram(gb, hDefaultMusicTrack);
-            goto setMusicTrack;
+            gb_write_hram(gb, hNextMusicTrackToFadeInto, music);
+            goto setMusicTrackDone;
         }
 
         gb_write_hram(gb, hNextMusicTrackToFadeInto, MUSIC_ACTIVE_POWER_UP);
-setMusicTrack:
-        gb_write_hram(gb, hNextMusicTrackToFadeInto, gb_read_hram(gb, hNextMusicTrackToFadeInto));
+    setMusicTrackDone:
         if (reset_music_fade_timer) {
             reset_music_fade_timer(gb);
         }
@@ -634,7 +622,6 @@ setMusicTrack:
     }
 
     /* Load the music track from the Overworld tracks array */
-    uint8_t map_room = gb_read_hram(gb, hMapRoom);
     /* OverworldMusicTracks table lookup - stub for now */
     /* For now we skip the music track selection */
 
