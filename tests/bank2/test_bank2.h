@@ -29,6 +29,9 @@ void test_bank2_room_triggers(void);
 void test_bank2_room_dispatch(void);
 void test_bank2_clamp_item_count(void);
 void test_bank2_func_002_60E0(void);
+void test_bank2_room_transition(void);
+void test_bank2_link_motion_helpers(void);
+void test_bank2_link_ground_physics(void);
 
 void run_bank2_tests(void);
 

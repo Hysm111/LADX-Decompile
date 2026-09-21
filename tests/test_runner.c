@@ -3,6 +3,7 @@
 
 #include "bank1/test_bank1.h"
 #include "bank2/test_bank2.h"
+#include "bank3/test_bank3.h"
 
 extern int run_clear_memory_tests(void);
 extern int run_copy_data_tests(void);
@@ -45,6 +46,7 @@ int main(void) {
     run_animated_tiles_tests();
     run_bank1_tests();
     run_bank2_tests();
+    run_bank3_tests();
 
     printf("========================================\n");
     if (total_failures == 0) {

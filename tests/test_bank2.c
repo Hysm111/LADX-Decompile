@@ -32,6 +32,9 @@ void run_bank2_tests(void) {
     test_bank2_room_dispatch();
     test_bank2_clamp_item_count();
     test_bank2_func_002_60E0();
+    test_bank2_room_transition();
+    test_bank2_link_motion_helpers();
+    test_bank2_link_ground_physics();
 
     printf("[+] Bank 2 unit tests passed successfully!\n");
 }

@@ -116,6 +116,11 @@ add_executable(ladx_tests
     tests/bank2/test_sword.c
     tests/bank2/test_tables.c
     tests/bank2/test_vfx.c
+    tests/bank2/test_link_ground_physics.c
+    tests/bank2/test_link_motion_helpers.c
+    tests/bank2/test_room_transition.c
+    tests/bank3/test_entities.c
+    tests/test_bank3.c
 )
 
 target_link_libraries(ladx_tests PRIVATE ladx_core)
