@@ -8,10 +8,14 @@
 #include "constants/joypad.h"
 #include "constants/sfx.h"
 #include "home/entities.h"
+#include "home/room.h"
 #include "home/bank.h"
 #include "home/audio.h"
 #include "home/gameplay.h"
 #include "constants/audio.h"
+
+/* Forward declarations for functions called before definition */
+void func_003_52D4(GBState *gb, uint16_t bc);
 
 void ConfigureNewEntity(GBState *gb) {
     if (!gb) return;
@@ -1901,4 +1905,388 @@ void EntityShiftPosition_shiftBy8(GBState *gb, uint16_t bc, uint16_t sign_table,
     uint8_t sign = gb_read(gb, sign_table + bc);
     uint8_t new_sign = sign + carry;
     gb_write(gb, sign_table + bc, new_sign);
+}
+
+/* PushedBlockEntityHandler (03:5249) */
+void PushedBlockEntityHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld a, [wIsIndoor]; ldh [hActiveEntitySpriteVariant], a */
+    uint8_t is_indoor = gb_read(gb, wIsIndoor);
+    gb_write_hram(gb, hActiveEntitySpriteVariant, is_indoor);
+
+    /* ld de, Unknown011SpriteVariants */
+    /* and a; jr nz, .render */
+    static const uint8_t Unknown011SpriteVariants[8] = {
+        0x6E, 0xC7,  /* variant0: tile $6E, palette 7 | OAMF_PAL0 */
+        0x6E, 0xC7 | OAMF_XFLIP,  /* variant0 flipped */
+        0xF8, 0xE7,  /* variant1: tile $F8, palette 7 | OAMF_PAL1 */
+        0xFA, 0xE7   /* variant1 flipped */
+    };
+    static const uint8_t Unknown010SpriteVariants[4] = {
+        0x7E, 0xC7,  /* variant0: tile $7E, palette 7 | OAMF_PAL0 */
+        0x7E, 0xC7 | OAMF_XFLIP
+    };
+
+    const uint8_t *de = Unknown011SpriteVariants;
+    if (is_indoor != 0) {
+        goto render;
+    }
+
+    /* ldh a, [hMapRoom]; cp ROOM_OW_COLOR_DUNGEON_ENTRANCE; jr nz, .render */
+    if (gb_read_hram(gb, hMapRoom) == ROOM_OW_COLOR_DUNGEON_ENTRANCE) {
+        de = Unknown010SpriteVariants;
+    }
+
+render:
+    /* call RenderActiveEntitySpritesPair */
+    RenderActiveEntitySpritesPair(gb, de, NULL);
+
+    /* call ReturnIfNonInteractive_03 */
+    if (ReturnIfNonInteractive_03(gb, false)) {
+        return;
+    }
+
+    /* call UpdateEntityPosWithSpeed_03 */
+    UpdateEntityPosWithSpeed_03(gb, bc);
+
+    /* call func_003_52D4 */
+    func_003_52D4(gb, bc);
+
+    /* call CheckLinkCollisionWithEnemy.collisionEvenInTheAir; jr nc, .jr_5276 */
+    if (CheckLinkCollisionWithEnemy(gb, bc)) {
+        /* call CopyLinkFinalPositionToPosition */
+        CopyLinkFinalPositionToActivePosition(gb);
+
+        /* ld a, $03; ld [wIsLinkPushing], a */
+        gb_write(gb, wIsLinkPushing, 0x03);
+    }
+
+    /* .jr_5276: */
+    /* ldh a, [hMapRoom]; cp UNKNOWN_ROOM_C7; jr z, .jr_5282 */
+    uint8_t map_room = gb_read_hram(gb, hMapRoom);
+    if (map_room == UNKNOWN_ROOM_C7) {
+        goto jr_5282;
+    }
+
+    /* ld a, [wIsIndoor]; and a; jr nz, jr_003_5286 */
+    if (gb_read(gb, wIsIndoor) != 0) {
+        goto jr_003_5286;
+    }
+
+jr_5282:
+    /* ld a, $02; ldh [hLinkInteractiveMotionBlocked], a */
+    gb_write_hram(gb, hLinkInteractiveMotionBlocked, 0x02);
+
+jr_003_5286:
+    /* ld hl, wEntitiesInertiaTable; add hl, bc; ld a, [hl]; inc a; ld [hl], a; cp $21; ret nz */
+    uint8_t inertia = gb_read(gb, wEntitiesInertiaTable + bc);
+    inertia++;
+    gb_write(gb, wEntitiesInertiaTable + bc, inertia);
+    if (inertia != 0x21) {
+        return;
+    }
+
+    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], a */
+    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, inertia);
+
+    /* call ApplyEntityInteractionWithBackground */
+    ApplyEntityInteractionWithBackground(gb, bc);
+
+    /* ld hl, wEntitiesStatusTable; add hl, bc; ld a, [hl]; and a; ret z */
+    uint8_t status = gb_read(gb, wEntitiesStatusTable + bc);
+    if (status == 0) {
+        return;
+    }
+
+    /* cp $02; ret z */
+    if (status == 0x02) {
+        return;
+    }
+
+    /* call UnloadEntity */
+    UnloadEntity(gb, bc);
+
+    /* ld de, Data_003_5162; ld b, $C4 */
+    /* ld a, [wIsIndoor]; and a; jr z, .jr_52B5 */
+    /* ld de, Data_003_515E; ld b, $A6 */
+    static const uint8_t Data_003_5162[4] = { 0xF8, 0xF9, 0xFA, 0xFB };
+    static const uint8_t Data_003_515E[4] = { 0x0E, 0x1E, 0x0F, 0x1F };
+    const uint8_t *data_ptr = Data_003_5162;
+    uint8_t b_val = 0xC4;
+    if (gb_read(gb, wIsIndoor) == 0) {
+        data_ptr = Data_003_515E;
+        b_val = 0xA6;
+    }
+
+    /* call func_003_51C9 */
+    func_003_51C9(gb, bc, data_ptr, b_val);
+
+    /* ld a, [wRoomEvent]; and EVENT_TRIGGER_MASK; cp TRIGGER_PUSH_SINGLE_BLOCK; jr z, .jr_52D1 */
+    uint8_t room_event = gb_read(gb, wRoomEvent) & EVENT_TRIGGER_MASK;
+    if (room_event == TRIGGER_PUSH_SINGLE_BLOCK) {
+        goto jr_52D1;
+    }
+
+    /* cp TRIGGER_PUSH_BLOCKS; ret nz */
+    if (room_event != TRIGGER_PUSH_BLOCKS) {
+        return;
+    }
+
+    /* call ApplyEntityInteractionWithBackground */
+    ApplyEntityInteractionWithBackground(gb, bc);
+
+    /* ld a, [wEntityHorizontallyCollidedObject]; cp $A7; jr z, .jr_52D1 */
+    uint8_t collided_obj = gb_read(gb, wEntityHorizontallyCollidedObject);
+    if (collided_obj == 0xA7) {
+        goto jr_52D1;
+    }
+
+    /* cp $A6; ret nz */
+    if (collided_obj != 0xA6) {
+        return;
+    }
+
+jr_52D1:
+    /* jp MarkTriggerAsResolved */
+    MarkTriggerAsResolved(gb);
+}
+
+/* func_003_52D4 (03:52D4) */
+void func_003_52D4(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld e, $0F; ld d, b; label_003_52D7: */
+    uint8_t e = 0x0F;
+    uint8_t d = (bc >> 8) & 0xFF;
+
+    while (true) {
+        /* ld hl, wEntitiesStatusTable; add hl, de; ld a, [hl]; cp $05; jr c, .jr_531E */
+        uint8_t status = gb_read(gb, wEntitiesStatusTable + e);
+        if (status < 0x05) {
+            goto jr_531E;
+        }
+
+        /* ld hl, wEntitiesPhysicsFlagsTable; add hl, de; ld a, [hl]; and ENTITY_PHYSICS_PROJECTILE_NOCLIP; jr nz, .jr_531E */
+        uint8_t physics = gb_read(gb, wEntitiesPhysicsFlagsTable + e);
+        if (physics & ENTITY_PHYSICS_PROJECTILE_NOCLIP) {
+            goto jr_531E;
+        }
+
+        /* ld hl, wEntitiesPosXTable; add hl, de; ldh a, [hActiveEntityPosX]; sub [hl]; add $0C; cp $18; jr nc, .jr_531E */
+        uint8_t entity_pos_x = gb_read(gb, wEntitiesPosXTable + e);
+        uint8_t active_pos_x = gb_read_hram(gb, hActiveEntityPosX);
+        int16_t diff_x = (int16_t)active_pos_x - entity_pos_x + 0x0C;
+        if ((uint8_t)diff_x >= 0x18) {
+            goto jr_531E;
+        }
+
+        /* ld hl, wEntitiesPosYTable; add hl, de; ld a, [hl]; ld hl, wEntitiesPosZTable; add hl, de; sub [hl]; ld hl, hActiveEntityVisualPosY; sub [hl]; add $0C; cp $18; jr nc, .jr_531E */
+        uint8_t entity_pos_y = gb_read(gb, wEntitiesPosYTable + e);
+        uint8_t entity_pos_z = gb_read(gb, wEntitiesPosZTable + e);
+        uint8_t visual_pos_y = gb_read_hram(gb, hActiveEntityVisualPosY);
+        int16_t diff_y = (int16_t)entity_pos_y - entity_pos_z - visual_pos_y + 0x0C;
+        if ((uint8_t)diff_y >= 0x18) {
+            goto jr_531E;
+        }
+
+        /* ld hl, wEntitiesPhysicsFlagsTable; add hl, de; ld a, [hl]; and ENTITY_PHYSICS_GRABBABLE; jr nz, .jr_531E */
+        if (physics & ENTITY_PHYSICS_GRABBABLE) {
+            goto jr_531E;
+        }
+
+        /* push bc; ld c, e; ld b, d; push de; ld a, $08; call ConfigureEntityRecoil; pop de; pop bc */
+        uint16_t other_bc = ((uint16_t)d << 8) | e;
+        ConfigureEntityRecoil(gb, other_bc, 0x08);
+
+jr_531E:
+        /* dec e; ld a, e; cp $FF; jp nz, label_003_52D7 */
+        if (e == 0) {
+            break;
+        }
+        e--;
+    }
+
+    return;
+}
+
+/* Entity4BHandler (03:5326) */
+void Entity4BHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld d, $03; fallthrough to LiftableRockEntityHandler */
+    /* This is a special entry point that sets d=3 before calling LiftableRockEntityHandler */
+    (void)gb;  /* d register is handled in LiftableRockEntityHandler */
+    LiftableRockEntityHandler(gb, bc);
+}
+
+/* LiftableRockEntityHandler (03:5328) */
+void LiftableRockEntityHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld a, c; ld [wPickedUpRockIndex], a */
+    uint8_t c = bc & 0xFF;
+    gb_write(gb, wPickedUpRockIndex, c);
+
+    /* call GetEntityPrivateCountdown1; ldh [hMultiPurpose0], a; jp z, LiftableRockIntactHandler */
+    uint8_t countdown1 = GetEntityPrivateCountdown1(gb, bc);
+    gb_write_hram(gb, hMultiPurpose0, countdown1);
+    if (countdown1 == 0) {
+        LiftableRockIntactHandler(gb, bc);
+        return;
+    }
+
+    /* cp $01; jr nz, jr_003_5395 */
+    if (countdown1 != 0x01) {
+        goto jr_003_5395;
+    }
+
+    /* Last frame */
+    /* ld hl, wEntitiesPrivateState5Table; add hl, bc; ld a, [hl]; and a; jr z, .spawnFairyEnd */
+    uint8_t private_state5 = gb_read(gb, wEntitiesPrivateState5Table + bc);
+    if (private_state5 != 0) {
+        /* call GetRandomByte; and $03; jr nz, .spawnFairyEnd */
+        uint8_t random = GetRandomByte(gb) & 0x03;
+        if (random == 0) {
+            /* ld a, ENTITY_DROPPABLE_FAIRY; call SpawnNewEntity; jr c, .spawnFairyEnd */
+            uint16_t de = SpawnNewEntity_trampoline(gb, ENTITY_DROPPABLE_FAIRY, NULL);
+            if (de != 0xFFFF) {
+                /* ldh a, [hMultiPurpose0]; ld hl, wEntitiesPosXTable; add hl, de; ld [hl], a */
+                gb_write(gb, wEntitiesPosXTable + de, gb_read_hram(gb, hMultiPurpose0));
+                /* ldh a, [hMultiPurpose1]; ld hl, wEntitiesPosYTable; add hl, de; ld [hl], a */
+                gb_write(gb, wEntitiesPosYTable + de, gb_read_hram(gb, hMultiPurpose1));
+                /* ldh a, [hMultiPurpose3]; ld hl, wEntitiesPosZTable; add hl, de; ld [hl], a */
+                gb_write(gb, wEntitiesPosZTable + de, gb_read_hram(gb, hMultiPurpose3));
+                /* ld hl, wEntitiesSlowTransitionCountdownTable; add hl, de; ld [hl], $80 */
+                gb_write(gb, wEntitiesSlowTransitionCountdownTable + de, 0x80);
+            }
+        }
+    }
+
+spawnFairyEnd:
+    /* ldh a, [hActiveEntitySpriteVariant]; and a; jr nz, .marinReactionEnd */
+    if (gb_read_hram(gb, hActiveEntitySpriteVariant) != 0) {
+        goto marinReactionEnd;
+    }
+
+    /* If inside a house... ldh a, [hMapId]; cp MAP_GHOST_HOUSE; jr z, .insideHouse */
+    /* cp MAP_HOUSE; jr nz, .marinReactionEnd */
+    uint8_t map_id = gb_read_hram(gb, hMapId);
+    if (map_id == MAP_GHOST_HOUSE || map_id == MAP_HOUSE) {
+        /* ... and Marin is following Link... ld a, [wIsMarinFollowingLink]; and a; jr z, .marinReactionEnd */
+        if (gb_read(gb, wIsMarinFollowingLink) != 0) {
+            /* draw a random number; and $3F; jr nz, .marinReaction2 */
+            uint8_t random = GetRandomByte(gb) & 0x3F;
+            if (random == 0) {
+                /* Open Marin reaction 1 (Dialog028) */
+                OpenDialogInTable0_trampoline(gb, 0x28);
+                /* jp UnloadEntityAndReturn */
+                UnloadEntityAndReturn(gb, bc);
+                return;
+            }
+            /* .marinReaction2: Open Marin reaction 2 (Dialog199) */
+            OpenDialogInTable0_trampoline(gb, 0xC7);  /* Dialog199 */
+        }
+    }
+
+    /* fall through to marinReactionEnd */
+    /* jp UnloadEntityAndReturn */
+    UnloadEntityAndReturn(gb, bc);
+    return;
+
+marinReactionEnd:
+    /* jp UnloadEntityAndReturn */
+    UnloadEntityAndReturn(gb, bc);
+    return;
+
+jr_003_5395:
+    /* jp label_3935 */
+    label_3935(gb, NULL);
+}
+
+/* LiftableRockIntactHandler (03:53A8) */
+void LiftableRockIntactHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* Select sprite variants based on indoor/outdoor */
+    static const uint8_t LiftableRockOutdoorSpriteVariants[8] = {
+        0xF0, 0xE7, 0xF2, 0xE7,  /* variant0: Rock */
+        0xF4, 0xE6, 0xF6, 0xE6   /* variant1: Bush */
+    };
+    static const uint8_t LiftableRockIndoorSpriteVariants[8] = {
+        0xF0, 0xE6, 0xF2, 0xE6,  /* variant0: Pot/Skull */
+        0xF4, 0xE6, 0xF6, 0xE6   /* variant1: Unused? */
+    };
+
+    const uint8_t *de = LiftableRockOutdoorSpriteVariants;
+    if (gb_read(gb, wIsIndoor) != 0) {
+        de = LiftableRockIndoorSpriteVariants;
+    }
+
+    /* .render: call RenderActiveEntitySpritesPair */
+    RenderActiveEntitySpritesPair(gb, de, NULL);
+
+    /* call ReturnIfNonInteractive_03 */
+    if (ReturnIfNonInteractive_03(gb, false)) {
+        return;
+    }
+
+    /* ld a, DAMAGE_TYPE_THROW_AT; ld [wAttackDamageType], a; call func_003_75A2 */
+    gb_write(gb, wAttackDamageType, DAMAGE_TYPE_THROW_AT);
+    func_003_75A2(gb, bc);
+
+    /* call BouncingEntityPhysics */
+    BouncingEntityPhysics(gb, bc);
+
+    /* ld hl, wEntitiesStatusTable; add hl, bc; ld a, [hl]; cp ENTITY_STATUS_FALLING; jp z, ret_003_5406 */
+    uint8_t status = gb_read(gb, wEntitiesStatusTable + bc);
+    if (status == ENTITY_STATUS_FALLING) {
+        return;
+    }
+
+    /* ld hl, wEntitiesPosZTable; add hl, bc; ld a, [hl]; and a; jr z, LiftableRockStartSmashingAnimation */
+    uint8_t pos_z = gb_read(gb, wEntitiesPosZTable + bc);
+    if (pos_z == 0) {
+        LiftableRockStartSmashingAnimation(gb, bc);
+        return;
+    }
+
+    /* ld hl, wEntitiesCollisionsTable; add hl, bc; ld a, [hl]; and a; jr z, ret_003_5406 */
+    uint8_t collisions = gb_read(gb, wEntitiesCollisionsTable + bc);
+    if (collisions == 0) {
+        return;
+    }
+
+    /* call EntityCheckThrowAtTriggers; fallthrough to LiftableRockStartSmashingAnimation */
+    EntityCheckThrowAtTriggers(gb, bc);
+    /* fallthrough */
+    LiftableRockStartSmashingAnimation(gb, bc);
+}
+
+/* LiftableRockStartSmashingAnimation (03:53E4) */
+void LiftableRockStartSmashingAnimation(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld hl, hNoiseSfx; ld [hl], NOISE_SFX_CUT_GRASS */
+    gb_write_hram(gb, hNoiseSfx, NOISE_SFX_CUT_GRASS);
+
+    /* ld e, $1F; ldh a, [hActiveEntitySpriteVariant]; cp $FF; jr z, .grassSound */
+    /* cp $01; jr z, .grassSound */
+    /* ld [hl], NOISE_SFX_POT_SMASHED; ld e, $0F */
+    uint8_t e = 0x1F;
+    uint8_t variant = gb_read_hram(gb, hActiveEntitySpriteVariant);
+    if (variant != 0xFF && variant != 0x01) {
+        gb_write_hram(gb, hNoiseSfx, NOISE_SFX_POT_SMASHED);
+        e = 0x0F;
+    }
+
+    /* ld hl, wEntitiesPrivateCountdown1Table; add hl, bc; ld [hl], e */
+    gb_write(gb, wEntitiesPrivateCountdown1Table + bc, e);
+
+    /* ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; inc [hl]; inc [hl] */
+    uint8_t physics = gb_read(gb, wEntitiesPhysicsFlagsTable + bc);
+    physics += 2;
+    gb_write(gb, wEntitiesPhysicsFlagsTable + bc, physics);
+
+    return;
 }

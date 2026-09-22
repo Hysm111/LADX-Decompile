@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~70.5%
-* **Number of Verified Functions**: 918
-* **Number of Decompiled Functions**: 718
-* **Number Remaining**: ~294 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Initialization & Handlers, 03:485B-03:52D4)
-* **Current Task**: Batch 79: Bank 3 entity handlers (EntityThrownHandler, EntityStunnedHandler, EntityGetLiftedUp, EntityLiftedHandler, EntityBecomeStunned) and entity init functions (EntityInitWithRandomSpeed through EntityInitGhini)
-* **Last Completed Task**: Decompile and verify entity handlers and init functions in ROM Bank 3 (EntityThrownHandler, EntityStunnedHandler, EntityGetLiftedUp, EntityLiftedHandler, EntityBecomeStunned, EntityInitWithRandomSpeed, EntityInitSparkClockwise, EntityInitSparkCounterClockwise, EntityInitWizrobe, EntityInitMoblinSword, EntityInitSecretSeashell, EntityInitDiggableBushOrPotDroppable, SetHiddenDroppableOptions1, EntityInitKeyDropPoint, EntityInitTradingItem, EntityInitWarp, EntityInitTreeOrPotDroppable, EntityInitWithShiftedXPosition, SetDroppableDefaultTimer, EntityInitWithCountdown, EntityInitGhini, plus helper functions func_003_4F12, EntityShiftPosition, EntityShiftPosition_shiftBy8)
-* **Last Update Timestamp**: 2026-09-22T12:00:00+03:00
+* **Current Overall Progress**: ~71.2%
+* **Number of Verified Functions**: 928
+* **Number of Decompiled Functions**: 728
+* **Number Remaining**: ~284 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Initialization & Handlers, 03:485B-03:5406)
+* **Current Task**: Batch 80: Bank 3 pushed block and liftable rock entity handlers
+* **Last Completed Task**: Decompile and verify pushed block and liftable rock entity handlers in ROM Bank 3 (PushedBlockEntityHandler, func_003_52D4, Entity4BHandler, LiftableRockEntityHandler, LiftableRockIntactHandler, LiftableRockStartSmashingAnimation, plus callback stubs func_003_51C9, ConfigureEntityRecoil, CopyLinkFinalPositionToActivePosition, OpenDialogInTable0_trampoline)
+* **Last Update Timestamp**: 2026-09-22T14:00:00+03:00
 
 ---
 
@@ -481,3 +481,35 @@
 - **Tests:** Extended `tests/bank3/test_entities.c` with 18 new test functions covering all new entity init functions and EntityBecomeStunned. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 918 verified functions across Batches 1-79 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03) are callback-modeled or directly implemented. Room-specific conditional logic matched to assembly branching. Genie collision handling verified against assembly flow.
+
+---
+
+## Batch 80 Verification — Bank 3 Pushed Block & Liftable Rock Entity Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:5249`-`03:5406`) and `LADX-Disassembly/src/code/entities/03_pushed_block.asm`, `LADX-Disassembly/src/code/entities/03_liftable_rock.asm`. Implemented 6 entity handler functions and 4 callback stubs in `src/bank3/entities.c` and `src/home/entities.c` with declarations in `include/bank3/entities.h` and `include/home/entities.h`. Added missing constants to `include/constants/entities.h`, `include/constants/rooms.h`, `include/constants/memory.h`, `include/constants/sfx.h`, `include/constants/dialog.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Entity Handlers Implemented:**
+  - `PushedBlockEntityHandler` (`03:5249`-`03:52D1`): Handles pushed block entity rendering and physics; selects sprite variants based on indoor/outdoor and Color Dungeon entrance; checks entity collisions with other entities; increments inertia counter; at threshold sets ignore hits countdown, applies background interaction; unloads entity and checks for push triggers (TRIGGER_PUSH_SINGLE_BLOCK, TRIGGER_PUSH_BLOCKS); marks trigger as resolved when block hits specific objects (0xA7, 0xA6).
+  - `func_003_52D4` (`03:52D4`-`03:5325`): Helper function that iterates through all entity slots (0x0F down to 0); checks for active entities with collision proximity; configures recoil for grabbable entities using ConfigureEntityRecoil.
+  - `Entity4BHandler` (`03:5326`): Entry point that falls through to LiftableRockEntityHandler with register D=3.
+  - `LiftableRockEntityHandler` (`03:5328`-`03:5395`): Main handler for liftable rocks, bushes, pots, skulls; stores picked-up rock index; if private countdown1 is 0, jumps to LiftableRockIntactHandler; if countdown1 is 1 (last frame), attempts to spawn fairy (1/4 chance); handles Marin reactions when lifted in houses (Ghost House, House); unloads entity when done.
+  - `LiftableRockIntactHandler` (`03:53A8`-`03:5406`): Renders intact liftable rock; selects outdoor/indoor sprite variants; applies throw-at damage; calls BouncingEntityPhysics; if falling status, returns; if Z position is 0 (on ground), starts smashing animation; if collisions detected, checks throw triggers then starts smashing animation.
+  - `LiftableRockStartSmashingAnimation` (`03:53E4`-`03:5406`): Initiates smashing animation; plays cut grass sound (or pot smashed sound for non-bush variants); sets private countdown1 to 0x1F (bush) or 0x0F (pot); increments physics flags by 2 to enable ground interaction.
+
+- **Callback Stubs Implemented:**
+  - `func_003_51C9` (`03:51C9`): Trigger checking helper for pushed blocks.
+  - `ConfigureEntityRecoil` (`03:6FCC`): Configures entity recoil after collision.
+  - `CopyLinkFinalPositionToActivePosition` (`03:0CBE`): Copies Link's final position to active entity position.
+  - `OpenDialogInTable0_trampoline` (`00:3B0C`): Opens dialog from table 0 via bank switching.
+
+- **Data Tables Referenced:**
+  - `Unknown011SpriteVariants` (`03:5235`): 4 variants for pushed block outdoor rendering.
+  - `Unknown010SpriteVariants` (`03:5245`): 2 variants for pushed block in Color Dungeon entrance.
+  - `Data_003_5162` (`03:5162`): {0xF8, 0xF9, 0xFA, 0xFB} - pushed block trigger data for outdoors.
+  - `Data_003_515E` (`03:515E`): {0x0E, 0x1E, 0x0F, 0x1F} - pushed block trigger data for indoors.
+  - `LiftableRockOutdoorSpriteVariants` (`03:5398`): 4 variants for rocks and bushes outdoors.
+  - `LiftableRockIndoorSpriteVariants` (`03:53A0`): 4 variants for pots/skulls indoors.
+
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 928 verified functions across Batches 1-80 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, ConfigureEntityRecoil, CopyLinkFinalPositionToActivePosition, MarkTriggerAsResolved) are callback-modeled or directly implemented. Room-specific conditional logic matched to assembly branching. Marin reaction logic in houses verified against assembly flow.

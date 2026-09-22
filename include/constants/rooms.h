@@ -39,6 +39,7 @@
 #define ROOM_INDOOR_B_MRS_MEOW_MEOW     0xA7
 #define ROOM_SECTION_OW_GHOST_TRIGGER   0x40
 #define UNKNOWN_ROOM_A4                 0xA4
+#define UNKNOWN_ROOM_C7                 0xC7
 
 /* Overworld Room Banks */
 #define BANK_OverworldRoomsFirstHalf  0x09

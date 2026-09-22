@@ -205,6 +205,8 @@
 #define wOAMNextAvailableSlot                 0xC3C0
 #define wItemUsageContext                     0xC1AD
 #define wSwordMoblinAlertingSoundCounter      0xC502
+#define wEntityHorizontallyCollidedObject     0xC503
+#define wPickedUpRockIndex                    0xC50C
 
 /* WRAM Transient VFX Tables */
 #define wTranscientVfxTypeTable      0xC510
@@ -411,6 +413,7 @@
 #define wD013                                 0xD013
 #define wD016                                 0xD016
 #define wD017                                 0xD017
+#define wD153                                 0xD153
 #define wIntroTimer                     0xD001
 #define wIntroSubTimer                  0xD002
 #define wD006                           0xD006
@@ -458,6 +461,7 @@
 #define wLinkPositionZHistory                   0xD195
 #define wLinkDirectionHistory                   0xD1B5
 #define wEntitiesPrivateState4Table             0xC440
+#define wEntitiesPrivateState5Table             0xC390
 #define wEntitiesPrivateCountdown2Table         0xC300
 #define wC13B                                   0xC13B
 #define wC167                                   0xC167

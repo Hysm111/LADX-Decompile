@@ -48,12 +48,14 @@
 #define NOISE_SFX_CUT_GRASS                     0x05
 #define NOISE_SFX_STAIRS                        0x06
 #define NOISE_SFX_FOOTSTEP                      0x07
+#define NOISE_SFX_POT_SMASHED                   0x09
 #define NOISE_SFX_WHOOSH                        0x0A
 #define NOISE_SFX_EXPLOSION                     0x0C
 #define NOISE_SFX_MAGIC_ROD                     0x0D
 #define NOISE_SFX_SHOVEL_DIG                    0x0E
 #define NOISE_SFX_SEA_WAVES                     0x0F
 #define NOISE_SFX_DOOR_CLOSED                   0x10
+#define NOISE_SFX_RUMBLE                        0x11
 #define NOISE_SFX_ENEMY_DESTROYED               0x13
 #define NOISE_SFX_SWORD_SWING_B                 0x14
 #define NOISE_SFX_SWORD_SWING_C                 0x15

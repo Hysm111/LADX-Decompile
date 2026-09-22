@@ -130,6 +130,9 @@
 #define ENTITY_OPT1_IS_MINI_BOSS     0x04
 #define ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL 0x02
 
+#define ENTITY_IRON_MASK             0x24
+#define ENTITY_OCTOROK_ROCK          0x0A
+
 /* Active power-up types */
 #define ACTIVE_POWER_UP_PIECE_OF_POWER 0x01
 #define ACTIVE_POWER_UP_GUARDIAN_ACORN 0x02
@@ -138,15 +141,40 @@
 
 /* Trigger types */
 #define TRIGGER_THROW_POT_AT_CHEST   0x0D
+#define TRIGGER_PUSH_SINGLE_BLOCK    0x02
+#define TRIGGER_PUSH_BLOCKS          0x07
+#define TRIGGER_SHOOT_STATUE_EYE     0x0F
 
 /* Damage types */
 #define DAMAGE_TYPE_THROW_AT           0x0B
+#define DAMAGE_TYPE_ARROW              0x05
+#define DAMAGE_TYPE_MAGIC_ROD          0x0A
+#define DAMAGE_TYPE_BOMB_ARROW         0x0C
 
 /* Object types */
 #define OBJECT_CHEST_CLOSED          0xA0
+#define OBJECT_ONE_EYED_STATUE       0xC0
+#define OBJECT_FROZEN_BLOCK          0x8A
+#define OBJECT_BUSH_GROUND_STAIRS    0xD3
+#define OBJECT_BUSH                  0x5C
+#define OBJECT_TALL_GRASS            0x0A
+#define OBJECT_BOMBABLE_BLOCK        0xA9
+#define OBJECT_ROCKY_GROUND          0x09
+#define OBJECT_ROCKY_CAVE_DOOR       0xE1
+#define OBJECT_GIANT_SKULL_TL        0xBB
+#define OBJECT_GIANT_SKULL_BR        0xBE
+#define OBJECT_BOMBED_PASSAGE_VERTICAL   0xA0
+#define OBJECT_BOMBED_PASSAGE_HORIZONTAL 0xA1
 
 /* Room constants */
 #define UNKNOWN_ROOM_74              0x74
+#define UNKNOWN_ROOM_C7              0xC7
+#define ROOM_OW_COLOR_DUNGEON_ENTRANCE 0x77
+#define ROOM_INDOOR_B_KANALET_MAIN_ENTRANCE 0xD3
+#define MAP_GHOST_HOUSE              0x1E
+#define MAP_HOUSE                    0x10
+#define MAP_BOWWOW_HIDEOUT           0x15
+#define MAP_UNKNOWN_1A               0x1A
 
 #define BANK_OverworldEntitiesPointersTable     0x16
 #define OverworldEntitiesPointersTable          0x4000

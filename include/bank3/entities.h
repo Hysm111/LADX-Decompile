@@ -92,6 +92,15 @@ void EntityGetLiftedUp(GBState *gb, uint16_t bc);
 void EntityLiftedHandler(GBState *gb, uint16_t bc);
 void EntityBecomeStunned(GBState *gb, uint16_t bc);
 
+/* Pushed Block Entity Handler (03:5249) */
+void PushedBlockEntityHandler(GBState *gb, uint16_t bc);
+
+/* Liftable Rock Entity Handlers (03:5326-03:5406) */
+void Entity4BHandler(GBState *gb, uint16_t bc);
+void LiftableRockEntityHandler(GBState *gb, uint16_t bc);
+void LiftableRockIntactHandler(GBState *gb, uint16_t bc);
+void LiftableRockStartSmashingAnimation(GBState *gb, uint16_t bc);
+
 /* Entity Init Functions (03:4EA8+) */
 void EntityInitWithRandomSpeed(GBState *gb);
 void EntityInitSparkClockwise(GBState *gb);

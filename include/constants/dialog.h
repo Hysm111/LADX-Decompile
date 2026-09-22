@@ -34,6 +34,7 @@
 
 /* Dialog background tile constants */
 #define Dialog026                  0x26
+#define Dialog028                  0x28
 #define Dialog0DA                  0xDA
 #define DIALOG_BG_TILE_DARK        0x7E
 #define DIALOG_BG_TILE_LIGHT       0x7F
@@ -52,6 +53,7 @@
 #define Dialog0FF                       0xFF
 #define Dialog0FC                       0xFC
 #define Dialog0FD                       0xFD
-#define Dialog04F                               0x4F
+#define Dialog04F                       0x4F
+#define Dialog199                       0xC7
 
 #endif /* LADX_CONSTANTS_DIALOG_H */

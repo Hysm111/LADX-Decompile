@@ -1427,3 +1427,34 @@ void SetEntityVariantForDirection_03(GBState *gb, uint16_t entity_index) {
 
     SetEntitySpriteVariant(gb, entity_index, final_variant);
 }
+
+void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, uint8_t b_val) {
+    if (!gb) return;
+    /* Stub: Helper function for PushedBlockEntityHandler trigger checking */
+    (void)entity_index;
+    (void)data_ptr;
+    (void)b_val;
+}
+
+void ConfigureEntityRecoil(GBState *gb, uint16_t entity_index, uint8_t a_val) {
+    if (!gb) return;
+    /* Stub: Configures entity recoil after collision */
+    (void)entity_index;
+    (void)a_val;
+}
+
+void CopyLinkFinalPositionToActivePosition(GBState *gb) {
+    if (!gb) return;
+    /* Stub: Copies Link's final position to active position */
+    uint8_t final_x = gb_read(gb, hLinkFinalPositionX);
+    uint8_t final_y = gb_read(gb, hLinkFinalPositionY);
+    gb_write_hram(gb, hActiveEntityPosX, final_x);
+    gb_write_hram(gb, hActiveEntityPosY, final_y);
+}
+
+void OpenDialogInTable0_trampoline(GBState *gb, uint8_t dialog_id) {
+    if (!gb) return;
+    /* Stub: Opens a dialog from table 0 */
+    (void)dialog_id;
+    gb_write(gb, wDialogState, 0x01);  /* Set dialog as opening */
+}

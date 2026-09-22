@@ -717,6 +717,44 @@ void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index);
  */
 void func_003_6E2B(GBState *gb, uint16_t entity_index);
 
+/**
+ * func_003_51C9 (03:51C9)
+ * Helper function called when pushing blocks to check triggers.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @param data_ptr Pointer to data table
+ * @param b_val Value for register B
+ */
+void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, uint8_t b_val);
+
+/**
+ * ConfigureEntityRecoil (03:6FCC)
+ * Configures entity recoil after collision.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @param a_val Value for register A
+ */
+void ConfigureEntityRecoil(GBState *gb, uint16_t entity_index, uint8_t a_val);
+
+/**
+ * CopyLinkFinalPositionToActivePosition (03:0CBE)
+ * Copies Link's final position to active position.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ */
+void CopyLinkFinalPositionToActivePosition(GBState *gb);
+
+/**
+ * OpenDialogInTable0_trampoline (00:3B0C)
+ * Opens a dialog from table 0.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param dialog_id Dialog ID to open
+ */
+void OpenDialogInTable0_trampoline(GBState *gb, uint8_t dialog_id);
+
 
 /**
  * BossIntro (00:3EE8)
