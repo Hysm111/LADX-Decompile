@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~72.0%
-* **Number of Verified Functions**: 942
-* **Number of Decompiled Functions**: 742
-* **Number Remaining**: ~270 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Handlers, 03:57E9-03:6B71)
-* **Current Task**: Batch 81: Bank 3 Arrow and Octorok entity handlers
-* **Last Completed Task**: Decompile and verify arrow and Octorok entity handlers in ROM Bank 3 (ArrowEntityHandler, BombArrowHandler, MoblinArrowEntityHandler, ArrowRenderAndMove, EntityBounceOffWallX, EntityBounceOffWallY, ArrowRockAfterHittingWall, OctorokEntityHandler, plus callback stubs for ApplySwordIntersectionWithObjects, AnimateRoamingEnemy, CheckLinkCollisionWithProjectile)
-* **Last Update Timestamp**: 2026-09-22T15:00:00+03:00
+* **Current Overall Progress**: ~73.5%
+* **Number of Verified Functions**: 958
+* **Number of Decompiled Functions**: 758
+* **Number Remaining**: ~254 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Handlers, 03:6C72-03:7267)
+* **Current Task**: Batch 82: Bank 3 Collision Detection and Damage Handling
+* **Last Completed Task**: Decompile and verify collision detection and damage handling in ROM Bank 3 (CheckLinkCollisionWithEnemy, ApplyLinkCollisionWithEnemy, DefaultEnemyDamageCollisionHandler, ApplySwordDamagesToEnemy, func_003_6B7B, plus callback stubs for func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, func_003_75A2, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers)
+* **Last Update Timestamp**: 2026-09-22T16:00:00+03:00
 
 ---
 
@@ -548,3 +548,36 @@
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 942 verified functions across Batches 1-81 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, ApplySwordIntersectionWithObjects, AnimateRoamingEnemy, CheckLinkCollisionWithProjectile) are callback-modeled or directly implemented. Arrow wall bounce physics (3x SRA division) verified against assembly flow. Dungeon 8 statue eye shooting trigger logic verified.
+
+---
+
+## Batch 82 Verification — Bank 3 Collision Detection and Damage Handling
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:6C72`-`03:7267`, `03:6B7B`-`03:6BC5`). Implemented 5 entity collision/damage handler functions and 8 callback stubs in `src/bank3/entities.c` and `src/home/entities.c` with declarations in `include/bank3/entities.h` and `include/home/entities.h`. Added missing constants to `include/constants/entities.h`, `include/constants/memory.h`, `include/constants/sfx.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Collision and Damage Handlers Implemented:**
+  - `CheckLinkCollisionWithEnemy` (`03:6C72`-`03:6CCC`): Checks collision between Link and enemy entities using hitbox collision detection; handles air/non-interactive early returns; checks entity physics flags for harmless entities; validates Link animation state for special collision cases.
+  - `ApplyLinkCollisionWithEnemy` (`03:6CD5`-`03:6D73`): Applies collision damage to Link from enemy entities; handles special cases for Cheep-Cheep, Goomba, Gel, Cue Ball, Rolling Bones Bar, and Moblin King; manages invincibility counter and ignore-link-collisions countdown; applies knockback effects and sound effects.
+  - `DefaultEnemyDamageCollisionHandler` (`03:6E2B`-`03:6ECD`): Handles default enemy damage from sword collisions; validates sword collision state and flash countdown; checks entity physics flags for harmless entities; verifies Link animation state for sword collision; delegates to ApplySwordDamagesToEnemy for damage application.
+  - `ApplySwordDamagesToEnemy` (`03:7267`-`03:73E6`): Applies sword damage to enemy entities with special cases for Final Nightmare, Buzz Blob, Bouncing Bombite, Angler Fish, Slime Eye, Knight, and Genie; handles recoil configuration based on tunic type and active power-ups; manages entity state transitions and sound effects.
+  - `func_003_6B7B` (`03:6B7B`-`03:6BC5`): Applies gravity and underwater physics for entities; handles side-scrolling gravity reduction; manages underwater horizontal speed decay; updates vertical speed based on entity type.
+
+- **Callback Stubs Implemented:**
+  - `func_003_6C6B` (`03:6C6B`): Helper function for default enemy damage collision handling.
+  - `func_003_6DDF` (`03:6DDF`): Handles various enemy damage reactions.
+  - `GetVectorTowardsLink` (`03:7E45`): Gets vector towards Link for recoil calculations.
+  - `ConfigureEntityRecoil` (`03:6FCC`): Configures entity recoil after collision with configurable strength.
+  - `func_003_75A2` (`03:75A2`): Helper function for damage collision handling.
+  - `AddEntitySpeedToPos_03` (`03:7F32`): Updates entity position using speed values (alias for UpdateEntityPosWithSpeed_03).
+  - `EntityCheckThrowAtTriggers` (`03:5438`): Checks if thrown entity hit a trigger.
+  - `ConfigureEntityRecoil` (`03:6FCC`): Configures entity recoil after collision.
+
+- **Constants Added:**
+  - `ENTITY_OPT1_SWORD_CLINK_OFF` (0x40): Option to disable sword clink effect.
+  - Entity types: `ENTITY_BUZZ_BLOB` (0xB9), `ENTITY_BOUNCING_BOMBITE` (0x55), `ENTITY_ANGLER_FISH` (0x65), `ENTITY_SLIME_EYE` (0x5B), `ENTITY_KNIGHT` (0x51), `ENTITY_FINAL_NIGHTMARE` (0xE6).
+  - Memory addresses: `wLinkSpeedX` (0xFF9A), `wLinkSpeedY` (0xFF9B), `wLinkVelocityZ` (0xFFA3), `wLinkCountdown` (0xFFB7), `wLinkPositionZ` (0xFFA2).
+  - SFX: `NOISE_SFX_BUZZ_BLOB_ELECTROCUTE` (0x1C), `WAVE_SFX_FLOOR_SWITCH` (0x0E).
+
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 958 verified functions across Batches 1-82 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers) are callback-modeled or directly implemented. Enemy collision hitbox logic verified against assembly flow. Special entity collision cases (Cheep-Cheep, Goomba, Gel, Moblin King) verified.

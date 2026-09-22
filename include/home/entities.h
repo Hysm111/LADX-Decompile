@@ -710,6 +710,52 @@ void AnimateRoamingEnemy(GBState *gb, uint16_t entity_index);
 bool CheckLinkCollisionWithProjectile(GBState *gb, uint16_t entity_index);
 
 /**
+ * CheckLinkCollisionWithEnemy (03:6C72)
+ * Checks collision between Link and an enemy entity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @return true if collision detected, false otherwise
+ */
+bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t entity_index);
+
+/**
+ * ApplyLinkCollisionWithEnemy (03:6CD5)
+ * Applies collision damage to Link from an enemy entity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ApplyLinkCollisionWithEnemy(GBState *gb, uint16_t entity_index);
+
+/**
+ * DefaultEnemyDamageCollisionHandler (03:6E2B)
+ * Handles default enemy damage collision with Link's sword.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void DefaultEnemyDamageCollisionHandler(GBState *gb, uint16_t entity_index);
+
+/**
+ * ApplySwordDamagesToEnemy (03:7267)
+ * Applies sword damage to enemy entities.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ApplySwordDamagesToEnemy(GBState *gb, uint16_t entity_index);
+
+/**
+ * func_003_6B7B (03:6B7B)
+ * Applies gravity and underwater physics for entities.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_6B7B(GBState *gb, uint16_t entity_index);
+
+/**
  * func_003_75A2 (03:75A2)
  * Helper function used by EntityThrownHandler.
  *
@@ -755,6 +801,34 @@ void func_003_6E2B(GBState *gb, uint16_t entity_index);
  * @param b_val Value for register B
  */
 void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, uint8_t b_val);
+
+/**
+ * func_003_6C6B (03:6C6B)
+ * Helper function for default enemy damage collision handling.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_6C6B(GBState *gb, uint16_t entity_index);
+
+/**
+ * func_003_6DDF (03:6DDF)
+ * Handles various enemy damage reactions.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_6DDF(GBState *gb, uint16_t entity_index);
+
+/**
+ * GetVectorTowardsLink (03:7E45)
+ * Gets vector towards Link for recoil calculations.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param x Output X component
+ * @param y Output Y component
+ */
+void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y);
 
 /**
  * ConfigureEntityRecoil (03:6FCC)

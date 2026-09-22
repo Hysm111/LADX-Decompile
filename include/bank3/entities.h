@@ -122,6 +122,13 @@ void ArrowRockAfterHittingWall(GBState *gb, uint16_t bc);
 /* Octorok Entity Handler (03:57E9) */
 void OctorokEntityHandler(GBState *gb, uint16_t bc);
 
+/* Collision and Damage Handlers (03:6C72-03:7267) */
+bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc);
+void ApplyLinkCollisionWithEnemy(GBState *gb, uint16_t bc);
+void DefaultEnemyDamageCollisionHandler(GBState *gb, uint16_t bc);
+void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc);
+void func_003_6B7B(GBState *gb, uint16_t bc);
+
 /* Helper functions (03:4F12+) */
 void func_003_4F12(GBState *gb, uint16_t bc);
 void SetHiddenDroppableOptions1(GBState *gb, uint16_t bc);

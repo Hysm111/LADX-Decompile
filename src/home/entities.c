@@ -1257,9 +1257,9 @@ void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index) {
     (void)entity_index;
 }
 
-void func_003_6B7B(GBState *gb, uint16_t entity_index) {
+void func_003_6E2B(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
-    /* Stub: Helper function for BouncingEntityPhysics */
+    /* Stub: Helper function for EntityStunnedHandler */
     (void)entity_index;
 }
 
@@ -1279,79 +1279,6 @@ void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Check if thrown entity hit a trigger */
     (void)entity_index;
-}
-
-void func_003_6E2B(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Helper function for EntityStunnedHandler */
-    (void)entity_index;
-}
-
-bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t entity_index) {
-    if (!gb) return false;
-
-    /* If Link is in the air (Z > 0), skip collision check */
-    if (gb_read_hram(gb, hLinkPositionZ) != 0) {
-        return false;
-    }
-
-    /* If Link is not interactive (motion state >= LINK_MOTION_UNSTUCKING), skip */
-    uint8_t link_motion = gb_read(gb, wLinkMotionState);
-    if (link_motion >= LINK_MOTION_UNSTUCKING) {
-        return false;
-    }
-
-    /* c = entity_index * 4 */
-    uint8_t c = (entity_index & 0xFF) << 2;
-
-    /* Check X collision */
-    /* hActiveEntityPosX + wEntitiesHitboxPositionTable[c + 0] */
-    uint8_t hitbox_x = gb_read(gb, wEntitiesHitboxPositionTable + c);
-    int16_t diff_x = (int16_t)gb_read_hram(gb, hActiveEntityPosX) + hitbox_x;
-    diff_x -= gb_read_hram(gb, hLinkPositionX);
-    diff_x -= 8;
-    if (diff_x < 0) diff_x = -diff_x;
-    if (diff_x >= 0x80) {
-        return false;
-    }
-
-    /* Check Y collision */
-    /* hActiveEntityVisualPosY + wEntitiesHitboxPositionTable[c + 1] + 4 */
-    uint8_t hitbox_y = gb_read(gb, wEntitiesHitboxPositionTable + c + 1);
-    int16_t diff_y = (int16_t)gb_read_hram(gb, hActiveEntityVisualPosY) + hitbox_y + 4;
-    diff_y -= gb_read_hram(gb, hLinkPositionY);
-    diff_y -= 8;
-    if (diff_y < 0) diff_y = -diff_y;
-    if (diff_y >= 0x80) {
-        return false;
-    }
-
-    /* Check hitbox width/height */
-    /* wEntitiesHitboxPositionTable[c + 2] + 4 */
-    uint8_t hitbox_w = gb_read(gb, wEntitiesHitboxPositionTable + c + 2) + 4;
-    if (diff_x >= hitbox_w) {
-        return false;
-    }
-
-    /* wEntitiesHitboxPositionTable[c + 3] + 4 */
-    uint8_t hitbox_h = gb_read(gb, wEntitiesHitboxPositionTable + c + 3) + 4;
-    if (diff_y >= hitbox_h) {
-        return false;
-    }
-
-    /* Check if entity is harmless */
-    uint8_t physics = gb_read(gb, wEntitiesPhysicsFlagsTable + entity_index);
-    if ((physics & ENTITY_PHYSICS_HARMLESS) == 0) {
-        return true;  /* collision with harmful entity */
-    }
-
-    /* Check Link animation state for special cases */
-    uint8_t link_anim = gb_read_hram(gb, hLinkAnimationState);
-    if (link_anim >= 0x4E && link_anim < 0x50) {
-        return true;
-    }
-
-    return false;
 }
 
 void BouncingEntityPhysics(GBState *gb, uint16_t entity_index) {
@@ -1478,4 +1405,25 @@ bool CheckLinkCollisionWithProjectile(GBState *gb, uint16_t entity_index) {
     /* From 03:6C72 - checks if Link is in air, not interactive, then checks hitbox collision */
     (void)entity_index;
     return false;
+}
+
+/* Collision and Damage Callback Stubs */
+
+void func_003_6C6B(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: func_003_6C6B - helper for DefaultEnemyDamageCollisionHandler */
+    (void)entity_index;
+}
+
+void func_003_6DDF(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: func_003_6DDF - handles various enemy damage reactions */
+    (void)entity_index;
+}
+
+void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y) {
+    if (!gb) return;
+    /* Stub: Gets vector towards Link for recoil calculations */
+    (void)x;
+    (void)y;
 }

@@ -460,6 +460,11 @@
 #define wLinkPositionYHistory                   0xD175
 #define wLinkPositionZHistory                   0xD195
 #define wLinkDirectionHistory                   0xD1B5
+#define wLinkSpeedY                             0xFF9B
+#define wLinkSpeedX                             0xFF9A
+#define wLinkVelocityZ                          0xFFA3
+#define wLinkCountdown                          0xFFB7
+#define wLinkPositionZ                          0xFFA2
 #define wEntitiesPrivateState4Table             0xC440
 #define wEntitiesPrivateState5Table             0xC390
 #define wEntitiesPrivateCountdown2Table         0xC300

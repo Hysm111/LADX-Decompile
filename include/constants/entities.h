@@ -68,6 +68,7 @@
 #define ENTITY_OPT1_NO_GROUND_INTERACTION  0x01
 #define ENTITY_OPT1_NO_WALL_COLLISION      0x10
 #define ENTITY_OPT1_SPLASH_IN_WATER        0x08
+#define ENTITY_OPT1_SWORD_CLINK_OFF        0x40
 
 /* Values for wEntitiesPhysicsFlagsTable. */
 #define ENTITY_PHYSICS_HARMLESS       0x80
@@ -124,6 +125,12 @@
 #define ENTITY_CUE_BALL              0x8E
 #define ENTITY_ROLLING_BONES_BAR     0x82
 #define ENTITY_MOBLIN_KING           0xE4
+#define ENTITY_BUZZ_BLOB             0xB9
+#define ENTITY_BOUNCING_BOMBITE      0x55
+#define ENTITY_ANGLER_FISH           0x65
+#define ENTITY_SLIME_EYE             0x5B
+#define ENTITY_KNIGHT                0x51
+#define ENTITY_FINAL_NIGHTMARE       0xE6
 #define ENTITY_NONE                  0xFF
 
 #define ENTITY_OPT1_IS_BOSS          0x80
