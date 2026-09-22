@@ -919,6 +919,40 @@ void LoadRoomEntities(GBState *gb,
                       void (*configure_new_entity)(GBState *, uint8_t slot),
                       void (*prepare_entity_position)(GBState *, uint8_t slot));
 
+/* Droppable Item Callback Stubs */
+
+void DroppableDisappearIfNeeded(GBState *gb, uint16_t entity_index);
+void func_003_61C0(GBState *gb, uint16_t entity_index);
+void DroppableRevealOrReturnIfNeeded(GBState *gb, uint16_t entity_index);
+void func_003_7E0E(GBState *gb, uint16_t entity_index);
+void PickableHandleGrabbedByItemIfNeeded(GBState *gb, uint16_t entity_index);
+void PickableCollectIfNeeded(GBState *gb, uint16_t entity_index);
+void PickDroppableMagicPowder(GBState *gb, uint16_t entity_index);
+void PickSecretSeashell(GBState *gb, uint16_t entity_index);
+void IncreaseValueAtHLClampAt99(GBState *gb);
+void PickDroppableArrows(GBState *gb, uint16_t entity_index);
+void PickDroppableBombs(GBState *gb, uint16_t entity_index);
+void PickSirensInstrument(GBState *gb, uint16_t entity_index);
+void HoldPickupInTheAir(GBState *gb, uint16_t entity_index);
+void PickHeartContainer(GBState *gb, uint16_t entity_index);
+void PickToadstoolOrDungeonKey(GBState *gb, uint16_t entity_index);
+void PickHeartPiece(GBState *gb, uint16_t entity_index);
+void PickGuardianAcorn(GBState *gb, uint16_t entity_index);
+void PickPieceOfPower(GBState *gb, uint16_t entity_index);
+void ProcessPowerUp(GBState *gb, uint16_t entity_index);
+void MovePickupInTheAir(GBState *gb, uint16_t entity_index);
+void PickSword(GBState *gb, uint16_t entity_index);
+void GiveInventoryItem(GBState *gb, uint16_t entity_index);
+void PickDroppableKey(GBState *gb, uint16_t entity_index);
+void PickDroppableHeart(GBState *gb, uint16_t entity_index);
+void PickDroppableRupee(GBState *gb, uint16_t entity_index);
+void PickDroppableFairy(GBState *gb, uint16_t entity_index);
+
+/* Entity Spawning Callbacks */
+void SpawnNewEntity(GBState *gb, uint16_t entity_index);
+void SpawnNewEntityInRange(GBState *gb, uint16_t entity_index);
+void ConfigureNewEntity_helper(GBState *gb, uint16_t entity_index);
+
 #ifdef __cplusplus
 }
 #endif

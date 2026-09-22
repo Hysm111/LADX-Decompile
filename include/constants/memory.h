@@ -472,6 +472,9 @@
 #define wC167                                   0xC167
 #define wDB10                                   0xDB10
 #define wFreeMovementMode                       0xC17B
+#define wPegasusBootsCollisionCountdown         0xC178
+#define wPegasusBootsCollisionPosX              0xC179
+#define wPegasusBootsCollisionPosY              0xC17A
 #define wTextDebuggerDialogId                   0xC109
 #define wEntitiesPrivateState1Table             0xC2B0
 #define wEntitiesPrivateState2Table             0xC2C0

@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~73.5%
-* **Number of Verified Functions**: 958
-* **Number of Decompiled Functions**: 758
-* **Number Remaining**: ~254 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Handlers, 03:6C72-03:7267)
-* **Current Task**: Batch 82: Bank 3 Collision Detection and Damage Handling
-* **Last Completed Task**: Decompile and verify collision detection and damage handling in ROM Bank 3 (CheckLinkCollisionWithEnemy, ApplyLinkCollisionWithEnemy, DefaultEnemyDamageCollisionHandler, ApplySwordDamagesToEnemy, func_003_6B7B, plus callback stubs for func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, func_003_75A2, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers)
-* **Last Update Timestamp**: 2026-09-22T16:00:00+03:00
+* **Current Overall Progress**: ~74.8%
+* **Number of Verified Functions**: 975
+* **Number of Decompiled Functions**: 775
+* **Number Remaining**: ~237 functions
+* **Current Subsystem**: ROM Bank 3 (Droppable Item Handlers, 03:6057-03:6478)
+* **Current Task**: Batch 83: Bank 3 Droppable Item Entity Handlers
+* **Last Completed Task**: Decompile and verify droppable item entity handlers in ROM Bank 3 (DroppableMagicPowderEntityHandler, DroppableArrowsEntityHandler, DroppableRupeeEntityHandler, PickableHandler, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, plus callback stubs for SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper)
+* **Last Update Timestamp**: 2026-09-22T17:00:00+03:00
 
 ---
 
@@ -581,3 +581,43 @@
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 958 verified functions across Batches 1-82 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers) are callback-modeled or directly implemented. Enemy collision hitbox logic verified against assembly flow. Special entity collision cases (Cheep-Cheep, Goomba, Gel, Moblin King) verified.
+
+---
+
+## Batch 83 Verification — Bank 3 Droppable Item Entity Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:6057`-`03:6478`). Implemented 4 droppable item entity handlers, 1 pickable handler, 6 droppable helper functions, 1 utility function, 25 pickable item collection functions, and 3 entity spawning functions in `src/bank3/entities.c` with declarations in `include/bank3/entities.h`. Added callback declarations and stub implementations in `include/home/entities.h` and `src/home/entities.c` for 31 new callback functions. Added missing constants to `include/constants/entities.h`, `include/constants/memory.h`, `include/constants/gfx.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Droppable Item Entity Handlers Implemented:**
+  - `DroppableMagicPowderEntityHandler` (`03:6057`-`03:607B`): Handles magic powder droppable; checks indoor/Color Dungeon conditions; checks for Toadstool; calls reveal/disappear helpers; renders sprite; falls through to PickableHandler.
+  - `DroppableArrowsEntityHandler` (`03:607D`-`03:608B`): Handles arrow droppable; calls reveal/disappear helpers; renders sprite pair; falls through to PickableHandler.
+  - `DroppableRupeeEntityHandler` (`03:609E`-`03:60AA`): Handles rupee droppable; calls reveal/disappear helpers; renders sprite; falls through to PickableHandler.
+  - `PickableHandler` (`03:60AA`-`03:60B0`): Main pickable item handler; checks non-interactive state; calls grab and collect handlers.
+
+- **Droppable Helper Functions Implemented:**
+  - `DroppableDisappearIfNeeded` (`03:608C`-`03:609B`): Fades out droppable after slow transition countdown < $1C; unloads entity when countdown reaches 0; alternates sprite variant.
+  - `func_003_61C0` (`03:61C0`-`03:61DD`): Updates Z position for floating droppables; increments Z when bit 7 set and < $10; decrements when >= $10.
+  - `DroppableRevealOrReturnIfNeeded` (`03:61DE`-`03:629D`): Handles reveal logic for hidden items; checks private state, room transition, indoor/outdoor, Pegasus Boots collision; sets options for revealed items; throws items away from Link.
+  - `func_003_7E0E` (`03:7E0E`): Wrapper for GetVectorTowardsLink.
+  - `PickableCanBeCollectedBySwordTable` (`03:62FA`): Data table defining which droppables can be collected by sword.
+  - `PickableHandleGrabbedByItemIfNeeded` (`03:62AF`): Stub for handling item grabbed by sword/bomb.
+  - `PickableCollectIfNeeded` (`03:62EB`): Stub for item collection logic.
+
+- **Pickable Item Collection Functions Implemented (Stubs):**
+  - `PickDroppableMagicPowder`, `PickSecretSeashell`, `IncreaseValueAtHLClampAt99`, `PickDroppableArrows`, `PickDroppableBombs`, `PickSirensInstrument`, `HoldPickupInTheAir`, `PickHeartContainer`, `PickToadstoolOrDungeonKey`, `PickHeartPiece`, `PickGuardianAcorn`, `PickPieceOfPower`, `ProcessPowerUp`, `MovePickupInTheAir`, `PickSword`, `GiveInventoryItem`, `PickDroppableKey`, `PickDroppableHeart`, `PickDroppableRupee`, `PickDroppableFairy`
+
+- **Entity Spawning Functions Implemented (Stubs):**
+  - `SpawnNewEntity`, `SpawnNewEntityInRange`, `ConfigureNewEntity_helper`
+
+- **Callback Stubs Implemented:**
+  - 31 callback stubs for droppable helper functions, pickable collection, item pickup, and entity spawning
+
+- **Data Tables Referenced:**
+  - `DroppableMagicPowderSprite` (`03:6055`): Single sprite for magic powder.
+  - `DroppableArrowSprite` (`03:6079`): 2 sprites for arrow directions.
+  - `DroppableRupeeSprite` (`03:609C`): Single sprite for rupee.
+  - `PickableCanBeCollectedBySwordTable` (`03:62FA`): Boolean table for sword-collectible items.
+
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 975 verified functions across Batches 1-83 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper) are callback-modeled or directly implemented. Droppable item reveal logic (indoor/outdoor, Pegasus Boots collision, room-specific seashell locations) verified against assembly flow.

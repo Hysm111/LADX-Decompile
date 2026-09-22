@@ -32,6 +32,62 @@
 #define ENTITY_KEY_DROP_POINT        0x30
 #define ENTITY_BOMB                  0x02
 #define ENTITY_STALFOS_EVASIVE       0x1E
+#define ENTITY_DROPPABLE_ARROWS      0x2C
+#define ENTITY_DROPPABLE_BOMBS       0x28
+#define ENTITY_DROPPABLE_MAGIC_POWDER 0x0D
+#define ENTITY_SWORD_SHIELD_PICKUP   0x31
+#define ENTITY_GUARDIAN_ACORN        0x34
+#define ENTITY_PIECE_OF_POWER        0x33
+#define ENTITY_HIDING_SLIME_KEY      0x3C
+#define ENTITY_KEY_DROP_POINT        0x30
+#define ENTITY_ARMOS_KNIGHT          0x88
+#define ENTITY_SWORD_BEAM            0xDF
+#define ENTITY_INSTRUMENT_OF_THE_SIRENS 0x39
+#define ENTITY_GOOMBA                0x9F
+#define ENTITY_FISH                  0xCC
+#define ENTITY_PEAHAT                0xA0
+#define ENTITY_ROOSTER               0xD5
+#define ENTITY_BOW_WOW               0x6D
+#define ENTITY_MARIN_AT_THE_SHORE    0xC1
+#define ENTITY_HEART_CONTAINER       0x36
+#define ENTITY_SPARK_COUNTER_CLOCKWISE 0x16
+#define ENTITY_SPARK_CLOCKWISE       0x17
+#define ENTITY_MOLDORM               0x59
+#define ENTITY_WATER_TEKTITE         0x99
+#define ENTITY_MAGIC_ROD_FIREBALL    0x04
+#define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
+#define ENTITY_IRON_MASK             0x24
+#define ENTITY_IRON_MASKS_MASK       0x32
+#define ENTITY_BOOMERANG             0x01
+#define ENTITY_HOOKSHOT_CHAIN        0x03
+#define ENTITY_LIFTABLE_ROCK         0x05
+#define ENTITY_FISH                  0xCC
+#define ENTITY_PEAHAT                0xA0
+#define ENTITY_ROOSTER               0xD5
+#define ENTITY_BOW_WOW               0x6D
+#define ENTITY_MARIN_AT_THE_SHORE    0xC1
+#define ENTITY_HEART_CONTAINER       0x36
+#define ENTITY_SPARK_COUNTER_CLOCKWISE 0x16
+#define ENTITY_SPARK_CLOCKWISE       0x17
+#define ENTITY_MOLDORM               0x59
+#define ENTITY_WATER_TEKTITE         0x99
+#define ENTITY_MAGIC_ROD_FIREBALL    0x04
+#define ENTITY_MAGIC_POWDER_SPRINKLE 0x08
+#define ENTITY_IRON_MASK             0x24
+#define ENTITY_IRON_MASKS_MASK       0x32
+#define ENTITY_BOOMERANG             0x01
+#define ENTITY_HOOKSHOT_CHAIN        0x03
+#define ENTITY_LIFTABLE_ROCK         0x05
+#define ENTITY_FISH                  0xCC
+#define ENTITY_PEAHAT                0xA0
+#define ENTITY_ROOSTER               0xD5
+#define ENTITY_BOW_WOW               0x6D
+#define ENTITY_MARIN_AT_THE_SHORE    0xC1
+#define ENTITY_HEART_CONTAINER       0x36
+#define ENTITY_SPARK_COUNTER_CLOCKWISE 0x16
+#define ENTITY_SPARK_CLOCKWISE       0x17
+#define ENTITY_MOLDORM               0x59
+#define ENTITY_WATER_TEKTITE         0x99
 
 /* Chest types */
 #define CHEST_POWER_BRACELET         0x00
@@ -170,6 +226,9 @@
 #define OBJECT_ROCKY_CAVE_DOOR       0xE1
 #define OBJECT_GIANT_SKULL_TL        0xBB
 #define OBJECT_GIANT_SKULL_BR        0xBE
+#define OBJECT_SHORT_GRASS           0x04
+#define OBJECT_SHOVEL_HOLE           0xCC
+
 
 
 
@@ -182,6 +241,11 @@
 #define MAP_HOUSE                    0x10
 #define MAP_BOWWOW_HIDEOUT           0x15
 #define MAP_UNKNOWN_1A               0x1A
+#define UNKNOWN_ROOM_DA              0xDA
+#define UNKNOWN_ROOM_A5              0xA5
+#define UNKNOWN_ROOM_3A              0x3A
+#define UNKNOWN_ROOM_A8              0xA8
+#define UNKNOWN_ROOM_B2              0xB2
 
 #define BANK_OverworldEntitiesPointersTable     0x16
 #define OverworldEntitiesPointersTable          0x4000
