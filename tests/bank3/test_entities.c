@@ -609,6 +609,505 @@ void test_EntityInitGiantBuzzBlob(void) {
     printf("  PASSED\n");
 }
 
+/* Test EntityBecomeStunned (03:7267) */
+void test_EntityBecomeStunned(void) {
+    printf("Testing EntityBecomeStunned...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE);
+
+    EntityBecomeStunned(&gb, 0x03);
+
+    /* Verify status set to STUNNED */
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) == ENTITY_STATUS_STUNNED);
+    /* Verify private countdown2 set to 0xFF */
+    assert(gb_read(&gb, wEntitiesPrivateCountdown2Table + 0x03) == 0xFF);
+    /* Verify speed Z cleared */
+    assert(gb_read(&gb, wEntitiesSpeedZTable + 0x03) == 0x00);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWithRandomSpeed (03:4EA8) */
+void test_EntityInitWithRandomSpeed(void) {
+    printf("Testing EntityInitWithRandomSpeed...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+
+    EntityInitWithRandomSpeed(&gb);
+
+    /* Verify speed X and Y are set to one of the 4 possible values */
+    uint8_t speed_x = gb_read(&gb, wEntitiesSpeedXTable + 0x02);
+    uint8_t speed_y = gb_read(&gb, wEntitiesSpeedYTable + 0x02);
+
+    /* Valid values: 12, 12, -12, -12 (0x0C, 0x0C, 0xF4, 0xF4) for X */
+    /* Valid values: 12, -12, 12, -12 (0x0C, 0xF4, 0x0C, 0xF4) for Y */
+    assert(speed_x == 0x0C || speed_x == 0xF4);
+    assert(speed_y == 0x0C || speed_y == 0xF4);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitSparkClockwise (03:4EC4) */
+void test_EntityInitSparkClockwise(void) {
+    printf("Testing EntityInitSparkClockwise...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x50);
+
+    EntityInitSparkClockwise(&gb);
+
+    /* Verify private state 2 set to 0x04 */
+    assert(gb_read(&gb, wEntitiesPrivateState2Table + 0x02) == 0x04);
+    /* Verify Y pos increased by 3 */
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x02) == 0x53);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitSparkCounterClockwise (03:4ECE) */
+void test_EntityInitSparkCounterClockwise(void) {
+    printf("Testing EntityInitSparkCounterClockwise...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x50);
+
+    EntityInitSparkCounterClockwise(&gb);
+
+    /* Verify Y pos decreased by 3 (0xFD = -3) */
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x02) == 0x4D);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWizrobe (03:4ED7) */
+void test_EntityInitWizrobe(void) {
+    printf("Testing EntityInitWizrobe...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesTransitionCountdownTable + 0x02, 0x00);
+    gb_write(&gb, wEntitiesSpriteVariantTable + 0x02, 0x05);
+
+    EntityInitWizrobe(&gb);
+
+    /* Verify transition countdown set to 0x80 */
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + 0x02) == 0x80);
+    /* Verify sprite variant decremented */
+    assert(gb_read(&gb, wEntitiesSpriteVariantTable + 0x02) == 0x04);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitMoblinSword (03:4EE2) */
+void test_EntityInitMoblinSword(void) {
+    printf("Testing EntityInitMoblinSword...\n");
+
+    /* Test with X pos bit 4 set -> direction 0 (RIGHT) */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write_hram(&gb, hActiveEntityPosX, 0x10); /* bit 4 set */
+
+    EntityInitMoblinSword(&gb);
+
+    /* Direction should be 0 (RIGHT) then XOR 1 = 1 */
+    assert(gb_read(&gb, wEntitiesDirectionTable + 0x02) == 0x01);
+
+    /* Test with X pos bit 4 clear -> direction 3 (DOWN) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hActiveEntityPosX, 0x00); /* bit 4 clear */
+
+    EntityInitMoblinSword(&gb);
+
+    /* Direction should be 3 (DOWN) then XOR 1 = 2 */
+    assert(gb_read(&gb, wEntitiesDirectionTable + 0x03) == 0x02);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitSecretSeashell (03:4EFB) */
+void test_EntityInitSecretSeashell(void) {
+    printf("Testing EntityInitSecretSeashell...\n");
+
+    /* Test 1: Room A4 (tree seashell) */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write_hram(&gb, hMapRoom, UNKNOWN_ROOM_A4);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x02, 0x00);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x50);
+
+    EntityInitSecretSeashell(&gb);
+
+    /* Private state 3 should be decremented to 0x01 */
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x01);
+    /* Position should be shifted by 8 */
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x58);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x02) == 0x58);
+
+    /* Test 2: Room D2 (tree seashell) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hMapRoom, UNKNOWN_ROOM_D2);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x03, 0x00);
+
+    EntityInitSecretSeashell(&gb);
+
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x03) == 0x01);
+
+    /* Test 3: Other room - no change */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x04);
+    gb_write_hram(&gb, hMapRoom, 0x20);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x04, 0x02);
+
+    EntityInitSecretSeashell(&gb);
+
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x04) == 0x02);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitDiggableBushOrPotDroppable (03:4F1E) */
+void test_EntityInitDiggableBushOrPotDroppable(void) {
+    printf("Testing EntityInitDiggableBushOrPotDroppable...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesOptions1Table + 0x02, 0x00);
+
+    EntityInitDiggableBushOrPotDroppable(&gb);
+
+    /* Private state 3 set to 0x02 */
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x02);
+    /* Options1 should have NO_GROUND_INTERACTION | NO_WALL_COLLISION set */
+    assert((gb_read(&gb, wEntitiesOptions1Table + 0x02) & (ENTITY_OPT1_NO_GROUND_INTERACTION | ENTITY_OPT1_NO_WALL_COLLISION)) != 0);
+
+    printf("  PASSED\n");
+}
+
+/* Test SetHiddenDroppableOptions1 (03:4F24) */
+void test_SetHiddenDroppableOptions1(void) {
+    printf("Testing SetHiddenDroppableOptions1...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesOptions1Table + 0x02, 0x00);
+
+    SetHiddenDroppableOptions1(&gb, 0x02);
+
+    /* Options1 should have NO_GROUND_INTERACTION | NO_WALL_COLLISION set */
+    assert((gb_read(&gb, wEntitiesOptions1Table + 0x02) & (ENTITY_OPT1_NO_GROUND_INTERACTION | ENTITY_OPT1_NO_WALL_COLLISION)) != 0);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitKeyDropPoint (03:4F2D) */
+void test_EntityInitKeyDropPoint(void) {
+    printf("Testing EntityInitKeyDropPoint...\n");
+
+    /* Test 1: Quicksand cave with room status bit 4 set -> unload */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesStatusTable + 0x02, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, ROOM_INDOOR_A_QUICKSAND_CAVE);
+    gb_write_hram(&gb, hRoomStatus, 0x10); /* bit 4 set */
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x02) == ENTITY_STATUS_DISABLED);
+
+    /* Test 2: Quicksand cave with room status bit 5 clear -> unload */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wEntitiesStatusTable + 0x03, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, ROOM_INDOOR_A_QUICKSAND_CAVE);
+    gb_write_hram(&gb, hRoomStatus, 0x00); /* bit 5 clear */
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x03) == ENTITY_STATUS_DISABLED);
+
+    /* Test 3: Mountain cave room 1 with EVENT_1 set -> unload */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x04);
+    gb_write(&gb, wEntitiesStatusTable + 0x04, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, ROOM_INDOOR_B_MOUNTAIN_CAVE_ROOM_1);
+    gb_write_hram(&gb, hRoomStatus, ROOM_STATUS_EVENT_1);
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x04) == ENTITY_STATUS_DISABLED);
+
+    /* Test 4: Angler's tunnel key fall - key dropped but EVENT_1 clear -> keep */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x05);
+    gb_write(&gb, wEntitiesStatusTable + 0x05, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_FALL);
+    gb_write(&gb, wIndoorARoomStatus + ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_DROP, 0x10);
+    gb_write_hram(&gb, hRoomStatus, 0x00);
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x05) == ENTITY_STATUS_ACTIVE);
+
+    /* Test 5: Angler's tunnel key fall - EVENT_1 set -> unload */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x06);
+    gb_write(&gb, wEntitiesStatusTable + 0x06, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_FALL);
+    gb_write(&gb, wIndoorARoomStatus + ROOM_INDOOR_A_ANGLERS_TUNNEL_KEY_DROP, 0x10);
+    gb_write_hram(&gb, hRoomStatus, ROOM_STATUS_EVENT_1);
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x06) == ENTITY_STATUS_DISABLED);
+
+    /* Test 6: Other room - no action */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x07);
+    gb_write(&gb, wEntitiesStatusTable + 0x07, ENTITY_STATUS_ACTIVE);
+    gb_write_hram(&gb, hMapRoom, 0x20);
+
+    EntityInitKeyDropPoint(&gb);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + 0x07) == ENTITY_STATUS_ACTIVE);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitTradingItem (03:4F68) */
+void test_EntityInitTradingItem(void) {
+    printf("Testing EntityInitTradingItem...\n");
+
+    /* Test 1: Has magnifying glass -> shift position */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wTradeSequenceItem, TRADING_ITEM_MAGNIFYING_LENS);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x50);
+
+    EntityInitTradingItem(&gb);
+
+    /* Position should be shifted by 8 */
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x58);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x02) == 0x58);
+
+    /* Test 2: Doesn't have magnifying glass -> no action */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wTradeSequenceItem, 0x00);
+    gb_write(&gb, wEntitiesPosXTable + 0x03, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x03, 0x50);
+
+    EntityInitTradingItem(&gb);
+
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) == 0x50);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x03) == 0x50);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWarp (03:4F70) */
+void test_EntityInitWarp(void) {
+    printf("Testing EntityInitWarp...\n");
+
+    /* Test 1: Not indoors -> return */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, wEntitiesStateTable + 0x02, 0x00);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x02, 0x50);
+
+    EntityInitWarp(&gb);
+
+    assert(gb_read(&gb, wEntitiesStateTable + 0x02) == 0x00);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0x50);
+
+    /* Test 2: Indoors -> increment state and shift position */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, wEntitiesStateTable + 0x03, 0x00);
+    gb_write(&gb, wEntitiesPosXTable + 0x03, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x03, 0x50);
+
+    EntityInitWarp(&gb);
+
+    assert(gb_read(&gb, wEntitiesStateTable + 0x03) == 0x01);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) == 0x58);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x03) == 0x58);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitTreeOrPotDroppable (03:4F7A) */
+void test_EntityInitTreeOrPotDroppable(void) {
+    printf("Testing EntityInitTreeOrPotDroppable...\n");
+
+    /* Test 1: Indoors -> set slow transition countdown to 0x80 */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wIsIndoor, 1);
+    gb_write(&gb, wEntitiesOptions1Table + 0x02, 0x00);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x02, 0x00);
+
+    EntityInitTreeOrPotDroppable(&gb);
+
+    /* Private state 3 should be 0x01 from func_003_4F12 */
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x01);
+    /* Options1 should have NO_GROUND_INTERACTION | NO_WALL_COLLISION */
+    assert((gb_read(&gb, wEntitiesOptions1Table + 0x02) & (ENTITY_OPT1_NO_GROUND_INTERACTION | ENTITY_OPT1_NO_WALL_COLLISION)) != 0);
+    /* Slow transition countdown should be 0x80 */
+    assert(gb_read(&gb, wEntitiesSlowTransitionCountdownTable + 0x02) == 0x80);
+
+    /* Test 2: Outdoors -> shift position */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wIsIndoor, 0);
+    gb_write(&gb, wEntitiesOptions1Table + 0x03, 0x00);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x03, 0x00);
+    gb_write(&gb, wEntitiesPosXTable + 0x03, 0x50);
+    gb_write(&gb, wEntitiesPosYTable + 0x03, 0x50);
+
+    EntityInitTreeOrPotDroppable(&gb);
+
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x03) == 0x01);
+    assert((gb_read(&gb, wEntitiesOptions1Table + 0x03) & (ENTITY_OPT1_NO_GROUND_INTERACTION | ENTITY_OPT1_NO_WALL_COLLISION)) != 0);
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) == 0x58);
+    assert(gb_read(&gb, wEntitiesPosYTable + 0x03) == 0x58);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWithShiftedXPosition (03:4FA1) */
+void test_EntityInitWithShiftedXPosition(void) {
+    printf("Testing EntityInitWithShiftedXPosition...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPosXTable + 0x02, 0xF0);
+    gb_write(&gb, wEntitiesPosXSignTable + 0x02, 0x00);
+
+    EntityInitWithShiftedXPosition(&gb, 0x02);
+
+    /* X pos + 8 = 0xF8, no carry to sign */
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x02) == 0xF8);
+    assert(gb_read(&gb, wEntitiesPosXSignTable + 0x02) == 0x00);
+
+    /* Test with carry */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write(&gb, wEntitiesPosXTable + 0x03, 0xFC); /* 0xFC + 8 = 0x104 -> carry */
+    gb_write(&gb, wEntitiesPosXSignTable + 0x03, 0x00);
+
+    EntityInitWithShiftedXPosition(&gb, 0x03);
+
+    assert(gb_read(&gb, wEntitiesPosXTable + 0x03) == 0x04);
+    assert(gb_read(&gb, wEntitiesPosXSignTable + 0x03) == 0x01);
+
+    printf("  PASSED\n");
+}
+
+/* Test SetDroppableDefaultTimer (03:4FA9) */
+void test_SetDroppableDefaultTimer(void) {
+    printf("Testing SetDroppableDefaultTimer...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesSlowTransitionCountdownTable + 0x02, 0x00);
+
+    SetDroppableDefaultTimer(&gb, 0x02);
+
+    assert(gb_read(&gb, wEntitiesSlowTransitionCountdownTable + 0x02) == 0x80);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitWithCountdown (03:4FAF) */
+void test_EntityInitWithCountdown(void) {
+    printf("Testing EntityInitWithCountdown...\n");
+
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write(&gb, wEntitiesPrivateCountdown1Table + 0x02, 0x00);
+
+    EntityInitWithCountdown(&gb);
+
+    assert(gb_read(&gb, wEntitiesPrivateCountdown1Table + 0x02) == 0xA0);
+
+    printf("  PASSED\n");
+}
+
+/* Test EntityInitGhini (03:4FB5) */
+void test_EntityInitGhini(void) {
+    printf("Testing EntityInitGhini...\n");
+
+    /* Test 1: Is Ghini -> set private state 3 to 1, Z pos to 0x10 */
+    GBState gb;
+    gb_init(&gb);
+
+    gb_write(&gb, wActiveEntityIndex, 0x02);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_GHINI);
+    gb_write(&gb, wEntitiesPrivateState3Table + 0x02, 0x00);
+    gb_write(&gb, wEntitiesPosZTable + 0x02, 0x00);
+
+    EntityInitGhini(&gb);
+
+    assert(gb_read(&gb, wEntitiesPrivateState3Table + 0x02) == 0x01);
+    assert(gb_read(&gb, wEntitiesPosZTable + 0x02) == 0x10);
+
+    /* Test 2: Not Ghini -> increment state */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, 0x03);
+    gb_write_hram(&gb, hActiveEntityType, 0x99); /* Not Ghini */
+    gb_write(&gb, wEntitiesStateTable + 0x03, 0x00);
+
+    EntityInitGhini(&gb);
+
+    assert(gb_read(&gb, wEntitiesStateTable + 0x03) == 0x01);
+
+    printf("  PASSED\n");
+}
+
 void test_bank3_entities(void) {
     /* test_ConfigureNewEntity(); */
     /* test_ConfigureEntityHealth(); */
@@ -637,6 +1136,25 @@ void test_bank3_entities(void) {
     test_EntityInitColorGuardianRed();
     test_EntityInitColorDungeonBook();
     test_EntityInitGiantBuzzBlob();
+
+    /* Test new entity init functions (Batch 79) */
+    test_EntityBecomeStunned();
+    test_EntityInitWithRandomSpeed();
+    test_EntityInitSparkClockwise();
+    test_EntityInitSparkCounterClockwise();
+    test_EntityInitWizrobe();
+    test_EntityInitMoblinSword();
+    test_EntityInitSecretSeashell();
+    test_EntityInitDiggableBushOrPotDroppable();
+    test_SetHiddenDroppableOptions1();
+    test_EntityInitKeyDropPoint();
+    test_EntityInitTradingItem();
+    test_EntityInitWarp();
+    test_EntityInitTreeOrPotDroppable();
+    test_EntityInitWithShiftedXPosition();
+    test_SetDroppableDefaultTimer();
+    test_EntityInitWithCountdown();
+    test_EntityInitGhini();
 
     printf("\nAll Bank 3 entity tests passed!\n");
 }

@@ -86,5 +86,31 @@ void EntityInitGiantBuzzBlob(GBState *gb);
 /* Entity Handlers */
 void EntityBurningHandler(GBState *gb, uint16_t bc);
 void EntityFallHandler(GBState *gb, uint16_t bc);
+void EntityThrownHandler(GBState *gb, uint16_t bc);
+void EntityStunnedHandler(GBState *gb, uint16_t bc);
+void EntityGetLiftedUp(GBState *gb, uint16_t bc);
+void EntityLiftedHandler(GBState *gb, uint16_t bc);
+void EntityBecomeStunned(GBState *gb, uint16_t bc);
+
+/* Entity Init Functions (03:4EA8+) */
+void EntityInitWithRandomSpeed(GBState *gb);
+void EntityInitSparkClockwise(GBState *gb);
+void EntityInitSparkCounterClockwise(GBState *gb);
+void EntityInitWizrobe(GBState *gb);
+void EntityInitMoblinSword(GBState *gb);
+void EntityInitSecretSeashell(GBState *gb);
+
+/* Helper functions (03:4F12+) */
+void func_003_4F12(GBState *gb, uint16_t bc);
+void SetHiddenDroppableOptions1(GBState *gb, uint16_t bc);
+void EntityInitDiggableBushOrPotDroppable(GBState *gb);
+void EntityInitKeyDropPoint(GBState *gb);
+void EntityInitTradingItem(GBState *gb);
+void EntityInitWarp(GBState *gb);
+void EntityInitTreeOrPotDroppable(GBState *gb);
+void EntityInitWithShiftedXPosition(GBState *gb, uint16_t bc);
+void SetDroppableDefaultTimer(GBState *gb, uint16_t bc);
+void EntityInitWithCountdown(GBState *gb);
+void EntityInitGhini(GBState *gb);
 
 #endif /* LADX_BANK3_ENTITIES_H */

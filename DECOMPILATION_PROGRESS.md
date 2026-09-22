@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~69.2%
-* **Number of Verified Functions**: 880
-* **Number of Decompiled Functions**: 680
-* **Number Remaining**: ~332 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Initialization, 03:485B-03:4CB6)
-* **Current Task**: Batch 78: Bank 3 entity initialization functions (EntityInitSouthFaceShrineDoor through EntityInitGiantBuzzBlob) and entity handlers (EntityBurningHandler, EntityFallHandler, SetEntityVariantForDirection_03)
-* **Last Completed Task**: Decompile and verify entity init functions in ROM Bank 3 (EntityInitSouthFaceShrineDoor, EntityInitLeever, EntityInitZora, EntityInitWithRightDirection, GetColorDungeonRoomStatus, EntityInitRotoswitchRed, EntityInitRotoswitchYellow, EntityInitRotoswitchBlue, EntityInitHopper, EntityInitFlyingHopperBombs, EntityInitHardHitBeetle, EntityInitAvalaunch, EntityInitColorGuardianBlue, EntityInitColorGuardianRed, EntityInitColorDungeonBook, EntityInitGiantBuzzBlob, EntityBurningHandler, EntityFallHandler, SetEntityVariantForDirection_03)
-* **Last Update Timestamp**: 2026-09-21T10:30:00+03:00
+* **Current Overall Progress**: ~70.5%
+* **Number of Verified Functions**: 918
+* **Number of Decompiled Functions**: 718
+* **Number Remaining**: ~294 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Initialization & Handlers, 03:485B-03:52D4)
+* **Current Task**: Batch 79: Bank 3 entity handlers (EntityThrownHandler, EntityStunnedHandler, EntityGetLiftedUp, EntityLiftedHandler, EntityBecomeStunned) and entity init functions (EntityInitWithRandomSpeed through EntityInitGhini)
+* **Last Completed Task**: Decompile and verify entity handlers and init functions in ROM Bank 3 (EntityThrownHandler, EntityStunnedHandler, EntityGetLiftedUp, EntityLiftedHandler, EntityBecomeStunned, EntityInitWithRandomSpeed, EntityInitSparkClockwise, EntityInitSparkCounterClockwise, EntityInitWizrobe, EntityInitMoblinSword, EntityInitSecretSeashell, EntityInitDiggableBushOrPotDroppable, SetHiddenDroppableOptions1, EntityInitKeyDropPoint, EntityInitTradingItem, EntityInitWarp, EntityInitTreeOrPotDroppable, EntityInitWithShiftedXPosition, SetDroppableDefaultTimer, EntityInitWithCountdown, EntityInitGhini, plus helper functions func_003_4F12, EntityShiftPosition, EntityShiftPosition_shiftBy8)
+* **Last Update Timestamp**: 2026-09-22T12:00:00+03:00
 
 ---
 
@@ -434,3 +434,50 @@
 - **Tests:** Extended `tests/bank3/test_entities.c` with 17 new test functions covering all new entity init functions. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 880 verified functions across Batches 1-78 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision) are callback-modeled or directly implemented. Color dungeon room status logic verified against assembly flow. GBC-specific conditional logic matched to assembly branching.
+
+---
+
+## Batch 79 Verification — Bank 3 Entity Handlers & Extended Init Functions
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:4D94`-`03:52D4`, `03:58FC`-`03:5914`, `03:7267`-`03:7278`). Implemented 5 entity handler functions, 16 entity init functions, and 6 helper functions in `src/bank3/entities.c` with declarations in `include/bank3/entities.h`. Added callback declarations and stub implementations in `include/home/entities.h` and `src/home/entities.c` for `func_003_75A2`, `AddEntitySpeedToPos_03`, `EntityCheckThrowAtTriggers`, `func_003_6E2B`, `CheckLinkCollisionWithEnemy`. Added missing constants to `include/constants/entities.h`, `include/constants/gameplay.h`, `include/constants/rooms.h`, `include/constants/memory.h`, and `include/constants/sfx.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Entity Handlers Implemented:**
+  - `EntityThrownHandler` (`03:4D94`-`03:4DEF`): Handles thrown entity physics; sets ignore hits countdown; calls BouncingEntityPhysics; handles Genie collision; applies throw-at damage; becomes stunned if speed zero.
+  - `EntityStunnedHandler` (`03:4E07`-`03:4E9D`): Handles stunned entity; checks for Power Bracelet lift; manages private countdown2; applies alternating horizontal speed from Data_003_4E05; clears speed.
+  - `EntityGetLiftedUp` (`03:4E35`-`03:4E6F`): Checks Link collision; sets lifted status; configures physics, transition countdown, lifted table; plays lift sound; jumps to EntityLiftedHandler.
+  - `EntityLiftedHandler` (`03:5732`): Stub implementation for lifted entity handling.
+  - `EntityBecomeStunned` (`03:7267`-`03:7278`): Sets entity status to STUNNED; private countdown2 to $FF; clears speed Z.
+
+- **Entity Init Functions Implemented:**
+  - `EntityInitWithRandomSpeed` (`03:4EA8`-`03:4EC3`): Sets random X/Y speed from EntityRandomSpeedX/Y tables.
+  - `EntityInitSparkClockwise` (`03:4EC4`-`03:4ED6`): Sets private state 2 to 4; increases Y pos by 3.
+  - `EntityInitSparkCounterClockwise` (`03:4ECE`-`03:4ED6`): Decreases Y pos by 3.
+  - `EntityInitWizrobe` (`03:4ED7`-`03:4EE1`): Sets transition countdown to $80; decrements sprite variant.
+  - `EntityInitMoblinSword` (`03:4EE2`-`03:4EFA`): Sets direction from X position bit 4; calls SetEntityVariantForDirection_03; flips direction bit 0.
+  - `EntityInitSecretSeashell` (`03:4EFB`-`03:4F0F`): Sets private state 3 to 2; for rooms A4/D2 decrements to 1 and shifts position.
+  - `EntityInitDiggableBushOrPotDroppable` (`03:4F1E`-`03:4F2C`): Sets private state 3 to 2; sets options1 flags.
+  - `EntityInitKeyDropPoint` (`03:4F2D`-`03:4F67`): Handles quicksand cave (room $F8), mountain cave room 1 (room $7A), Angler's Tunnel key fall (room $7C) with room status checks; sets sprite variants.
+  - `EntityInitTradingItem` (`03:4F68`-`03:4F6F`): If magnifying glass trade item, shifts position by 8.
+  - `EntityInitWarp` (`03:4F70`-`03:4F79`): Indoors only: increments state and shifts position.
+  - `EntityInitTreeOrPotDroppable` (`03:4F7A`-`03:4F82`): Calls func_003_4F12; indoors sets slow transition countdown, outdoors shifts position.
+  - `EntityInitWithShiftedXPosition` (`03:4FA1`-`03:4FA8`): Increments X position by 8 with sign extension.
+  - `SetDroppableDefaultTimer` (`03:4FA9`-`03:4FAE`): Sets slow transition countdown to $80.
+  - `EntityInitWithCountdown` (`03:4FAF`-`03:4FB4`): Sets private countdown1 to $A0.
+  - `EntityInitGhini` (`03:4FB5`-`03:4FCC`): If Ghini, sets private state 3 to 1 and Z pos to $10; else increments state.
+
+- **Helper Functions Implemented:**
+  - `func_003_4F12` (`03:4F12`-`03:4F1D`): Sets private state 3 to 1; indoors falls through to SetHiddenDroppableOptions1.
+  - `SetHiddenDroppableOptions1` (`03:4F24`-`03:4F2C`): Sets ENTITY_OPT1_NO_GROUND_INTERACTION and ENTITY_OPT1_NO_WALL_COLLISION in options1.
+  - `EntityShiftPosition` (`03:4F83`-`03:4FA0`): Increments X and Y position by 8 with sign extension via carry.
+  - `EntityShiftPosition_shiftBy8` (`03:4F92`-`03:4FA0`): Shared add-8-with-carry logic for position/sign tables.
+  - `CheckLinkCollisionWithEnemy` (`03:6C72`): Full hitbox-based collision detection between Link and entity.
+  - Callback stubs for `func_003_75A2`, `AddEntitySpeedToPos_03`, `EntityCheckThrowAtTriggers`, `func_003_6E2B`.
+
+- **Data Tables Referenced:**
+  - `EntityRandomSpeedX` (`03:4EA0`): {12, 12, -12, -12}
+  - `EntityRandomSpeedY` (`03:4EA4`): {12, -12, 12, -12}
+  - `Data_003_4E05` (`03:4E05`): {0x10, 0xF0}
+
+- **Tests:** Extended `tests/bank3/test_entities.c` with 18 new test functions covering all new entity init functions and EntityBecomeStunned. Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 918 verified functions across Batches 1-79 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03) are callback-modeled or directly implemented. Room-specific conditional logic matched to assembly branching. Genie collision handling verified against assembly flow.

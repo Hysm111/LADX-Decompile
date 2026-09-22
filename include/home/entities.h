@@ -267,6 +267,16 @@ void label_3B44(GBState *gb, void (*func_003_6c6b)(GBState *));
 void CheckLinkCollisionWithProjectile_trampoline(GBState *gb, void (*check_collision)(GBState *));
 
 /**
+ * CheckLinkCollisionWithEnemy (03:6C72)
+ * Checks collision between Link and an enemy entity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @return true if collision detected, false otherwise
+ */
+bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t entity_index);
+
+/**
  * CheckLinkCollisionWithEnemy_trampoline (00:3B5A)
  * Switches to Bank $03, calls check_collision, and restores saved bank via ReloadSavedBank.
  *
@@ -670,6 +680,42 @@ void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index);
  * @param entity_index Entity slot index (0..15)
  */
 void func_003_6B7B(GBState *gb, uint16_t entity_index);
+
+/**
+ * func_003_75A2 (03:75A2)
+ * Helper function used by EntityThrownHandler.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_75A2(GBState *gb, uint16_t entity_index);
+
+/**
+ * AddEntitySpeedToPos_03 (03:7F32)
+ * Updates entity position using speed values (alternate entry point).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void AddEntitySpeedToPos_03(GBState *gb, uint16_t entity_index);
+
+/**
+ * EntityCheckThrowAtTriggers (03:5438)
+ * Checks if thrown entity hit a trigger.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index);
+
+/**
+ * func_003_6E2B (03:6E2B)
+ * Helper function used by EntityStunnedHandler.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void func_003_6E2B(GBState *gb, uint16_t entity_index);
 
 
 /**

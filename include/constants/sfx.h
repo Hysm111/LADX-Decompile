@@ -38,6 +38,7 @@
 #define WAVE_SFX_BOSS_DEATH_CRY                 0x10
 #define WAVE_SFX_OCARINA_NOSONG                 0x15
 #define WAVE_SFX_OWL_HOOT                       0x19
+#define WAVE_SFX_BOSS_HURT                      0x07
 
 /* Values for hNoiseSfx */
 #define NOISE_SFX_NONE                          0x00

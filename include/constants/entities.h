@@ -33,6 +33,17 @@
 #define ENTITY_BOMB                  0x02
 #define ENTITY_STALFOS_EVASIVE       0x1E
 
+/* Chest types */
+#define CHEST_POWER_BRACELET         0x00
+#define CHEST_SHIELD                 0x01
+#define CHEST_BOMB                   0x0A
+#define CHEST_TAIL_KEY               0x11
+#define CHEST_MAP                    0x16
+#define CHEST_RUPEES_50              0x1B
+#define CHEST_SEASHELL               0x20
+#define CHEST_MESSAGE                0x21
+#define CHEST_FLIPPERS               0x0C
+
 #define MAX_ENTITIES 16
 
 #define ENTITY_STATUS_DISABLED   0
@@ -54,10 +65,15 @@
 /* Values for wEntitiesOptions1Table. */
 #define ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL 0x02
 #define ENTITY_OPT1_ALLOW_OUT_OF_BOUNDS    0x20
+#define ENTITY_OPT1_NO_GROUND_INTERACTION  0x01
+#define ENTITY_OPT1_NO_WALL_COLLISION      0x10
+#define ENTITY_OPT1_SPLASH_IN_WATER        0x08
 
 /* Values for wEntitiesPhysicsFlagsTable. */
-#define ENTITY_PHYSICS_HARMLESS  0x80
-#define ENTITY_PHYSICS_MASK      0xF0
+#define ENTITY_PHYSICS_HARMLESS       0x80
+#define ENTITY_PHYSICS_MASK           0xF0
+#define ENTITY_PHYSICS_PROJECTILE_NOCLIP 0x40
+#define ENTITY_PHYSICS_GRABBABLE      0x20
 
 #define ENTITY_RAFT_RAFT_OWNER   0x6A
 
@@ -92,13 +108,45 @@
 #define ENTITY_SWORD_BEAM            0xDF
 #define ENTITY_MUSICAL_NOTE          0xC9
 #define ENTITY_MASTER_STALFOS        0x5F
+#define ENTITY_GENIE                 0x5C
+#define ENTITY_FACADE                0x5A
+#define ENTITY_MOLDORM               0x59
 #define ENTITY_TEXT_DEBUGGER         0x6B
+#define ENTITY_GHINI                 0x12
+#define ENTITY_LIKE_LIKE             0x23
+#define ENTITY_ARMOS_KNIGHT          0x88
+#define ENTITY_DROPPABLE_SECRET_SEASHELL 0x3D
+#define ENTITY_LASER_BEAM            0x2B
+#define ENTITY_MOBLIN_ARROW          0x0C
+#define ENTITY_CHEEP_CHEEP_JUMPING   0xAC
+#define ENTITY_GOOMBA                0x9F
+#define ENTITY_GEL                   0x1C
+#define ENTITY_CUE_BALL              0x8E
+#define ENTITY_ROLLING_BONES_BAR     0x82
+#define ENTITY_MOBLIN_KING           0xE4
+#define ENTITY_NONE                  0xFF
 
 #define ENTITY_OPT1_IS_BOSS          0x80
 #define ENTITY_OPT1_IS_MINI_BOSS     0x04
 #define ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL 0x02
 
+/* Active power-up types */
+#define ACTIVE_POWER_UP_PIECE_OF_POWER 0x01
+#define ACTIVE_POWER_UP_GUARDIAN_ACORN 0x02
+
 #define ENTITIES_END                 0xFF
+
+/* Trigger types */
+#define TRIGGER_THROW_POT_AT_CHEST   0x0D
+
+/* Damage types */
+#define DAMAGE_TYPE_THROW_AT           0x0B
+
+/* Object types */
+#define OBJECT_CHEST_CLOSED          0xA0
+
+/* Room constants */
+#define UNKNOWN_ROOM_74              0x74
 
 #define BANK_OverworldEntitiesPointersTable     0x16
 #define OverworldEntitiesPointersTable          0x4000

@@ -132,6 +132,8 @@
 #define PIT_MAX_SLIPPING                24
 #define TRANSITION_GFX_MANBO_IN         0x02
 
+#define GUARDIAN_ACORN_COUNTER_MAX      0x0C
+
 /* Values for wRoomTransitionState */
 #define ROOM_TRANSITION_NONE             0x00
 #define ROOM_TRANSITION_LOAD_ROOM        0x01
