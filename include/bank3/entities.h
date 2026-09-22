@@ -109,6 +109,19 @@ void EntityInitWizrobe(GBState *gb);
 void EntityInitMoblinSword(GBState *gb);
 void EntityInitSecretSeashell(GBState *gb);
 
+/* Arrow Entity Handlers (03:6A34-03:6B71) */
+void ArrowEntityHandler(GBState *gb, uint16_t bc);
+void BombArrowHandler(GBState *gb, uint16_t bc);
+void MoblinArrowEntityHandler(GBState *gb, uint16_t bc);
+void ArrowRenderAndMove(GBState *gb, uint16_t bc);
+void ArrowRenderAndMove_skipRendering(GBState *gb, uint16_t bc);
+void EntityBounceOffWallX(GBState *gb, uint16_t bc);
+void EntityBounceOffWallY(GBState *gb, uint16_t bc);
+void ArrowRockAfterHittingWall(GBState *gb, uint16_t bc);
+
+/* Octorok Entity Handler (03:57E9) */
+void OctorokEntityHandler(GBState *gb, uint16_t bc);
+
 /* Helper functions (03:4F12+) */
 void func_003_4F12(GBState *gb, uint16_t bc);
 void SetHiddenDroppableOptions1(GBState *gb, uint16_t bc);

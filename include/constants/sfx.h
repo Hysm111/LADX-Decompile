@@ -63,6 +63,7 @@
 #define NOISE_SFX_CLINK                         0x17
 #define NOISE_SFX_SWORD_SWING_D                 0x18
 #define NOISE_SFX_PING                          0x19
+#define NOISE_SFX_BUZZ_BLOB_ELECTROCUTE         0x1C
 #define NOISE_SFX_OPEN_KEY_CAVERN               0x2A
 #define NOISE_SFX_RUMBLE2                       0x2B
 

@@ -682,6 +682,34 @@ void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index);
 void func_003_6B7B(GBState *gb, uint16_t entity_index);
 
 /**
+ * ApplySwordIntersectionWithObjects (03:7CAB)
+ * Applies sword intersection with objects.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t entity_index);
+
+/**
+ * AnimateRoamingEnemy (03:583C)
+ * Animates a roaming enemy (Octorok, Moblin, etc.).
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ */
+void AnimateRoamingEnemy(GBState *gb, uint16_t entity_index);
+
+/**
+ * CheckLinkCollisionWithProjectile (03:6C72)
+ * Checks collision between Link and a projectile entity.
+ *
+ * @param gb Pointer to Game Boy hardware state
+ * @param entity_index Entity slot index (0..15)
+ * @return true if collision detected, false otherwise
+ */
+bool CheckLinkCollisionWithProjectile(GBState *gb, uint16_t entity_index);
+
+/**
  * func_003_75A2 (03:75A2)
  * Helper function used by EntityThrownHandler.
  *

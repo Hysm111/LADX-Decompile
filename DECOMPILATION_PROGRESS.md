@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~71.2%
-* **Number of Verified Functions**: 928
-* **Number of Decompiled Functions**: 728
-* **Number Remaining**: ~284 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Initialization & Handlers, 03:485B-03:5406)
-* **Current Task**: Batch 80: Bank 3 pushed block and liftable rock entity handlers
-* **Last Completed Task**: Decompile and verify pushed block and liftable rock entity handlers in ROM Bank 3 (PushedBlockEntityHandler, func_003_52D4, Entity4BHandler, LiftableRockEntityHandler, LiftableRockIntactHandler, LiftableRockStartSmashingAnimation, plus callback stubs func_003_51C9, ConfigureEntityRecoil, CopyLinkFinalPositionToActivePosition, OpenDialogInTable0_trampoline)
-* **Last Update Timestamp**: 2026-09-22T14:00:00+03:00
+* **Current Overall Progress**: ~72.0%
+* **Number of Verified Functions**: 942
+* **Number of Decompiled Functions**: 742
+* **Number Remaining**: ~270 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Handlers, 03:57E9-03:6B71)
+* **Current Task**: Batch 81: Bank 3 Arrow and Octorok entity handlers
+* **Last Completed Task**: Decompile and verify arrow and Octorok entity handlers in ROM Bank 3 (ArrowEntityHandler, BombArrowHandler, MoblinArrowEntityHandler, ArrowRenderAndMove, EntityBounceOffWallX, EntityBounceOffWallY, ArrowRockAfterHittingWall, OctorokEntityHandler, plus callback stubs for ApplySwordIntersectionWithObjects, AnimateRoamingEnemy, CheckLinkCollisionWithProjectile)
+* **Last Update Timestamp**: 2026-09-22T15:00:00+03:00
 
 ---
 
@@ -513,3 +513,38 @@
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 928 verified functions across Batches 1-80 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, ConfigureEntityRecoil, CopyLinkFinalPositionToActivePosition, MarkTriggerAsResolved) are callback-modeled or directly implemented. Room-specific conditional logic matched to assembly branching. Marin reaction logic in houses verified against assembly flow.
+
+---
+
+## Batch 81 Verification — Bank 3 Arrow & Octorok Entity Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/03_arrow.asm` (`03:6A34`-`03:6B71`), `LADX-Disassembly/src/code/entities/03_octorok.asm` (`03:57E9`-`03:57FA`). Implemented 8 entity handler functions and 3 callback stubs in `src/bank3/entities.c` and `src/home/entities.c` with declarations in `include/bank3/entities.h` and `include/home/entities.h`. Added missing constants to `include/constants/entities.h`, `include/constants/sfx.h`. Existing VERIFIED function bodies and production callers unchanged.
+
+- **Arrow Entity Handlers Implemented:**
+  - `ArrowEntityHandler` (`03:6A34`-`03:6A63`): Main arrow handler; increments projectile count; delegates to BombArrowHandler if state=1; calls ArrowRenderAndMove if transition countdown > 0; otherwise sets damage type, calls func_003_75A2, calls ArrowRenderAndMove; handles Dungeon 8 statue eye shooting trigger.
+  - `BombArrowHandler` (`03:6A70`-`03:6AC9`): Handles bomb arrow entity; if transition countdown > 0, spawns bomb entity at explosion position; before exploding, renders bomb sprite at offset position, renders arrow sprite, deals bomb arrow damage, falls through to ArrowRenderAndMove skipRendering.
+  - `MoblinArrowEntityHandler` (`03:6ACC`-`03:6AD3`): Moblin arrow handler; if transition countdown > 0, calls ArrowRenderAndMove; otherwise checks Link collision with projectile then calls ArrowRenderAndMove.
+  - `ArrowRenderAndMove` (`03:6AD4`-`03:6B4B`): Renders arrow sprites; returns early if non-interactive or transition countdown > 0 (jumps to ArrowRockAfterHittingWall); updates position with speed, applies sword intersection; if no collision returns; handles magic rod fireball special case; plays sword poking jingle on collision; alerts sword moblins; player arrows bounce 3x more than enemy projectiles.
+  - `ArrowRenderAndMove_skipRendering` (`03:6ACA`): Entry point skipping sprite rendering for bomb arrow damage phase.
+  - `EntityBounceOffWallX` (`03:6B34`-`03:6B42`): Bounces X speed off walls; negates speed and divides by 8 (3x SRA).
+  - `EntityBounceOffWallY` (`03:6B43`-`03:6B46`): Bounces Y speed off walls; negates speed and divides by 8 (3x SRA).
+  - `ArrowRockAfterHittingWall` (`03:6B4C`-`03:6B71`): Handles arrow/octorok rock after wall collision; unloads if countdown=1; octorok rocks don't spin; arrows spin through 4 directional variants; updates position and calls func_003_6B7B.
+
+- **Octorok Entity Handler Implemented:**
+  - `OctorokEntityHandler` (`03:57E9`-`03:57FA`): Simple roaming enemy handler; sets tiles offset for non-credits gameplay; calls AnimateRoamingEnemy.
+
+- **Callback Stubs Implemented:**
+  - `ApplySwordIntersectionWithObjects` (`03:7CAB`): Applies sword intersection with objects.
+  - `AnimateRoamingEnemy` (`03:583C`): Animates roaming enemies (Octorok, Moblin, Iron Mask) - calls RenderActiveEntitySpritesPair, ReturnIfNonInteractive_03, ApplyRecoilIfNeeded_03, DefaultEnemyDamageCollisionHandler.
+  - `CheckLinkCollisionWithProjectile` (`03:6C72`): Checks collision between Link and projectile entities - validates Link not in air/interactive, then checks hitbox overlap.
+
+- **Data Tables Added:**
+  - `EntityArrowSpriteVariants` (`03:6AC6`): 8 variants for arrow directions (right, left, up, down).
+  - `BombArrowBombSprite` (`03:6A66`): Single sprite for bomb arrow bomb.
+  - `BombArrowBombXOffsetPerDirection` / `BombArrowBombYOffsetPerDirection` (`03:6A68`/`03:6A6C`): Directional offsets for bomb arrow bomb rendering.
+  - `ArrowSpinningSpriteVariantFrames` (`03:6B48`): 4 frames for arrow spinning animation after wall hit.
+  - `OctorokRockSpriteVariants` (`03:6B52`): 8 variants for octorok rock directions.
+
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 942 verified functions across Batches 1-81 passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, ApplySwordIntersectionWithObjects, AnimateRoamingEnemy, CheckLinkCollisionWithProjectile) are callback-modeled or directly implemented. Arrow wall bounce physics (3x SRA division) verified against assembly flow. Dungeon 8 statue eye shooting trigger logic verified.

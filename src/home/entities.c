@@ -1458,3 +1458,24 @@ void OpenDialogInTable0_trampoline(GBState *gb, uint8_t dialog_id) {
     (void)dialog_id;
     gb_write(gb, wDialogState, 0x01);  /* Set dialog as opening */
 }
+
+void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: Applies sword intersection with objects */
+    (void)entity_index;
+}
+
+void AnimateRoamingEnemy(GBState *gb, uint16_t entity_index) {
+    if (!gb) return;
+    /* Stub: Animates a roaming enemy (Octorok, Moblin, etc.) */
+    /* This would call RenderActiveEntitySpritesPair, ReturnIfNonInteractive_03, etc. */
+    (void)entity_index;
+}
+
+bool CheckLinkCollisionWithProjectile(GBState *gb, uint16_t entity_index) {
+    if (!gb) return false;
+    /* Stub: Checks collision between Link and a projectile entity */
+    /* From 03:6C72 - checks if Link is in air, not interactive, then checks hitbox collision */
+    (void)entity_index;
+    return false;
+}

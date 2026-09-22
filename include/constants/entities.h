@@ -163,8 +163,8 @@
 #define OBJECT_ROCKY_CAVE_DOOR       0xE1
 #define OBJECT_GIANT_SKULL_TL        0xBB
 #define OBJECT_GIANT_SKULL_BR        0xBE
-#define OBJECT_BOMBED_PASSAGE_VERTICAL   0xA0
-#define OBJECT_BOMBED_PASSAGE_HORIZONTAL 0xA1
+
+
 
 /* Room constants */
 #define UNKNOWN_ROOM_74              0x74

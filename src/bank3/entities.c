@@ -2290,3 +2290,315 @@ void LiftableRockStartSmashingAnimation(GBState *gb, uint16_t bc) {
 
     return;
 }
+
+/* Arrow Entity Handlers (03:6A34-03:6B71) */
+
+/* Arrow sprite variants - from 03:6AC6/03:6B48 */
+static const uint8_t EntityArrowSpriteVariants[8] = {
+    0x08, 0x01,  0x08, 0x01,  /* variant 0: right */
+    0x0A, 0x01,  0x0A, 0x01,  /* variant 1: left */
+    0x0C, 0x01,  0x0C, 0x01,  /* variant 2: up */
+    0x0E, 0x01,  0x0E, 0x01   /* variant 3: down */
+};
+
+/* Bomb Arrow bomb sprite - from 03:6A66 */
+static const uint8_t BombArrowBombSprite[2] = {
+    0x80, 0xE1  /* tile $80, palette 5 | OAMF_PAL1 */
+};
+
+/* Bomb Arrow offsets - from 03:6A68/03:6A6C */
+static const int8_t BombArrowBombXOffsetPerDirection[4] = { +4, -4, 0, 0 };
+static const int8_t BombArrowBombYOffsetPerDirection[4] = { -2, -2, -6, +4 };
+
+/* Arrow spinning sprite variant frames - from 03:6B48 */
+static const uint8_t ArrowSpinningSpriteVariantFrames[4] = {
+    DIRECTION_RIGHT, DIRECTION_DOWN, DIRECTION_LEFT, DIRECTION_UP
+};
+
+/* Octorok Rock sprite variants - from 03:6B52 */
+static const uint8_t OctorokRockSpriteVariants[8] = {
+    0x30, 0x01,  0x30, 0x41,  /* variant 0: right */
+    0x32, 0x01,  0x32, 0x41,  /* variant 1: left */
+    0x30, 0x21,  0x30, 0x61,  /* variant 2: up */
+    0x32, 0x21,  0x32, 0x61   /* variant 3: down */
+};
+
+/* ArrowEntityHandler (03:6A34) */
+void ArrowEntityHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* Increment the active projectiles count */
+    /* ld hl, wActiveProjectileCount; inc [hl] */
+    gb_write(gb, wActiveProjectileCount, gb_read(gb, wActiveProjectileCount) + 1);
+
+    /* If hActiveEntityState == 1... */
+    /* ldh a, [hActiveEntityState]; and a; jr nz, BombArrowHandler */
+    if (gb_read_hram(gb, hActiveEntityState) != 0) {
+        BombArrowHandler(gb, bc);
+        return;
+    }
+
+    /* If GetEntityTransitionCountdown != 0... */
+    /* call GetEntityTransitionCountdown; jp nz, ArrowRenderAndMove */
+    if (GetEntityTransitionCountdown(gb, bc) != 0) {
+        ArrowRenderAndMove(gb, bc);
+        return;
+    }
+
+    /* hActiveEntityState == 0 and GetEntityTransitionCountdown == 0 */
+    /* ld a, DAMAGE_TYPE_ARROW; ld [wAttackDamageType], a; call func_003_75A2 */
+    gb_write(gb, wAttackDamageType, DAMAGE_TYPE_ARROW);
+    func_003_75A2(gb, bc);
+
+    /* call ArrowRenderAndMove */
+    ArrowRenderAndMove(gb, bc);
+
+    /* Allow shooting the Dungeon 8 statue in the eye */
+    /* ldh a, [hActiveEntitySpriteVariant]; cp DIRECTION_UP; ret nz */
+    if (gb_read_hram(gb, hActiveEntitySpriteVariant) != DIRECTION_UP) {
+        return;
+    }
+    /* and the event trigger is TRIGGER_SHOOT_STATUE_EYE... */
+    /* ld a, [wRoomEvent]; and EVENT_TRIGGER_MASK; cp TRIGGER_SHOOT_STATUE_EYE; ret nz */
+    if ((gb_read(gb, wRoomEvent) & EVENT_TRIGGER_MASK) != TRIGGER_SHOOT_STATUE_EYE) {
+        return;
+    }
+    /* and hObjectUnderEntity == OBJECT_ONE_EYED_STATUE... */
+    /* ldh a, [hObjectUnderEntity]; cp OBJECT_ONE_EYED_STATUE; ret nz */
+    if (gb_read_hram(gb, hObjectUnderEntity) != OBJECT_ONE_EYED_STATUE) {
+        return;
+    }
+    /* call MarkTriggerAsResolved, and clear entity */
+    /* call MarkTriggerAsResolved; jp UnloadEntityAndReturn */
+    MarkTriggerAsResolved(gb);
+    UnloadEntityAndReturn(gb, bc);
+}
+
+/* BombArrowHandler (03:6A70) */
+void BombArrowHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* call GetEntityTransitionCountdown; jr z, .beforeExploding */
+    uint8_t countdown = GetEntityTransitionCountdown(gb, bc);
+    if (countdown == 0) {
+        goto beforeExploding;
+    }
+
+    /* ld a, ENTITY_BOMB; call SpawnNewEntity; jr c, .unloadAndReturn */
+    uint16_t de = SpawnNewEntity_trampoline(gb, ENTITY_BOMB, NULL);
+    if (de == 0xFFFF) {
+        goto unloadAndReturn;
+    }
+
+    /* ldh a, [hMultiPurpose0]; ld hl, wEntitiesPosXTable; add hl, de; ld [hl], a */
+    gb_write(gb, wEntitiesPosXTable + de, gb_read_hram(gb, hMultiPurpose0));
+    /* ldh a, [hMultiPurpose1]; ld hl, wEntitiesPosYTable; add hl, de; ld [hl], a */
+    gb_write(gb, wEntitiesPosYTable + de, gb_read_hram(gb, hMultiPurpose1));
+    /* ld hl, wEntitiesTransitionCountdownTable; add hl, de; ld [hl], $17 */
+    gb_write(gb, wEntitiesTransitionCountdownTable + de, 0x17);
+    /* call PlayBombExplosionSfx */
+    PlayBombExplosionSfx(gb);
+
+unloadAndReturn:
+    /* jp UnloadEntityAndReturn */
+    UnloadEntityAndReturn(gb, bc);
+    return;
+
+beforeExploding:
+    /* Render the bomb arrow's bomb */
+    /* ldh a, [hActiveEntitySpriteVariant]; push af; ld e, a; ld d, b; xor a; ldh [hActiveEntitySpriteVariant], a */
+    uint8_t sprite_variant = gb_read_hram(gb, hActiveEntitySpriteVariant);
+    gb_write_hram(gb, hActiveEntitySpriteVariant, 0x00);
+
+    /* ld hl, BombArrowBombXOffsetPerDirection; add hl, de; ldh a, [hActiveEntityPosX]; add [hl]; ldh [hActiveEntityPosX], a */
+    int8_t x_offset = BombArrowBombXOffsetPerDirection[sprite_variant & 0x03];
+    uint8_t pos_x = gb_read_hram(gb, hActiveEntityPosX);
+    gb_write_hram(gb, hActiveEntityPosX, (uint8_t)(pos_x + x_offset));
+
+    /* ld hl, BombArrowBombYOffsetPerDirection; add hl, de; ldh a, [hActiveEntityVisualPosY]; add [hl]; ldh [hActiveEntityVisualPosY], a */
+    int8_t y_offset = BombArrowBombYOffsetPerDirection[sprite_variant & 0x03];
+    uint8_t visual_pos_y = gb_read_hram(gb, hActiveEntityVisualPosY);
+    gb_write_hram(gb, hActiveEntityVisualPosY, (uint8_t)(visual_pos_y + y_offset));
+
+    /* ld de, BombArrowBombSprite; call RenderActiveEntitySprite */
+    RenderActiveEntitySprite(gb, BombArrowBombSprite, NULL);
+
+    /* call CopyEntityPositionToActivePosition */
+    CopyEntityPositionToActivePosition(gb, bc);
+
+    /* pop af; ldh [hActiveEntitySpriteVariant], a */
+    gb_write_hram(gb, hActiveEntitySpriteVariant, sprite_variant);
+
+    /* Render the arrow itself */
+    /* ld de, EntityArrowSpriteVariants; call RenderActiveEntitySpritesPair */
+    RenderActiveEntitySpritesPair(gb, EntityArrowSpriteVariants, NULL);
+
+    /* Deal (no) damage to other entities before exploding */
+    /* ld a, DAMAGE_TYPE_BOMB_ARROW; ld [wAttackDamageType], a; call func_003_75A2 */
+    gb_write(gb, wAttackDamageType, DAMAGE_TYPE_BOMB_ARROW);
+    func_003_75A2(gb, bc);
+    /* jr ArrowRenderAndMove.skipRendering */
+    /* fallthrough to ArrowRenderAndMove skipRendering */
+    ArrowRenderAndMove_skipRendering(gb, bc);
+}
+
+/* MoblinArrowEntityHandler (03:6ACC) */
+void MoblinArrowEntityHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* call GetEntityTransitionCountdown; jr nz, ArrowRenderAndMove */
+    if (GetEntityTransitionCountdown(gb, bc) != 0) {
+        ArrowRenderAndMove(gb, bc);
+        return;
+    }
+
+    /* call CheckLinkCollisionWithProjectile; fallthrough to ArrowRenderAndMove */
+    CheckLinkCollisionWithProjectile(gb, bc);
+    ArrowRenderAndMove(gb, bc);
+}
+
+/* ArrowRenderAndMove (03:6AD4) */
+void ArrowRenderAndMove(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld de, EntityArrowSpriteVariants; call RenderActiveEntitySpritesPair */
+    RenderActiveEntitySpritesPair(gb, EntityArrowSpriteVariants, NULL);
+
+    /* call ReturnIfNonInteractive_03; call GetEntityTransitionCountdown; jr nz, ArrowRockAfterHittingWall */
+    if (ReturnIfNonInteractive_03(gb, false)) {
+        return;
+    }
+
+    if (GetEntityTransitionCountdown(gb, bc) != 0) {
+        ArrowRockAfterHittingWall(gb, bc);
+        return;
+    }
+
+    /* call UpdateEntityPosWithSpeed_03; call ApplySwordIntersectionWithObjects */
+    UpdateEntityPosWithSpeed_03(gb, bc);
+    ApplySwordIntersectionWithObjects(gb, bc);
+
+    /* ld hl, wEntitiesCollisionsTable; add hl, bc; ld a, [hl]; and a; jr z, EntityBounceOffWallX.return */
+    if (gb_read(gb, wEntitiesCollisionsTable + bc) == 0) {
+        return;
+    }
+
+    /* call GetEntityTransitionCountdown */
+    uint8_t countdown = GetEntityTransitionCountdown(gb, bc);
+
+    /* ldh a, [hActiveEntityType]; cp ENTITY_MAGIC_ROD_FIREBALL; jr nz, .fireballEnd */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_MAGIC_ROD_FIREBALL) {
+        /* call GetEntityPrivateCountdown1; ld [hl], $30; ret */
+        GetEntityPrivateCountdown1(gb, bc);
+        gb_write(gb, wEntitiesPrivateCountdown1Table + bc, 0x30);
+        return;
+    }
+
+fireballEnd:
+    /* ld [hl], $18; ld hl, wEntitiesSpeedZTable; add hl, bc; ld [hl], $10 */
+    gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x18);
+    gb_write(gb, wEntitiesSpeedZTable + bc, 0x10);
+
+    /* ld hl, wEntitiesCollisionsTable; add hl, bc; ld a, [hl]; inc a; jr z, .skipSound */
+    uint8_t collisions = gb_read(gb, wEntitiesCollisionsTable + bc);
+    if ((uint8_t)(collisions + 1) == 0) {
+        goto skipSound;
+    }
+
+    /* ld a, JINGLE_SWORD_POKING; ldh [hJingle], a */
+    gb_write_hram(gb, hJingle, JINGLE_SWORD_POKING);
+
+skipSound:
+    /* call AlertSwordMoblins */
+    AlertSwordMoblins(gb);
+
+    /* ldh a, [hActiveEntityType]; cp ENTITY_ARROW; jr nz, .enemyProjectileBounce */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_ARROW) {
+        /* Player arrows bounce more off walls */
+        /* call .playerArrowBounceY; ld hl, wEntitiesSpeedXTable; .playerArrowBounce: add hl, bc; ld a, [hl]; cpl; inc a; sra a; sra a; sra a; ld [hl], a; ret */
+        EntityBounceOffWallY(gb, bc);
+        EntityBounceOffWallX(gb, bc);
+        return;
+    }
+
+enemyProjectileBounce:
+    /* call EntityBounceOffWallY; fallthrough to EntityBounceOffWallX */
+    EntityBounceOffWallY(gb, bc);
+    EntityBounceOffWallX(gb, bc);
+}
+
+/* ArrowRenderAndMove skipRendering entry point */
+void ArrowRenderAndMove_skipRendering(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+    /* Skip rendering, just do the collision/movement logic */
+    ArrowRenderAndMove(gb, bc);
+}
+
+/* EntityBounceOffWallX (03:6B34) */
+void EntityBounceOffWallX(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld hl, wEntitiesSpeedXTable; add hl, bc; ld a, [hl]; cpl; inc a; sra a; sra a; sra a; ld [hl], a; ret */
+    int8_t speed_x = (int8_t)gb_read(gb, wEntitiesSpeedXTable + bc);
+    speed_x = (int8_t)(~speed_x + 1);  /* cpl + 1 = negate */
+    speed_x >>= 3;  /* sra x3 */
+    gb_write(gb, wEntitiesSpeedXTable + bc, (uint8_t)speed_x);
+}
+
+/* EntityBounceOffWallY (03:6B43) */
+void EntityBounceOffWallY(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld hl, wEntitiesSpeedYTable; add hl, bc; ld a, [hl]; cpl; inc a; sra a; sra a; sra a; ld [hl], a; ret */
+    int8_t speed_y = (int8_t)gb_read(gb, wEntitiesSpeedYTable + bc);
+    speed_y = (int8_t)(~speed_y + 1);  /* cpl + 1 = negate */
+    speed_y >>= 3;  /* sra x3 */
+    gb_write(gb, wEntitiesSpeedYTable + bc, (uint8_t)speed_y);
+}
+
+/* ArrowRockAfterHittingWall (03:6B4C) */
+void ArrowRockAfterHittingWall(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* cp $01; jp z, UnloadEntityAndReturn / jr nz, .unloadEnd */
+    uint8_t countdown = GetEntityTransitionCountdown(gb, bc);
+    if (countdown == 0x01) {
+        UnloadEntityAndReturn(gb, bc);
+        return;
+    }
+
+unloadEnd:
+    /* Octorok rocks don't spin after hitting a wall, only arrows do */
+    /* ldh a, [hActiveEntityType]; cp ENTITY_OCTOROK_ROCK; jr z, .spinningEnd */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_OCTOROK_ROCK) {
+        goto spinningEnd;
+    }
+
+    /* call GetEntityTransitionCountdown; srl a x3; and $03; ld e, a; ld d, b; ld hl, ArrowSpinningSpriteVariantFrames; add hl, de; ld a, [hl]; call SetEntitySpriteVariant */
+    uint8_t frame = GetEntityTransitionCountdown(gb, bc);
+    frame >>= 3;  /* srl x3 */
+    frame &= 0x03;
+    uint8_t variant = ArrowSpinningSpriteVariantFrames[frame];
+    SetEntitySpriteVariant(gb, bc, variant);
+
+spinningEnd:
+    /* call UpdateEntityPosWithSpeed_03; jr func_003_6B7B */
+    UpdateEntityPosWithSpeed_03(gb, bc);
+    func_003_6B7B(gb, bc);
+}
+
+/* OctorokEntityHandler (03:57E9) */
+void OctorokEntityHandler(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld de, OctorokSpriteVariants */
+    /* ld a, [wGameplayType]; cp GAMEPLAY_CREDITS; jr z, .creditsEnd */
+    /* ld a, $30; ldh [hActiveEntityTilesOffset], a */
+    if (gb_read(gb, wGameplayType) != GAMEPLAY_CREDITS) {
+        gb_write_hram(gb, hActiveEntityTilesOffset, 0x30);
+    }
+
+creditsEnd:
+    /* call AnimateRoamingEnemy; ret */
+    AnimateRoamingEnemy(gb, bc);
+}
