@@ -7,6 +7,7 @@
 #include "constants/inventory.h"
 #include "constants/joypad.h"
 #include "constants/sfx.h"
+#include "constants/gfx.h"
 #include "home/entities.h"
 #include "home/room.h"
 #include "home/bank.h"
@@ -1175,7 +1176,6 @@ burningEnd:
         return;
     }
 
-gibdoEnd:
     /* ld hl, wEntitiesPrivateCountdown3Table; add hl, bc; ld [hl], $1F */
     gb_write(gb, wEntitiesPrivateCountdown3Table + bc, 0x1F);
 
@@ -1215,7 +1215,7 @@ void EntityFallHandler(GBState *gb, uint16_t bc) {
         return;
     }
 
-colorShellEnd:
+colorShellEnd: ;
     /* call GetEntityTransitionCountdown; jr nz, jr_003_4D07 */
     uint8_t countdown = GetEntityTransitionCountdown(gb, bc);
     if (countdown != 0) {
@@ -1229,7 +1229,6 @@ colorShellEnd:
         gb_write(gb, wD460, 0x01);
     }
 
-jr_4CEF:
     /* ldh a, [hActiveEntityType]; cp ENTITY_WRECKING_BALL; jr nz, jr_4D04 */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_WRECKING_BALL) {
         /* ld a, $16; ld [wWreckingBallRoom], a */
@@ -1240,7 +1239,6 @@ jr_4CEF:
         gb_write(gb, wWreckingBallPosY, 0x27);
     }
 
-jr_4D04:
     /* jp UnloadEntityAndReturn */
     UnloadEntityAndReturn(gb, bc);
     return;
@@ -1264,7 +1262,6 @@ jr_003_4D07:
         SetEntityVariantForDirection_03(gb, bc);
     }
 
-jr_003_4D22:
     /* call ExecuteActiveEntityHandler_trampoline */
     ExecuteActiveEntityHandler_trampoline(gb, NULL);
 
@@ -1274,7 +1271,7 @@ jr_003_4D22:
     }
     return;
 
-jr_003_4D29:
+jr_003_4D29: ;
     /* rra x4; and $03; ld hl, wEntitiesSpriteVariantTable; add hl, bc; ld [hl], a; ldh [hActiveEntitySpriteVariant], a */
     uint8_t variant = (countdown >> 4) & 0x03;
     gb_write(gb, wEntitiesSpriteVariantTable + bc, variant);
@@ -1311,7 +1308,6 @@ jr_003_4D29:
         gb_write_hram(gb, hJingle, JINGLE_ITEM_FALLING);
     }
 
-jr_4D66:
     /* rra x4; and $03; ld e, a; ld d, b; ld hl, Data_003_4CA8; add hl, de */
     variant = (countdown >> 4) & 0x03;
     static const uint8_t Data_003_4CA8[4] = { 0x00, 0x01, 0x03, 0x06 };
@@ -1454,7 +1450,7 @@ void EntityStunnedHandler(GBState *gb, uint16_t bc) {
         }
     }
 
-jr_003_4E72:
+jr_003_4E72: ;
     /* ld hl, wEntitiesPrivateCountdown2Table; add hl, bc; ld a, [hl]; and a; jr nz, .jr_4E85 */
     uint8_t countdown2 = gb_read(gb, wEntitiesPrivateCountdown2Table + bc);
     if (countdown2 == 0) {
@@ -1978,7 +1974,7 @@ jr_5282:
     /* ld a, $02; ldh [hLinkInteractiveMotionBlocked], a */
     gb_write_hram(gb, hLinkInteractiveMotionBlocked, 0x02);
 
-jr_003_5286:
+jr_003_5286: ;
     /* ld hl, wEntitiesInertiaTable; add hl, bc; ld a, [hl]; inc a; ld [hl], a; cp $21; ret nz */
     uint8_t inertia = gb_read(gb, wEntitiesInertiaTable + bc);
     inertia++;
@@ -2163,7 +2159,6 @@ void LiftableRockEntityHandler(GBState *gb, uint16_t bc) {
         }
     }
 
-spawnFairyEnd:
     /* ldh a, [hActiveEntitySpriteVariant]; and a; jr nz, .marinReactionEnd */
     if (gb_read_hram(gb, hActiveEntitySpriteVariant) != 0) {
         goto marinReactionEnd;
@@ -2293,12 +2288,21 @@ void LiftableRockStartSmashingAnimation(GBState *gb, uint16_t bc) {
 
 /* Arrow Entity Handlers (03:6A34-03:6B71) */
 
-/* Arrow sprite variants - from 03:6AC6/03:6B48 */
-static const uint8_t EntityArrowSpriteVariants[8] = {
-    0x08, 0x01,  0x08, 0x01,  /* variant 0: right */
-    0x0A, 0x01,  0x0A, 0x01,  /* variant 1: left */
-    0x0C, 0x01,  0x0C, 0x01,  /* variant 2: up */
-    0x0E, 0x01,  0x0E, 0x01   /* variant 3: down */
+/* Arrow sprite variants - from 03:6AC6 (EntityArrowSpriteVariants) */
+/* 4 variants * 4 bytes each (2 sprites * 2 bytes) = 16 bytes */
+static const uint8_t EntityArrowSpriteVariants[16] = {
+    /* variant 0 (right): tile $2E/$2C, attrs with XFLIP */
+    0x2E, OAM_GBC_PAL_1 | OAMF_PAL0 | OAMF_XFLIP,
+    0x2C, OAM_GBC_PAL_1 | OAMF_PAL0 | OAMF_XFLIP,
+    /* variant 1 (left): tile $2C/$2E, attrs without XFLIP */
+    0x2C, OAM_GBC_PAL_1 | OAMF_PAL0,
+    0x2E, OAM_GBC_PAL_1 | OAMF_PAL0,
+    /* variant 2 (up): tile $2A, attrs with YFLIP */
+    0x2A, OAM_GBC_PAL_1 | OAMF_PAL0 | OAMF_YFLIP,
+    0x2A, OAM_GBC_PAL_1 | OAMF_PAL0 | OAMF_YFLIP | OAMF_XFLIP,
+    /* variant 3 (down): tile $2A, attrs without YFLIP */
+    0x2A, OAM_GBC_PAL_1 | OAMF_PAL0,
+    0x2A, OAM_GBC_PAL_1 | OAMF_PAL0 | OAMF_XFLIP
 };
 
 /* Bomb Arrow bomb sprite - from 03:6A66 */
@@ -2315,12 +2319,15 @@ static const uint8_t ArrowSpinningSpriteVariantFrames[4] = {
     DIRECTION_RIGHT, DIRECTION_DOWN, DIRECTION_LEFT, DIRECTION_UP
 };
 
-/* Octorok Rock sprite variants - from 03:6B52 */
+/* Octorok Rock sprite variants - from 03:6A1E (OctorokRockSpriteVariants) */
+/* 2 variants * 4 bytes each (2 sprites * 2 bytes) = 8 bytes */
 static const uint8_t OctorokRockSpriteVariants[8] = {
-    0x30, 0x01,  0x30, 0x41,  /* variant 0: right */
-    0x32, 0x01,  0x32, 0x41,  /* variant 1: left */
-    0x30, 0x21,  0x30, 0x61,  /* variant 2: up */
-    0x32, 0x21,  0x32, 0x61   /* variant 3: down */
+    /* variant 0: tile $6C, attrs */
+    0x6C, 0x01,
+    0x6C, OAMF_XFLIP,
+    /* variant 1: tile $5C, attrs */
+    0x5C, 0x01,
+    0x5C, OAMF_XFLIP
 };
 
 /* ArrowEntityHandler (03:6A34) */
@@ -2404,7 +2411,7 @@ unloadAndReturn:
     UnloadEntityAndReturn(gb, bc);
     return;
 
-beforeExploding:
+beforeExploding: ;
     /* Render the bomb arrow's bomb */
     /* ldh a, [hActiveEntitySpriteVariant]; push af; ld e, a; ld d, b; xor a; ldh [hActiveEntitySpriteVariant], a */
     uint8_t sprite_variant = gb_read_hram(gb, hActiveEntitySpriteVariant);
@@ -2462,7 +2469,12 @@ void ArrowRenderAndMove(GBState *gb, uint16_t bc) {
     if (!gb) return;
 
     /* ld de, EntityArrowSpriteVariants; call RenderActiveEntitySpritesPair */
-    RenderActiveEntitySpritesPair(gb, EntityArrowSpriteVariants, NULL);
+    /* Select sprite variants based on entity type (matches OctorokRockEntityHandler behavior) */
+    const uint8_t *sprite_variants = EntityArrowSpriteVariants;
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_OCTOROK_ROCK) {
+        sprite_variants = OctorokRockSpriteVariants;
+    }
+    RenderActiveEntitySpritesPair(gb, sprite_variants, NULL);
 
     /* call ReturnIfNonInteractive_03; call GetEntityTransitionCountdown; jr nz, ArrowRockAfterHittingWall */
     if (ReturnIfNonInteractive_03(gb, false)) {
@@ -2483,8 +2495,8 @@ void ArrowRenderAndMove(GBState *gb, uint16_t bc) {
         return;
     }
 
-    /* call GetEntityTransitionCountdown */
-    uint8_t countdown = GetEntityTransitionCountdown(gb, bc);
+    /* call GetEntityTransitionCountdown (result unused, reloaded later) */
+    (void)GetEntityTransitionCountdown(gb, bc);
 
     /* ldh a, [hActiveEntityType]; cp ENTITY_MAGIC_ROD_FIREBALL; jr nz, .fireballEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_MAGIC_ROD_FIREBALL) {
@@ -2494,7 +2506,6 @@ void ArrowRenderAndMove(GBState *gb, uint16_t bc) {
         return;
     }
 
-fireballEnd:
     /* ld [hl], $18; ld hl, wEntitiesSpeedZTable; add hl, bc; ld [hl], $10 */
     gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x18);
     gb_write(gb, wEntitiesSpeedZTable + bc, 0x10);
@@ -2521,7 +2532,6 @@ skipSound:
         return;
     }
 
-enemyProjectileBounce:
     /* call EntityBounceOffWallY; fallthrough to EntityBounceOffWallX */
     EntityBounceOffWallY(gb, bc);
     EntityBounceOffWallX(gb, bc);
@@ -2567,7 +2577,6 @@ void ArrowRockAfterHittingWall(GBState *gb, uint16_t bc) {
         return;
     }
 
-unloadEnd:
     /* Octorok rocks don't spin after hitting a wall, only arrows do */
     /* ldh a, [hActiveEntityType]; cp ENTITY_OCTOROK_ROCK; jr z, .spinningEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_OCTOROK_ROCK) {
@@ -2598,7 +2607,6 @@ void OctorokEntityHandler(GBState *gb, uint16_t bc) {
         gb_write_hram(gb, hActiveEntityTilesOffset, 0x30);
     }
 
-creditsEnd:
     /* call AnimateRoamingEnemy; ret */
     AnimateRoamingEnemy(gb, bc);
 }
@@ -2621,7 +2629,7 @@ void func_003_6B7B(GBState *gb, uint16_t bc) {
     gb_write(gb, wEntitiesSpeedZTable + bc, speed_z);
     return;
 
-sideScrolling:
+sideScrolling: ;
     /* ld hl, wEntitiesGroundStatusTable; add hl, bc; ld a, [hl]; ld e, a; ld d, b; and a; jr z, .updateXSpeedEnd */
     uint8_t ground_status = gb_read(gb, wEntitiesGroundStatusTable + bc);
     if (ground_status == 0) {
@@ -2655,7 +2663,7 @@ positiveDifferenceX:
     speed_x -= 1;
     gb_write(gb, wEntitiesSpeedXTable + bc, speed_x);
 
-updateXSpeedEnd:
+updateXSpeedEnd: ;
     /* ld hl, Data_003_6B73; add hl, de; ld a, [hl] */
     /* ld hl, wEntitiesSpeedYTable; add hl, bc; add [hl]; ld [hl], a */
     static const uint8_t Data_003_6B73[4] = { 0x02, 0x01, 0x02, 0x02 };
@@ -2687,7 +2695,6 @@ bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
         return false;
     }
 
-collisionEvenInTheAir:
     /* If Link is not interactive, return. */
     /* ld a, [wLinkMotionState]; cp LINK_MOTION_TYPE_NON_INTERACTIVE; jr nc, CheckLinkCollisionWithProjectile.return */
     if (gb_read(gb, wLinkMotionState) >= LINK_MOTION_UNSTUCKING) {
@@ -2738,14 +2745,11 @@ collisionEvenInTheAir:
     /* func_003_6CC0: ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld a, [hl]; and ENTITY_PHYSICS_HARMLESS; jr z, jr_003_6CCD */
     uint8_t physics = gb_read(gb, wEntitiesPhysicsFlagsTable + bc);
     if ((physics & ENTITY_PHYSICS_HARMLESS) != 0) {
-        goto jr_003_6CCD;
+        /* Harmless entity - no collision */
+        return false;
     }
 
-jr_003_6CCB:
-    return false;
-
-jr_003_6CCD:
-    /* ldh a, [hLinkAnimationState]; sub $4E; cp $02; jr c, jr_003_6CC9 */
+    /* jr_003_6CCD: ldh a, [hLinkAnimationState]; sub $4E; cp $02; jr c, jr_003_6CC9 */
     if (gb_read_hram(gb, hLinkAnimationState) < 0x4E || gb_read_hram(gb, hLinkAnimationState) >= 0x50) {
         return false;
     }
@@ -2772,7 +2776,6 @@ void ApplyLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
         return;
     }
 
-cheepCheepEnd:
     /* Special case when a Goomba hurts Link */
     /* ldh a, [hActiveEntityType]; cp ENTITY_GOOMBA; jr nz, .goombaEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_GOOMBA) {
@@ -2819,7 +2822,6 @@ cheepCheepEnd:
         return;
     }
 
-goombaEnd:
     /* Special case when Link collides with a Gel */
     /* ldh a, [hActiveEntityType]; cp ENTITY_GEL; jr nz, .gelEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_GEL) {
@@ -2830,7 +2832,6 @@ goombaEnd:
         return;
     }
 
-gelEnd:
     /* cp ENTITY_CUE_BALL; jr z, .jr_6D5D; cp ENTITY_ROLLING_BONES_BAR; jr z, .jr_6D5D */
     /* ld a, [wIgnoreLinkCollisionsCountdown]; and a; jp nz, setCarryAndReturn */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_CUE_BALL ||
@@ -2855,7 +2856,6 @@ jr_6D5D:
         }
     }
 
-jr_6D73:
     /* ld a, [wInvincibilityCounter]; and a; jp nz, .invincibleEnd */
     if (gb_read(gb, wInvincibilityCounter) != 0) {
         return;
