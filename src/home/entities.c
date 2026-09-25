@@ -1251,21 +1251,9 @@ void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t entity_index) {
     gb_write(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index), (uint8_t)(pos_y >> 8));
 }
 
-void ApplyEntityInteractionWithBackground(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Background interaction is complex, just clear the speed for now */
-    (void)entity_index;
-}
-
 void func_003_6E2B(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Helper function for EntityStunnedHandler */
-    (void)entity_index;
-}
-
-void func_003_75A2(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Helper function for EntityThrownHandler */
     (void)entity_index;
 }
 
@@ -1279,64 +1267,6 @@ void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Check if thrown entity hit a trigger */
     (void)entity_index;
-}
-
-void BouncingEntityPhysics(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-
-    UpdateEntityPosWithSpeed_03(gb, entity_index);
-    func_003_6B7B(gb, entity_index);
-    ApplyEntityInteractionWithBackground(gb, entity_index);
-
-    /* Side-scrolling bounce */
-    if (gb_read_hram(gb, hIsSideScrolling) != 0) {
-        uint8_t collisions = gb_read(gb, (uint16_t)(wEntitiesCollisionsTable + entity_index));
-        if ((collisions & 0x08) != 0) {
-            /* Bounce off ground */
-            uint8_t pos_y = gb_read(gb, (uint16_t)(wEntitiesPosYTable + entity_index));
-            pos_y = (pos_y & 0xF0) + 0x05;
-            gb_write(gb, (uint16_t)(wEntitiesPosYTable + entity_index), pos_y);
-
-            int8_t speed_y = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index));
-            speed_y = (int8_t)(~speed_y);  /* cpl */
-            speed_y >>= 1;  /* sra */
-            if (speed_y < -8) {  /* cp $F8 */
-                gb_write_hram(gb, hNoiseSfx, NOISE_SFX_CLINK);
-            } else {
-                speed_y = 0;
-            }
-            gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), (uint8_t)speed_y);
-            return;
-        }
-        return;
-    }
-
-    /* Top-down bounce */
-    uint8_t pos_z = gb_read(gb, (uint16_t)(wEntitiesPosZTable + entity_index));
-    if ((pos_z & 0x80) == 0) {
-        return;
-    }
-
-    /* Clear Z position */
-    gb_write(gb, (uint16_t)(wEntitiesPosZTable + entity_index), 0);
-
-    uint8_t ground_status = gb_read(gb, (uint16_t)(wEntitiesGroundStatusTable + entity_index));
-    if (ground_status == ENTITY_GROUND_STATUS_SHALLOW_WATER) {
-        /* Clear speeds for shallow water */
-        gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), 0);
-        gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), 0);
-        return;
-    }
-
-    int8_t speed_z = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedZTable + entity_index));
-    speed_z >>= 1;  /* sra */
-    speed_z = (int8_t)~speed_z;  /* cpl */
-    if (speed_z >= 7) {
-        gb_write_hram(gb, hNoiseSfx, NOISE_SFX_CLINK);
-    } else {
-        gb_write(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index), 0);
-        gb_write(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index), 0);
-    }
 }
 
 void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, uint8_t b_val) {
@@ -1370,37 +1300,10 @@ void OpenDialogInTable0_trampoline(GBState *gb, uint8_t dialog_id) {
     gb_write(gb, wDialogState, 0x01);  /* Set dialog as opening */
 }
 
-void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Applies sword intersection with objects */
-    (void)entity_index;
-}
-
 bool CheckLinkCollisionWithProjectile(GBState *gb, uint16_t entity_index) {
     if (!gb) return false;
     /* Stub: Checks collision between Link and a projectile entity */
     /* From 03:6C72 - checks if Link is in air, not interactive, then checks hitbox collision */
     (void)entity_index;
     return false;
-}
-
-/* Collision and Damage Callback Stubs */
-
-void func_003_6C6B(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: func_003_6C6B - helper for DefaultEnemyDamageCollisionHandler */
-    (void)entity_index;
-}
-
-void func_003_6DDF(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: func_003_6DDF - handles various enemy damage reactions */
-    (void)entity_index;
-}
-
-void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y) {
-    if (!gb) return;
-    /* Stub: Gets vector towards Link for recoil calculations */
-    (void)x;
-    (void)y;
 }

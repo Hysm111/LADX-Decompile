@@ -809,7 +809,7 @@ void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, 
  * @param gb Pointer to Game Boy hardware state
  * @param entity_index Entity slot index (0..15)
  */
-void func_003_6C6B(GBState *gb, uint16_t entity_index);
+bool func_003_6C6B(GBState *gb, uint16_t entity_index);
 
 /**
  * func_003_6DDF (03:6DDF)
