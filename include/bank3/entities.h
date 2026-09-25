@@ -182,4 +182,25 @@ void SpawnNewEntity(GBState *gb, uint16_t bc);
 void SpawnNewEntityInRange(GBState *gb, uint16_t bc);
 void ConfigureNewEntity_helper(GBState *gb, uint16_t bc);
 
+/* Moblin/Roaming Enemy Handlers (03:5827-05:59D6) */
+void MoblinEntityHandler(GBState *gb, uint16_t bc);
+void AnimateRoamingEnemy(GBState *gb, uint16_t bc);
+void RoamingEnemyState0Handler(GBState *gb, uint16_t bc);
+void SetEntityVariantForDirection_03(GBState *gb, uint16_t bc);
+void SpawnMoblinArrow(GBState *gb, uint16_t bc);
+void SpawnOctorokRock(GBState *gb, uint16_t bc);
+
+/* Bomb Entity Handlers (03:65E2-03:68F0) */
+void BombExplosionHandler(GBState *gb, uint16_t bc);
+void BombExplosionVisuals(GBState *gb, uint16_t bc);
+void RenderBombExplosion(GBState *gb, uint16_t bc);
+void BombEntityHandler(GBState *gb, uint16_t bc);
+void RenderBomb(GBState *gb, uint16_t bc);
+void CheckForBombDestroyableObjectPuzzle(GBState *gb, uint16_t bc);
+void CheckForBombDestroyableObjectBasic(GBState *gb, uint16_t bc);
+void CheckExplosionInteractionWithEntities(GBState *gb, uint16_t bc);
+
+/* Magic Rod Fireball Handler (03:69B2-03:6A1D) */
+void MagicRodFireballEntityHandler(GBState *gb, uint16_t bc);
+
 #endif /* LADX_BANK3_ENTITIES_H */

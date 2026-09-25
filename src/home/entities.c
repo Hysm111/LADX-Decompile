@@ -1339,22 +1339,6 @@ void BouncingEntityPhysics(GBState *gb, uint16_t entity_index) {
     }
 }
 
-void SetEntityVariantForDirection_03(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-
-    uint8_t direction = gb_read(gb, (uint16_t)(wEntitiesDirectionTable + entity_index));
-    static const uint8_t EntityVariantForDirection_03[4] = { 6, 4, 2, 0 };
-    uint8_t base_variant = EntityVariantForDirection_03[direction & 0x03];
-
-    uint8_t inertia = gb_read(gb, (uint16_t)(wEntitiesInertiaTable + entity_index));
-    inertia++;
-    gb_write(gb, (uint16_t)(wEntitiesInertiaTable + entity_index), inertia);
-    uint8_t inertia_bit = (inertia >> 3) & 0x01;
-    uint8_t final_variant = base_variant | inertia_bit;
-
-    SetEntitySpriteVariant(gb, entity_index, final_variant);
-}
-
 void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, uint8_t b_val) {
     if (!gb) return;
     /* Stub: Helper function for PushedBlockEntityHandler trigger checking */
@@ -1389,13 +1373,6 @@ void OpenDialogInTable0_trampoline(GBState *gb, uint8_t dialog_id) {
 void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Applies sword intersection with objects */
-    (void)entity_index;
-}
-
-void AnimateRoamingEnemy(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Animates a roaming enemy (Octorok, Moblin, etc.) */
-    /* This would call RenderActiveEntitySpritesPair, ReturnIfNonInteractive_03, etc. */
     (void)entity_index;
 }
 

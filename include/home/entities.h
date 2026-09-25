@@ -953,6 +953,21 @@ void SpawnNewEntity(GBState *gb, uint16_t entity_index);
 void SpawnNewEntityInRange(GBState *gb, uint16_t entity_index);
 void ConfigureNewEntity_helper(GBState *gb, uint16_t entity_index);
 
+/* Moblin/Roaming Enemy Callbacks */
+void AnimateRoamingEnemy(GBState *gb, uint16_t entity_index);
+void SpawnMoblinArrow(GBState *gb, uint16_t entity_index);
+void SpawnOctorokRock(GBState *gb, uint16_t entity_index);
+
+/* Bomb Callbacks */
+void RenderBombExplosion(GBState *gb, uint16_t entity_index);
+void RenderBomb(GBState *gb, uint16_t entity_index);
+void CheckForBombDestroyableObjectPuzzle(GBState *gb, uint16_t entity_index);
+void CheckForBombDestroyableObjectBasic(GBState *gb, uint16_t entity_index);
+void CheckExplosionInteractionWithEntities(GBState *gb, uint16_t entity_index);
+
+/* Magic Rod Fireball Callback */
+void RevealObjectUnderObject_trampoline(GBState *gb, void (*reveal_object)(GBState *));
+
 #ifdef __cplusplus
 }
 #endif
