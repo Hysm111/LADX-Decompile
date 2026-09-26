@@ -7,10 +7,10 @@
 * **Number of Verified Functions**: 975
 * **Number of Decompiled Functions**: 775
 * **Number Remaining**: ~237 functions
-* **Current Subsystem**: ROM Bank 3 (Droppable Item Handlers, 03:6057-03:6478)
-* **Current Task**: Batch 83: Bank 3 Droppable Item Entity Handlers
-* **Last Completed Task**: Decompile and verify droppable item entity handlers in ROM Bank 3 (DroppableMagicPowderEntityHandler, DroppableArrowsEntityHandler, DroppableRupeeEntityHandler, PickableHandler, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, plus callback stubs for SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper)
-* **Last Update Timestamp**: 2026-09-22T17:00:00+03:00
+* **Current Subsystem**: ROM Bank 3 (Entity Module Refactoring)
+* **Current Task**: Batch 85: Bank 3 Entity Module Refactoring & Quality Improvements
+* **Last Completed Task**: Refactor monolithic `src/bank3/entities.c` (4,495 lines) into 14 modular source files with corresponding headers, fix duplicate symbols, strict C11 compliance, and all quality issues. Added 14 header files and 14 source modules. All 975+ verified functions passing.
+* **Last Update Timestamp**: 2026-09-25T00:00:00+03:00
 
 ---
 
@@ -621,3 +621,42 @@
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 975 verified functions across Batches 1-83 passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Cross-bank calls (UnloadEntityAndReturn, SetEntitySpriteVariant, GetRandomByte, IncrementEntityState, label_27F2, ResetMusicFadeTimer, GetEntityTransitionCountdown, GetEntityPrivateCountdown1, GetEntitySlowTransitionCountdown, ConfigureEntityHitbox, ExecuteActiveEntityHandler_trampoline, RenderActiveEntitySpritesPair, RenderActiveEntitySprite, ClearEntitySpeed, label_3E8E, StopEntityRecoilOnCollision, BouncingEntityPhysics, ApplyRecoilIfNeeded_03, ReturnIfNonInteractive_03, ApplyEntityInteractionWithBackground, func_003_6B7B, SetEntityVariantForDirection_03, UpdateEntityPosWithSpeed_03, SpawnNewEntity_trampoline, label_3935, OpenDialogInTable0_trampoline, func_003_75A2, AlertSwordMoblins, PlayBombExplosionSfx, MarkTriggerAsResolved, CopyLinkFinalPositionToActivePosition, func_003_6C6B, func_003_6DDF, GetVectorTowardsLink, ConfigureEntityRecoil, AddEntitySpeedToPos_03, EntityCheckThrowAtTriggers, DroppableDisappearIfNeeded, func_003_61C0, DroppableRevealOrReturnIfNeeded, func_003_7E0E, PickableCanBeCollectedBySwordTable, PickableHandleGrabbedByItemIfNeeded, PickableCollectIfNeeded, PickDroppableMagicPowder, PickSecretSeashell, IncreaseValueAtHLClampAt99, PickDroppableArrows, PickDroppableBombs, PickSirensInstrument, HoldPickupInTheAir, PickHeartContainer, PickToadstoolOrDungeonKey, PickHeartPiece, PickGuardianAcorn, PickPieceOfPower, ProcessPowerUp, MovePickupInTheAir, PickSword, GiveInventoryItem, PickDroppableKey, PickDroppableHeart, PickDroppableRupee, PickDroppableFairy, SpawnNewEntity, SpawnNewEntityInRange, ConfigureNewEntity_helper) are callback-modeled or directly implemented. Droppable item reveal logic (indoor/outdoor, Pegasus Boots collision, room-specific seashell locations) verified against assembly flow.
+
+---
+
+## Batch 85 Verification — Bank 3 Entity Module Refactoring & Quality Improvements
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (entire file). The monolithic `src/bank3/entities.c` (4,495 lines) was split into 14 logical modules following the Bank 1 organization style, with corresponding header files.
+
+- **Files Created:**
+  - **Headers (14):** `entities_init_core.h`, `entities_init_basic.h`, `entities_init_extended.h`, `entities_handlers.h`, `entities_pushed_block.h`, `entities_liftable_rock.h`, `entities_arrow.h`, `entities_bomb.h`, `entities_moblin.h`, `entities_magic_rod.h`, `entities_droppable.h`, `entities_collision.h`, `entities_physics.h`, and updated `entities.h` as master header.
+  - **Sources (14):** `entities_init_core.c`, `entities_init_basic.c`, `entities_init_extended.c`, `entities_handlers.c`, `entities_pushed_block.c`, `entities_liftable_rock.c`, `entities_arrow.c`, `entities_bomb.c`, `entities_moblin.c`, `entities_magic_rod.c`, `entities_droppable.c`, `entities_collision.c`, `entities_physics.c`, and the original `entities.c` split into these modules.
+
+- **Refactoring Details:**
+  - Split the 4,495-line monolithic `entities.c` into 14 focused modules by entity category/behavior
+  - Preserved all function signatures, behavior, and public APIs
+  - Fixed duplicate symbol definitions across modules (e.g., `func_003_4F12`, `SetHiddenDroppableOptions1`, `EntityShiftPosition`, `UpdateEntityPosWithSpeed_03`, `ReturnIfNonInteractive_03`, etc.)
+  - Fixed label/declaration issues for strict C11 `-pedantic` compliance (added semicolons after labels)
+  - Fixed unused variable warnings (e.g., `index` in `BombExplosionHandler`, `obj_index` in `MagicRodFireballEntityHandler`)
+  - Fixed overflow warnings in data tables (using signed decimal values instead of hex)
+  - Fixed conflicting function pointer signatures for trampoline callbacks
+  - Updated `CMakeLists.txt` to include all 14 new source files
+
+- **Modules and Key Functions:**
+  - **entities_physics.c** (03:6B7B-03:8850): `BouncingEntityPhysics`, `func_003_6B7B`, `func_003_6C6B`, `func_003_6CC0`, `func_003_6DDF`, `func_003_6F5C`, `func_003_6F93`, `func_003_7565`, `func_003_75A2`, `ApplyEntityInteractionWithBackground`, `ApplySwordIntersectionWithObjects`, `GetVectorTowardsLink`, `GetEntityDirectionToLink_03`, `GetEntityX/YDistanceToLink_03`, `UpdateEntityPosWithSpeed_03`, `AddEntitySpeedToPos_03`, `AddEntityZSpeedToPos_03`, `ReturnIfNonInteractive_03`, `ApplyRecoilIfNeeded_03`, plus helper/trampoline stubs
+  - **entities_collision.c** (03:6C72-03:73E6): `CheckLinkCollisionWithEnemy`, `ApplyLinkCollisionWithEnemy`, `DefaultEnemyDamageCollisionHandler`, `ApplySwordDamagesToEnemy`
+  - **entities_moblin.c** (03:5827-03:59D6): `MoblinEntityHandler`, `AnimateRoamingEnemy`, `RoamingEnemyState0Handler`, `SetEntityVariantForDirection_03`, `SpawnMoblinArrow`, `SpawnOctorokRock`
+  - **entities_bomb.c** (03:65E2-03:68F0): `BombExplosionHandler`, `BombExplosionVisuals`, `RenderBombExplosion`, `BombEntityHandler`, `RenderBomb`, `CheckForBombDestroyableObjectPuzzle/Basic`, `CheckExplosionInteractionWithEntities`
+  - **entities_arrow.c** (03:6A34-03:6B71, 03:57E9): `ArrowEntityHandler`, `BombArrowHandler`, `MoblinArrowEntityHandler`, `ArrowRenderAndMove`, `EntityBounceOffWallX/Y`, `ArrowRockAfterHittingWall`, `OctorokEntityHandler`
+  - **entities_magic_rod.c** (03:69B2-03:6A1D): `MagicRodFireballEntityHandler`
+  - **entities_pushed_block.c** (03:5249-03:5325): `PushedBlockEntityHandler`, `func_003_52D4`
+  - **entities_liftable_rock.c** (03:5326-03:5406): `Entity4BHandler`, `LiftableRockEntityHandler`, `LiftableRockIntactHandler`, `LiftableRockStartSmashingAnimation`
+  - **entities_handlers.c** (03:4C4C-03:4DEF): `EntityBurningHandler`, `EntityFallHandler`, `EntityThrownHandler`, `EntityStunnedHandler`, `EntityGetLiftedUp`, `EntityLiftedHandler`, `EntityBecomeStunned`
+  - **entities_droppable.c** (03:6057-03:6478): All droppable item handlers, pickable helpers, and pickup stubs
+  - **entities_init_core.c** (03:485B-03:493C): `ConfigureNewEntity`, `ConfigureEntityHealth`, `EntityInitHandler`, `MasterStalfosDefeated`
+  - **entities_init_basic.c** (03:4926-03:4B56): 34 entity init functions + helpers
+  - **entities_init_extended.c** (03:4B57-03:4FB5): 19 entity init functions + helpers
+
+- **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 975+ verified functions passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. All cross-bank calls remain callback-modeled. No behavior changes - only code organization and quality improvements. The refactoring preserves all existing VERIFIED function bodies and production callers unchanged.

@@ -52,7 +52,19 @@ set(LADX_CORE_SOURCES
     src/bank2/shovel.c
     src/bank2/swimming.c
     src/bank2/vfx.c
-    src/bank3/entities.c
+    src/bank3/entities_physics.c
+    src/bank3/entities_collision.c
+    src/bank3/entities_droppable.c
+    src/bank3/entities_moblin.c
+    src/bank3/entities_bomb.c
+    src/bank3/entities_arrow.c
+    src/bank3/entities_magic_rod.c
+    src/bank3/entities_pushed_block.c
+    src/bank3/entities_liftable_rock.c
+    src/bank3/entities_handlers.c
+    src/bank3/entities_init_core.c
+    src/bank3/entities_init_basic.c
+    src/bank3/entities_init_extended.c
 )
 
 add_library(ladx_core STATIC ${LADX_CORE_SOURCES})
