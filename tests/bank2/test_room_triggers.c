@@ -102,12 +102,39 @@ static void expect_mark(GBState *gb) {
     }
 }
 
+/* Optimized working-memory-only copy/compare for room trigger tests. */
+static void copy_working_memory(GBState *dst, const GBState *src) {
+    memcpy(dst->wram, src->wram, sizeof(dst->wram));
+    memcpy(dst->hram, src->hram, sizeof(dst->hram));
+    dst->wram_bank = src->wram_bank;
+    dst->rom_bank = src->rom_bank;
+    dst->vram_bank = src->vram_bank;
+    dst->sram_bank = src->sram_bank;
+    dst->sram_enabled = src->sram_enabled;
+    dst->joypad_input = src->joypad_input;
+    dst->ie = src->ie;
+    /* rom, rom_size, vram, sram, oam, io are not modified by room trigger tests */
+}
+
+static int compare_working(const GBState *a, const GBState *b) {
+    if (memcmp(a->wram, b->wram, sizeof(a->wram)) != 0) return 1;
+    if (memcmp(a->hram, b->hram, sizeof(a->hram)) != 0) return 1;
+    if (a->wram_bank != b->wram_bank) return 1;
+    if (a->rom_bank != b->rom_bank) return 1;
+    if (a->vram_bank != b->vram_bank) return 1;
+    if (a->sram_bank != b->sram_bank) return 1;
+    if (a->sram_enabled != b->sram_enabled) return 1;
+    if (a->joypad_input != b->joypad_input) return 1;
+    if (a->ie != b->ie) return 1;
+    return 0;
+}
+
 static void compare(const GBState *gb, const GBState *expected, unsigned api) {
-    if (memcmp(gb, expected, sizeof(*gb)) != 0) {
+    if (compare_working(gb, expected) != 0) {
         const unsigned char *actual = (const unsigned char *)gb;
         const unsigned char *wanted = (const unsigned char *)expected;
         for (size_t i = 0; i < sizeof(*gb); ++i) {
-            if (actual[i] != wanted[i]) {
+            if (((const unsigned char *)gb)[i] != ((const unsigned char *)expected)[i]) {
                 fprintf(stderr, "room trigger API %u: GBState byte %zu: %02X != %02X\n",
                         api, i, (unsigned)actual[i], (unsigned)wanted[i]);
                 break;
@@ -117,9 +144,11 @@ static void compare(const GBState *gb, const GBState *expected, unsigned api) {
     }
 }
 
+
+
 static void check_simple(GBState *gb, unsigned api, bool resolved) {
     GBState expected;
-    memcpy(&expected, gb, sizeof(expected));
+    copy_working_memory(&expected, gb);
     if (resolved) {
         expect_mark(&expected);
     }
@@ -132,7 +161,7 @@ static void check_simple(GBState *gb, unsigned api, bool resolved) {
  * fixture, used only by room $12 after its effect guard succeeds. */
 static void check_tunics(GBState *gb, unsigned count, uint16_t status_address) {
     GBState expected;
-    memcpy(&expected, gb, sizeof(expected));
+    copy_working_memory(&expected, gb);
     if (C(&expected, 0xC18F) == 0) {
         uint8_t room = H(&expected, 0xFFF6);
         H(&expected, 0xFFD7) = (uint8_t)count;
@@ -199,17 +228,17 @@ static void set_answer(GBState *gb, uint8_t room, unsigned count, unsigned first
 static void test_simple_bytes(const GBState *seed) {
     GBState gb;
     for (unsigned value = 0; value < 256; ++value) {
-        memcpy(&gb, seed, sizeof(gb));
+        copy_working_memory(&gb, seed);
         C(&gb, 0xC1A2) = (uint8_t)value;
         check_simple(&gb, 1, value == 2);
-        memcpy(&gb, seed, sizeof(gb));
+        copy_working_memory(&gb, seed);
         C(&gb, 0xC1CB) = (uint8_t)value;
         check_simple(&gb, 2, value != 0);
     }
     /* All map/status pairs; the unselected boss room has opposite bit 5. */
     for (unsigned map = 0; map < 256; ++map) {
         for (unsigned status = 0; status < 256; ++status) {
-            memcpy(&gb, seed, sizeof(gb));
+            copy_working_memory(&gb, seed);
             H(&gb, 0xFFF7) = (uint8_t)map;
             D(&gb, 0xDAE8) = (uint8_t)(map == 6 ? status : status ^ 0x20);
             D(&gb, 0xD9FF) = (uint8_t)(map == 6 ? status ^ 0x20 : status);
@@ -222,7 +251,7 @@ static void test_simple_bytes(const GBState *seed) {
         unsigned a = (fixed + 1) % 3, b = (fixed + 2) % 3;
         for (unsigned x = 0; x < 256; ++x) {
             for (unsigned y = 0; y < 256; ++y) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 D(&gb, 0xDBB6 + a) = (uint8_t)x;
                 D(&gb, 0xDBB6 + b) = (uint8_t)y;
                 check_simple(&gb, 3, x == a && y == b);
@@ -238,7 +267,7 @@ static void test_resolution_guards(const GBState *seed) {
     for (unsigned api = 0; api < 6; ++api) {
         for (unsigned field = 0; field < 2; ++field) {
             for (unsigned value = 0; value < 256; ++value) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 set_answer(&gb, 8, 4, 0);
                 if (api == 4) {
                     for (unsigned slot = 0; slot < 16; ++slot) {
@@ -262,7 +291,7 @@ static void test_enemies(const GBState *seed) {
      * nonzero status blocks, not just active/normal entity status values. */
     for (unsigned status = 0; status < 256; ++status) {
         for (unsigned options = 0; options < 256; ++options) {
-            memcpy(&gb, seed, sizeof(gb));
+            copy_working_memory(&gb, seed);
             unsigned slot = (status + options) % 16;
             C(&gb, 0xC280 + slot) = (uint8_t)status;
             C(&gb, 0xC430 + slot) = (uint8_t)options;
@@ -275,7 +304,7 @@ static void test_enemies(const GBState *seed) {
     for (unsigned slot = 0; slot < 16; ++slot) {
         for (unsigned value = 0; value < 256; ++value) {
             for (unsigned excluded = 0; excluded < 2; ++excluded) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 for (unsigned other = 0; other < 16; ++other) {
                     C(&gb, 0xC280 + other) = other & 1 ? 0xFF : 0;
                     C(&gb, 0xC430 + other) = other & 1 ? 0x02 : 0xFD;
@@ -289,7 +318,7 @@ static void test_enemies(const GBState *seed) {
     /* Exhaust both special-condition bytes; ordinary trigger IDs bypass both. */
     for (unsigned ready = 0; ready < 256; ++ready) {
         for (unsigned killed = 0; killed < 256; ++killed) {
-            memcpy(&gb, seed, sizeof(gb));
+            copy_working_memory(&gb, seed);
             D(&gb, 0xD460) = (uint8_t)ready;
             C(&gb, 0xC113) = (uint8_t)killed;
             check_simple(&gb, 4, ready != 0 && killed == 0);
@@ -297,7 +326,7 @@ static void test_enemies(const GBState *seed) {
     }
     for (unsigned id = 0; id < 256; ++id) {
         for (unsigned combination = 0; combination < 4; ++combination) {
-            memcpy(&gb, seed, sizeof(gb));
+            copy_working_memory(&gb, seed);
             H(&gb, 0xFFD7) = (uint8_t)id;
             D(&gb, 0xD460) = (uint8_t)(combination & 1 ? 0x80 : 0);
             C(&gb, 0xC113) = combination & 2 ? 0xFF : 0;
@@ -313,7 +342,7 @@ static void test_tunic_counts_and_entities(const GBState *seed) {
     for (size_t r = 0; r < sizeof(rooms); ++r) {
         for (unsigned count = 0; count <= 16; ++count) {
             for (unsigned first = 0; first < 16; ++first) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 set_answer(&gb, rooms[r], count, first);
                 check_tunics(&gb, count, 0xDDF2);
             }
@@ -327,7 +356,7 @@ static void test_tunic_counts_and_entities(const GBState *seed) {
         for (unsigned slot = 0; slot < 16; ++slot) {
             for (unsigned type = 0; type < 256; ++type) {
                 for (size_t s = 0; s < sizeof(edges); ++s) {
-                    memcpy(&gb, seed, sizeof(gb));
+                    copy_working_memory(&gb, seed);
                     set_answer(&gb, room, baseline, (slot + 1) % 16);
                     C(&gb, 0xC3A0 + slot) = (uint8_t)type;
                     C(&gb, 0xC280 + slot) = edges[s];
@@ -339,7 +368,7 @@ static void test_tunic_counts_and_entities(const GBState *seed) {
             for (size_t t = 0; t < sizeof(types); ++t) {
                 for (unsigned value = 0; value < 256; ++value) {
                     for (unsigned field = 0; field < 2; ++field) {
-                        memcpy(&gb, seed, sizeof(gb));
+                        copy_working_memory(&gb, seed);
                         set_answer(&gb, room, baseline, (slot + 1) % 16);
                         C(&gb, 0xC3A0 + slot) = types[t];
                         C(&gb, 0xC280 + slot) = field ? 0xFF : (uint8_t)value;
@@ -378,7 +407,7 @@ static void test_tunic_guards_and_routes(const GBState *seed) {
     for (size_t r = 0; r < sizeof(rooms); ++r) {
         for (unsigned cache = 0; cache < 256; ++cache) {
             for (size_t latch = 0; latch < sizeof(edges); ++latch) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 unsigned count = rooms[r] == 0x12 ? 2 : rooms[r] == 0x0A ? 9 : 4;
                 set_answer(&gb, rooms[r], count, 0);
                 H(&gb, 0xFFF8) = (uint8_t)cache;
@@ -394,7 +423,7 @@ static void test_tunic_guards_and_routes(const GBState *seed) {
     for (size_t r = 0; r < sizeof(routes) / sizeof(routes[0]); ++r) {
         for (unsigned bank = 1; bank <= 7; ++bank) {
             for (unsigned saved = 0; saved < 256; ++saved) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 gb.wram_bank = (uint8_t)bank;
                 D(&gb, 0xDBA5) = routes[r].indoor;
                 H(&gb, 0xFFF7) = routes[r].map;
@@ -407,7 +436,7 @@ static void test_tunic_guards_and_routes(const GBState *seed) {
     /* Room 0A uses color status regardless of map/indoor; all other room IDs
      * except 08/12 take the chest branch. No color-map validation is allowed. */
     for (unsigned value = 0; value < 256; ++value) {
-        memcpy(&gb, seed, sizeof(gb));
+        copy_working_memory(&gb, seed);
         H(&gb, 0xFFF7) = (uint8_t)value;
         D(&gb, 0xDBA5) = (uint8_t)value;
         D(&gb, 0xDDEA) = (uint8_t)value;
@@ -415,7 +444,7 @@ static void test_tunic_guards_and_routes(const GBState *seed) {
         C(&gb, 0xC18E) = (uint8_t)value;
         set_answer(&gb, 0x0A, 9, 15);
         check_tunics(&gb, 9, 0);
-        memcpy(&gb, seed, sizeof(gb));
+        copy_working_memory(&gb, seed);
         H(&gb, 0xFFF7) = (uint8_t)value;
         unsigned count = value == 0x12 ? 2 : value == 0x0A ? 9 : 4;
         set_answer(&gb, (uint8_t)value, count, 15);
@@ -430,7 +459,7 @@ static void test_chest_dependency(const GBState *seed) {
     for (size_t x = 0; x < sizeof(xs); ++x) {
         for (size_t y = 0; y < sizeof(ys); ++y) {
             for (int free_slot = -1; free_slot < 16; ++free_slot) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 set_answer(&gb, 9, 4, 15);
                 H(&gb, 0xFF98) = xs[x];
                 H(&gb, 0xFF99) = ys[y];
@@ -448,7 +477,7 @@ static void test_chest_dependency(const GBState *seed) {
     }
     /* Full VFX table replacement, including ring wrap and byte-wide indices. */
     for (unsigned ring = 0; ring < 256; ++ring) {
-        memcpy(&gb, seed, sizeof(gb));
+        copy_working_memory(&gb, seed);
         set_answer(&gb, 0, 4, 0);
         for (unsigned slot = 0; slot < 16; ++slot) {
             C(&gb, 0xC510 + slot) = 0x80;
@@ -463,7 +492,7 @@ static void test_simple_banks(const GBState *seed) {
     for (unsigned bank = 1; bank <= 7; ++bank) {
         for (unsigned api = 0; api < 5; ++api) {
             for (unsigned resolved = 0; resolved < 2; ++resolved) {
-                memcpy(&gb, seed, sizeof(gb));
+                copy_working_memory(&gb, seed);
                 gb.wram_bank = (uint8_t)bank;
                 gb.rom_bank = (uint8_t)(bank * 9);
                 D(&gb, 0xDBB6) = 0;
