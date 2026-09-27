@@ -145,13 +145,30 @@
 #define wScreenShakeHorizontal                0xC155
 #define wEntitiesPosXSignTable                0xC220
 #define wEntitiesPosYSignTable                0xC230
+#define wEntitiesPosZSignTable                0xC340
 #define wEntitiesPhysicsFlagsTable            0xC340
 #define wEntitiesInertiaTable                 0xC3D0
 #define wEntitiesPosXTable                    0xC200
 #define wEntitiesPosYTable                    0xC210
+#define wEntitiesPosZTable                    0xC310
 #define wEntitiesSpeedXTable                  0xC240
 #define wEntitiesSpeedYTable                  0xC250
-#define wEntitiesPosZTable                    0xC310
+#define wEntitiesSpeedZTable                  0xC320
+#define wEntitiesSpeedXAccTable               0xC260
+#define wEntitiesSpeedYAccTable               0xC270
+#define wEntitiesSpeedZAccTable               0xC330
+#define wEntitiesPosXAccTable                 0xC260  /* Alias for SpeedXAccTable */
+#define wEntitiesPosYAccTable                 0xC270  /* Alias for SpeedYAccTable */
+#define wEntitiesPosZAccTable                 0xC330  /* Alias for SpeedZAccTable */
+#define wEntitiesPosZSignTable                0xC340  /* Reuses PhysicsFlagsTable space */
+#define wEntitiesTransitionCountdownTable     0xC2E0
+#define wEntitiesPrivateCountdown1Table       0xC2F0
+#define wEntitiesIgnoreHitsCountdownTable     0xC410
+#define wEntitiesSlowTransitionCountdownTable 0xC450
+#define wEntitiesPrivateCountdown3Table       0xC480
+#define wEntitiesStateTable                   0xC290
+#define wEntitiesHitboxFlagsTable             0xC350
+#define wEntitiesSpriteVariantTable           0xC3B0
 #define wEntitiesTransitionCountdownTable     0xC2E0
 #define wEntitiesPrivateCountdown1Table       0xC2F0
 #define wEntitiesIgnoreHitsCountdownTable     0xC410
@@ -393,6 +410,13 @@
 #define wD003                                 0xD003
 #define wD004                                 0xD004
 #define wD005                                 0xD005
+#define wD205                                 0xD205
+#define wD5C0                                 0xD5C0
+#define wD5C1                                 0xD5C1
+#define wD5C2                                 0xD5C2
+#define wD5C3                                 0xD5C3
+#define wD5C4                                 0xD5C4
+#define wC144                                 0xC144
 #define wD00A                                 0xD00A
 #define wD00B                                 0xD00B
 #define wD00C                                 0xD00C

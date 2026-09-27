@@ -56,6 +56,7 @@
 #define LINK_MOTION_PASS_OUT            0x07
 #define LINK_MOTION_RECOVER             0x08
 #define LINK_MOTION_TELEPORT            0x09
+#define LINK_MOTION_UNKNOWN_0A          0x0A
 
 #define SLIME_KEY                       0x06
 #define TRADING_ITEM_BANANAS            0x04

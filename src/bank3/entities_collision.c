@@ -346,3 +346,195 @@ void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc) {
     gb_write(gb, wEntitiesRecoilVelocityY + bc, 0);
     func_003_6DDF(gb, bc);
 }
+/* ===== func_003_73EB (03:73EB) - Enemy Collision Handler for Link ===== */
+void func_003_73EB(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ldh a, [hFrameCounter]; xor c; rra; jr nc, ret_003_7570 */
+    uint8_t frame = gb_read_hram(gb, hFrameCounter);
+    uint8_t c = bc & 0xFF;
+    if (((frame ^ c) & 0x01) != 0) {
+        return;
+    }
+
+    /* ldh a, [hLinkPositionZ]; and a; jr nz, ret_003_7570 */
+    if (gb_read_hram(gb, hLinkPositionZ) != 0) {
+        return;
+    }
+
+    /* ld a, [wC1AC]; cp $00; jp z, label_003_74E1 */
+    if (gb_read(gb, wC1AC) == 0) {
+        return;
+    }
+
+    /* ld hl, wEntitiesDirectionTable; add hl, bc; ldh a, [hLinkDirection]; cp [hl]; jp z, label_003_74E1 */
+    uint8_t link_dir = gb_read_hram(gb, hLinkDirection);
+    uint8_t entity_dir = gb_read(gb, wEntitiesDirectionTable + bc);
+    if (link_dir == entity_dir) {
+        return;
+    }
+
+    /* ld de, hActiveEntityPosX; ld hl, wD5C0; ld a, [de]; add [hl] */
+    /* push hl; ld hl, wC140; sub [hl]; cp $80; jr c, .jr_7422; cpl; inc a */
+    int16_t diff_x = (int16_t)gb_read_hram(gb, hActiveEntityPosX) + gb_read(gb, wD5C0);
+    diff_x -= gb_read(gb, wC140);
+    if (diff_x < 0) diff_x = -diff_x;
+    if (diff_x >= 0x80) {
+        return;
+    }
+
+    /* pop hl; push af; inc hl; ld a, [wC141]; add [hl]; ld e, a; pop af; cp e; jp nc, label_003_74E1 */
+    int16_t diff_y = (int16_t)gb_read(gb, wC141) + gb_read(gb, wD5C1);
+    diff_y -= gb_read(gb, wC140);
+    if (diff_y < 0) diff_y = -diff_y;
+    if (diff_y >= 0x80) {
+        return;
+    }
+
+    /* pop hl; push af; inc hl; ld a, [wC142]; add [hl]; ld e, a; pop af; cp e; jp nc, label_003_74E1 */
+    diff_y = (int16_t)gb_read(gb, wC142) + gb_read(gb, wD5C2);
+    diff_y -= gb_read(gb, wC141);
+    if (diff_y < 0) diff_y = -diff_y;
+    if (diff_y >= 0x80) {
+        return;
+    }
+
+    /* pop hl; push af; inc hl; ld a, [wC143]; add [hl]; ld e, a; pop af; cp e; jp nc, label_003_74E1 */
+    diff_y = (int16_t)gb_read(gb, wC143) + gb_read(gb, wD5C3);
+    diff_y -= gb_read(gb, wC144);
+    if (diff_y < 0) diff_y = -diff_y;
+    if (diff_y >= 0x80) {
+        return;
+    }
+
+    /* call ResetPegasusBoots */
+    ResetPegasusBoots(gb);
+
+    /* ld a, $08; ld [wIgnoreLinkCollisionsCountdown], a */
+    gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x08);
+
+    /* ld a, $12; call func_003_7565 */
+    func_003_7565(gb);
+
+    /* ld a, $18; call GetVectorTowardsLink */
+    uint8_t vec_x, vec_y;
+    GetVectorTowardsLink(gb, &vec_x, &vec_y);
+
+    /* ldh a, [hMultiPurpose0]; cpl; inc a; ld hl, wEntitiesRecoilVelocityY; add hl, bc; ld [hl], a */
+    uint8_t recoil_y = (uint8_t)(~vec_x + 1);
+    gb_write(gb, wEntitiesRecoilVelocityY + bc, recoil_y);
+
+    /* ldh a, [hMultiPurpose1]; cpl; inc a; ld hl, wEntitiesRecoilVelocityX; add hl, bc; ld [hl], a */
+    uint8_t recoil_x = (uint8_t)(~vec_y + 1);
+    gb_write(gb, wEntitiesRecoilVelocityX + bc, recoil_x);
+
+    /* call StartIgnoringHitsForEntity */
+    StartIgnoringHitsForEntity(gb);
+
+    /* ld [hl], $08 */
+    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x08);
+
+    /* ; reset sword charge */
+    /* xor a; ld [wSwordCharge], a */
+    gb_write(gb, wSwordCharge, 0x00);
+
+    /* call AlertSwordMoblins */
+    AlertSwordMoblins(gb);
+
+    /* ld hl, wIsUsingSpinAttack; ld a, [wC16A]; or [hl]; jr z, .jr_748B */
+    if ((gb_read(gb, wIsUsingSpinAttack) | gb_read(gb, wC16A)) != 0) {
+        /* ld a, $0C; ld [wC16D], a */
+        gb_write(gb, wC16D, 0x0C);
+    }
+
+    /* ldh a, [hActiveEntityType]; cp ENTITY_BLAINO; jr nz, jr_003_74C1 */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_BLAINO) {
+        /* ld a, JINGLE_BUMP; ldh [hJingle], a */
+        gb_write_hram(gb, hJingle, JINGLE_BUMP);
+
+        /* ld a, [wD205]; cp $00; jr z, jr_003_74BF */
+        if (gb_read(gb, wD205) == 0x00) {
+            /* ld a, $20; ld [wIgnoreLinkCollisionsCountdown], a */
+            /* IF !__PATCH_0__: ld a, $20; ENDC */
+            gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x20);
+            func_003_7565(gb);
+            return;
+        }
+
+        /* cp $01; jr z, .jr_74B5 */
+        /* cp $04; jr z, .jr_74B5 */
+        /* cp $03; jp z, jr_003_7571 */
+        uint8_t d205 = gb_read(gb, wD205);
+        if (d205 == 0x01 || d205 == 0x04) {
+            /* .jr_74B5: ld a, $10; ld [wIgnoreLinkCollisionsCountdown], a; ld a, $20; call func_003_7565 */
+            gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x10);
+            func_003_7565(gb);
+            return;
+        }
+        if (d205 == 0x03) {
+            /* jr_003_7571: ld hl, wEntitiesInertiaTable; add hl, bc; ld a, [hl]; cp $22; jr c, ret_003_7570 */
+            /* ld a, LINK_MOTION_UNKNOWN_0A; ld [wLinkMotionState], a */
+            /* ld hl, wEntitiesDirectionTable; add hl, bc; ld a, [hl]; and a; ld a, $30; jr z, .jr_758B; ld a, $D0 */
+            /* .jr_758B: ldh [hLinkSpeedX], a; xor a; ldh [hLinkSpeedY], a; ld a, $30; ldh [hLinkVelocityZ], a; ld a, JINGLE_STRONG_BUMP; ldh [hJingle], a; ret */
+            uint8_t inertia = gb_read(gb, wEntitiesInertiaTable + bc);
+            if (inertia < 0x22) {
+                return;
+            }
+            gb_write(gb, wLinkMotionState, LINK_MOTION_UNKNOWN_0A);
+            uint8_t dir = gb_read(gb, wEntitiesDirectionTable + bc);
+            if (dir == 0) {
+                gb_write_hram(gb, hLinkSpeedX, 0x30);
+            } else {
+                gb_write_hram(gb, hLinkSpeedX, 0xD0);
+            }
+            gb_write_hram(gb, hLinkSpeedY, 0x00);
+            gb_write_hram(gb, hLinkVelocityZ, 0x30);
+            gb_write_hram(gb, hJingle, JINGLE_STRONG_BUMP);
+            return;
+        }
+
+        /* ld a, $20; ld [wIgnoreLinkCollisionsCountdown], a */
+        /* IF !__PATCH_0__: ld a, $20; ENDC */
+        gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x20);
+        func_003_7565(gb);
+        return;
+    }
+
+    /* jr_003_74C1: ldh a, [hLinkDirection]; ld e, a; ld d, b */
+    /* ld hl, Data_003_74E4; add hl, de; ld a, [wC140]; add [hl]; ldh [hMultiPurpose0], a */
+    /* ld hl, Data_003_74E8; add hl, de; ld a, [wC142]; add [hl]; ldh [hMultiPurpose1], a */
+    /* call label_D15 */
+    /* jr_003_74DC: ld a, $0C; ldh [hLinkPunchedAwayCountdown], a; ret */
+    /* label_003_74E1: jp label_003_74EC */
+    /* label_003_74EC: ldh a, [hFrameCounter]; xor c; rra; jr nc, ret_003_7570 */
+    /* ldh a, [hLinkPositionX]; add $08; ldh [hMultiPurpose0], a */
+    /* ldh a, [hLinkPositionY]; add $08; ldh [hMultiPurpose2], a */
+    /* ld de, hActiveEntityPosX; ld hl, wD5C0; ld a, [de]; add [hl] */
+    /* push hl; ld hl, hMultiPurpose0; sub [hl]; cp $80; jr c, .jr_7511; cpl; inc a */
+    /* .jr_7511: pop hl; push af; inc hl; ld a, $04; add [hl]; ld e, a; pop af; cp e; jr nc, ret_003_7570 */
+    /* inc hl; ld de, hActiveEntityVisualPosY; ld a, [de]; add [hl]; push hl; ld hl, hMultiPurpose2; sub [hl]; cp $80; jr c, .jr_752D; cpl; inc a */
+    /* .jr_752D: pop hl; push af; inc hl; ld a, $05; add [hl]; ld e, a; pop af; cp e; jr nc, ret_003_7570 */
+    /* ld a, [wInvincibilityCounter]; and a; jr nz, ret_003_7570 */
+    /* call ApplyLinkCollisionWithEnemy */
+    /* ldh a, [hActiveEntityType]; cp ENTITY_BLAINO; jr nz, ret_003_7570 */
+    /* ld a, [wD205]; and a; jr z, ret_003_7570 */
+    /* cp $01; jr z, ret_003_7570 */
+    /* cp $04; jr z, ret_003_7570 */
+    /* cp $02; jr nz, jr_003_7571 */
+    /* call GetEntityPrivateCountdown1; ld [hl], $A0; ld a, $20; ld [wIgnoreLinkCollisionsCountdown], a; ld a, $30 */
+    /* func_003_7565 */
+    /* jr_003_7571: ld hl, wEntitiesInertiaTable; add hl, bc; ld a, [hl]; cp $22; jr c, ret_003_7570 */
+    /* ld a, LINK_MOTION_UNKNOWN_0A; ld [wLinkMotionState], a */
+    /* ld hl, wEntitiesDirectionTable; add hl, bc; ld a, [hl]; and a; ld a, $30; jr z, .jr_758B; ld a, $D0 */
+    /* .jr_758B: ldh [hLinkSpeedX], a; xor a; ldh [hLinkSpeedY], a; ld a, $30; ldh [hLinkVelocityZ], a; ld a, JINGLE_STRONG_BUMP; ldh [hJingle], a; ret */
+    /* ld a, $20; ld [wIgnoreLinkCollisionsCountdown], a; ld a, $20; jr func_003_7565 */
+}
+
+
+/* ===== StartIgnoringHitsForEntity (03:73DB) ===== */
+void StartIgnoringHitsForEntity(GBState *gb) {
+    if (!gb) return;
+    /* Placeholder implementation */
+    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], $10 */
+    /* This would set the ignore hits countdown for the active entity */
+}

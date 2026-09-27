@@ -7,6 +7,7 @@
 #define BossIntroDialogTable         0x3EDF
 #define ENTITY_DESERT_LANMOLA        0x87
 #define ENTITY_GRIM_CREEPER          0xBC
+#define ENTITY_BLAINO                0xBE
 #define ENTITY_LEEVER                0x0E
 #define ENTITY_OCTOROK               0x09
 #define ENTITY_MOBLIN                0x0B
