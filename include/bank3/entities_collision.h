@@ -42,5 +42,6 @@ void ResetPegasusBoots(GBState *gb);
 
 /* func_003_7565 (03:7565) */
 void func_003_7565(GBState *gb);
+void func_003_7565_with_length(GBState *gb, uint8_t length);
 
 #endif /* LADX_BANK3_ENTITIES_COLLISION_H */

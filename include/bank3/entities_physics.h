@@ -26,8 +26,12 @@ void func_003_6F5C(GBState *gb, uint16_t bc);
 /* func_003_6F93 (03:6F93) - JINGLE_BUMP and recoil setup */
 void func_003_6F93(GBState *gb);
 
+/* label_003_6FA7 (03:6FA7) - Apply horizontal bump velocity to Link */
+void label_003_6FA7(GBState *gb, uint8_t magnitude);
+
 /* func_003_7565 (03:7565) - Push Link away from entity */
 void func_003_7565(GBState *gb);
+void func_003_7565_with_length(GBState *gb, uint8_t length);
 
 /* func_003_75A2 (03:75A2) - Entity collision detection with other entities */
 void func_003_75A2(GBState *gb, uint16_t bc);

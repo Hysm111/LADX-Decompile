@@ -210,14 +210,20 @@ updateXSpeedEnd: ;
     return;
 }
 
+/* Directional speed tables */
+static const uint8_t Data_003_6E0C[2] = { 0x0C, 0xF4 };
+
 /* ===== func_003_6C6B (03:6C6B) ===== */
 bool func_003_6C6B(GBState *gb, uint16_t bc) {
     if (!gb) return false;
 
-    /* ldh a, [hFrameCounter]; xor c; rra; jp nc, jr_003_6CCB */
+    /* ldh a, [hFrameCounter]; xor c; rra; jp nc, jr_003_6CCB
+       rra rotates bit 0 of (hFrameCounter ^ c) into CF.
+       If CF == 0, jp nc jumps to jr_003_6CCB (and a; ret), returning false.
+       If CF == 1, jp nc is not taken, returning true. */
     uint8_t frame = gb_read_hram(gb, hFrameCounter);
-    uint8_t c = bc & 0xFF;
-    if (((frame ^ c) & 0x01) != 0) {  /* rra + nc = bit 0 was 1 */
+    uint8_t c = (uint8_t)(bc & 0xFF);
+    if (((frame ^ c) & 0x01) == 0) {
         return false;
     }
     return true;
@@ -227,85 +233,47 @@ bool func_003_6C6B(GBState *gb, uint16_t bc) {
 bool func_003_6CC0(GBState *gb, uint16_t bc) {
     if (!gb) return false;
 
-    /* ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld a, [hl]; and ENTITY_PHYSICS_HARMLESS; jr z, jr_003_6CCD */
-    if ((gb_read(gb, wEntitiesPhysicsFlagsTable + bc) & ENTITY_PHYSICS_HARMLESS) == 0) {
-        return true;  /* Not harmless - collision possible */
+    /* ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld a, [hl]; and ENTITY_PHYSICS_HARMLESS; jr z, jr_003_6CCD
+       jr_003_6CC9: scf; ret */
+    if ((gb_read(gb, wEntitiesPhysicsFlagsTable + bc) & ENTITY_PHYSICS_HARMLESS) != 0) {
+        return true;  /* Harmless: returns with carry set (skip hurting Link) */
     }
-    return false;  /* Harmless - no collision */
+
+    /* jr_003_6CCD: ldh a, [hLinkAnimationState]; sub $4E; cp $02; jr c, jr_003_6CC9 */
+    uint8_t anim = (uint8_t)(gb_read_hram(gb, hLinkAnimationState) - 0x4E);
+    if (anim < 0x02) {
+        return true;  /* Link animation 0x4E or 0x4F (falling into pit): carry set (skip hurting Link) */
+    }
+    return false;     /* Not harmless and not falling: proceed to hurt Link */
 }
 
-/* ===== func_003_6DDF (03:6DDF) ===== */
-void func_003_6DDF(GBState *gb, uint16_t bc) {
+/* ===== label_003_6FA7 (03:6FA7) ===== */
+void label_003_6FA7(GBState *gb, uint8_t magnitude) {
     if (!gb) return;
 
-    /* call ResetPegasusBoots */
-    ResetPegasusBoots(gb);
-
-    /* ld a, $10; ld [wIgnoreLinkCollisionsCountdown], a */
-    gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x10);
-
-    /* ldh a, [hActiveEntityType]; ld e, $18; cp ENTITY_ROLLING_BONES_BAR; jp z, label_003_6FA7 */
-    uint8_t entity_type = gb_read_hram(gb, hActiveEntityType);
-    if (entity_type == ENTITY_ROLLING_BONES_BAR) {
-        /* This jumps to label_003_6FA7 which is part of ConfigureEntityRecoil */
-        /* We'll handle this in ConfigureEntityRecoil */
-        return;
+    /* push de; call GetEntityXDistanceToLink_03; ld a, e; and a; pop de; ld a, e; jr z, .jr_6FB3; cpl; inc a; .jr_6FB3: ldh [hLinkSpeedX], a; xor a; ldh [hLinkSpeedY], a; ret */
+    uint8_t dir = 0;
+    uint8_t dist = 0;
+    GetEntityXDistanceToLink_03(gb, &dir, &dist);
+    int8_t speed_x = (int8_t)magnitude;
+    if (dir != 0) {
+        speed_x = (int8_t)(-speed_x);
     }
-
-    /* cp ENTITY_FACADE; jr nz, .facadeEnd */
-    if (entity_type == ENTITY_FACADE) {
-        /* ld hl, wEntitiesCollisionsTable; add hl, bc; ld [hl], $01 */
-        gb_write(gb, wEntitiesCollisionsTable + bc, 0x01);
-    }
-
-    /* cp ENTITY_MOLDORM; ld a, $14; jr nz, .moldormEnd; ld a, $18; .moldormEnd: */
-    uint8_t moldorm_val = 0x14;
-    if (entity_type == ENTITY_MOLDORM) {
-        moldorm_val = 0x18;
-    }
-
-    /* call func_003_7565 */
-    (void)moldorm_val;  /* Suppress unused warning */
-    func_003_7565(gb);
-
-    /* ldh a, [hIsSideScrolling]; and a; jr nz, jr_003_6E0E */
-    if (gb_read_hram(gb, hIsSideScrolling) != 0) {
-        goto jr_003_6E0E;
-    }
-
-    /* setCarryAndReturn: scf; ret */
-    return;
-
-jr_003_6E0E: ;
-    /* ldh a, [hLinkPhysicsModifier]; cp $02; jr z, setCarryAndReturn */
-    if (gb_read_hram(gb, hLinkPhysicsModifier) == 0x02) {
-        return;
-    }
-
-    /* call GetEntityXDistanceToLink_03; ld d, b; ld hl, Data_003_6E0C; add hl, de; ld a, [hl]; ldh [hLinkSpeedX], a */
-    uint8_t x_dist, y_dist;
-    GetEntityXDistanceToLink_03(gb, &x_dist, &y_dist);
-    
-    static const int8_t Data_003_6E0C[2] = { 12, -12 };  /* right, left */
-    int8_t link_speed_x = Data_003_6E0C[x_dist & 0x01];
-    gb_write_hram(gb, hLinkSpeedX, (uint8_t)link_speed_x);
-
-    /* ld a, $F4; ldh [hLinkSpeedY], a */
-    gb_write_hram(gb, hLinkSpeedY, 0xF4);
-
-    /* xor a; ldh [hLinkPhysicsModifier], a; scf; ret */
-    gb_write_hram(gb, hLinkPhysicsModifier, 0x00);
+    gb_write_hram(gb, hLinkSpeedX, (uint8_t)speed_x);
+    gb_write_hram(gb, hLinkSpeedY, 0x00);
 }
 
-/* ===== func_003_6F5C (03:6F5C) ===== */
-void func_003_6F5C(GBState *gb, uint16_t bc) {
+/* ===== func_003_7565 (03:7565) ===== */
+void func_003_7565_with_length(GBState *gb, uint8_t length) {
     if (!gb) return;
 
-    /* call func_003_6F93 */
-    func_003_6F93(gb);
+    GetVectorTowardsLink_with_length(gb, length, NULL, NULL);
+    gb_write_hram(gb, hLinkSpeedY, gb_read_hram(gb, hMultiPurpose0));
+    gb_write_hram(gb, hLinkSpeedX, gb_read_hram(gb, hMultiPurpose1));
+}
 
-    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], b */
-    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x00);
+void func_003_7565(GBState *gb) {
+    func_003_7565_with_length(gb, 0x12);
 }
 
 /* ===== func_003_6F93 (03:6F93) ===== */
@@ -323,33 +291,84 @@ void func_003_6F93(GBState *gb) {
 
     /* ldh a, [hActiveEntityType]; cp ENTITY_ROLLING_BONES_BAR; jr nz, jr_003_6FB9 */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_ROLLING_BONES_BAR) {
-        /* ld e, $10; push de; call GetEntityXDistanceToLink_03; ld a, e; and a; pop de; ld a, e; jr z, .jr_6FB3; cpl; inc a; .jr_6FB3: ldh [hLinkSpeedX], a; xor a; ldh [hLinkSpeedY], a; ret */
-        uint8_t x_dist, y_dist;
-        GetEntityXDistanceToLink_03(gb, &x_dist, &y_dist);
-        int8_t link_speed_x = (x_dist == 0) ? 0x10 : (int8_t)(~0x10 + 1);
-        gb_write_hram(gb, hLinkSpeedX, (uint8_t)link_speed_x);
-        gb_write_hram(gb, hLinkSpeedY, 0x00);
+        label_003_6FA7(gb, 0x10);
         return;
     }
 
     /* jr_003_6FB9: ld a, $12; call func_003_7565 */
-    func_003_7565(gb);
+    func_003_7565_with_length(gb, 0x12);
 
-    /* The rest handles facade and other special cases - simplified */
+    /* ld hl, hIndexOfObjectBelowLink; ldh a, [hPressedButtonsMask]; and $0F; ld a, $08; or [hl]; jr z, ConfigureEntityRecoil; ld a, $20; ConfigureEntityRecoil */
+    uint16_t bc = gb_read(gb, wActiveEntityIndex);
+    uint8_t recoil_amount = 0x20;
+    uint8_t obj_below = gb_read_hram(gb, hIndexOfObjectBelowLink);
+    if ((0x08 | obj_below) == 0) {
+        recoil_amount = 0x08;
+    }
+    ConfigureEntityRecoil(gb, bc, recoil_amount);
 }
 
-/* ===== func_003_7565 (03:7565) ===== */
-void func_003_7565(GBState *gb) {
+/* ===== func_003_6F5C (03:6F5C) ===== */
+void func_003_6F5C(GBState *gb, uint16_t bc) {
     if (!gb) return;
 
-    /* call GetVectorTowardsLink */
-    GetVectorTowardsLink(gb, NULL, NULL);
+    /* call func_003_6F93 */
+    func_003_6F93(gb);
 
-    /* ldh a, [hMultiPurpose0]; ldh [hLinkSpeedY], a */
-    gb_write_hram(gb, hLinkSpeedY, gb_read_hram(gb, hMultiPurpose0));
+    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], b */
+    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x00);
+}
 
-    /* ldh a, [hMultiPurpose1]; ldh [hLinkSpeedX], a */
-    gb_write_hram(gb, hLinkSpeedX, gb_read_hram(gb, hMultiPurpose1));
+/* ===== func_003_6DDF (03:6DDF) ===== */
+void func_003_6DDF(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* call ResetPegasusBoots */
+    ResetPegasusBoots(gb);
+
+    /* ld a, $10; ld [wIgnoreLinkCollisionsCountdown], a */
+    gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x10);
+
+    /* ldh a, [hActiveEntityType]; ld e, $18; cp ENTITY_ROLLING_BONES_BAR; jp z, label_003_6FA7 */
+    uint8_t entity_type = gb_read_hram(gb, hActiveEntityType);
+    if (entity_type == ENTITY_ROLLING_BONES_BAR) {
+        label_003_6FA7(gb, 0x18);
+        return;
+    }
+
+    /* cp ENTITY_FACADE; jr nz, .facadeEnd */
+    if (entity_type == ENTITY_FACADE) {
+        /* ld hl, wEntitiesCollisionsTable; add hl, bc; ld [hl], $01 */
+        gb_write(gb, wEntitiesCollisionsTable + bc, 0x01);
+    }
+
+    /* cp ENTITY_MOLDORM; ld a, $14; jr nz, .moldormEnd; ld a, $18; .moldormEnd: call func_003_7565 */
+    uint8_t length = (entity_type == ENTITY_MOLDORM) ? 0x18 : 0x14;
+    func_003_7565_with_length(gb, length);
+
+    /* ldh a, [hIsSideScrolling]; and a; jr nz, jr_003_6E0E */
+    if (gb_read_hram(gb, hIsSideScrolling) == 0) {
+        return;
+    }
+
+    /* jr_003_6E0E: ldh a, [hLinkPhysicsModifier]; cp $02; jr z, setCarryAndReturn */
+    if (gb_read_hram(gb, hLinkPhysicsModifier) == 0x02) {
+        return;
+    }
+
+    /* call GetEntityXDistanceToLink_03; ld d, b; ld hl, Data_003_6E0C; add hl, de; ld a, [hl]; ldh [hLinkSpeedX], a */
+    uint8_t dir_x = 0;
+    uint8_t dist_x = 0;
+    GetEntityXDistanceToLink_03(gb, &dir_x, &dist_x);
+
+    uint8_t speed_x = Data_003_6E0C[dir_x & 1];
+    gb_write_hram(gb, hLinkSpeedX, speed_x);
+
+    /* ld a, $F4; ldh [hLinkSpeedY], a */
+    gb_write_hram(gb, hLinkSpeedY, 0xF4);
+
+    /* xor a; ldh [hLinkPhysicsModifier], a; scf; ret */
+    gb_write_hram(gb, hLinkPhysicsModifier, 0x00);
 }
 
 /* ===== func_003_75A2 (03:75A2) ===== */
@@ -714,4 +733,99 @@ void ConfigureEntityRecoil(GBState *gb, uint16_t bc, uint8_t recoil_amount) {
 
     /* jp StartIgnoringHitsForEntity */
     StartIgnoringHitsForEntity_idx(gb, bc);
+}
+
+/* ===== ReturnIfNonInteractive_03 (03:7F78) ===== */
+bool ReturnIfNonInteractive_03(GBState *gb, bool allow_inactive_entity) {
+    if (!gb) return true;
+
+    /* ldh a, [hActiveEntityStatus]; cp ENTITY_STATUS_ACTIVE; jr nz, .skip */
+    if (!allow_inactive_entity) {
+        uint8_t status = gb_read_hram(gb, hActiveEntityStatus);
+        if (status != ENTITY_STATUS_ACTIVE) {
+            return true;
+        }
+    }
+
+    /* .allowInactiveEntity: ld a, [wGameplayType] */
+    uint8_t gameplay_type = gb_read(gb, wGameplayType);
+
+    /* cp GAMEPLAY_WORLD_MAP; jr z, .skip */
+    if (gameplay_type == GAMEPLAY_WORLD_MAP) {
+        return true;
+    }
+
+    /* cp GAMEPLAY_CREDITS; jr z, .creditsEnd */
+    if (gameplay_type != GAMEPLAY_CREDITS) {
+        /* cp GAMEPLAY_WORLD; jr nz, .skip */
+        if (gameplay_type != GAMEPLAY_WORLD) {
+            return true;
+        }
+
+        /* ld a, [wTransitionSequenceCounter]; cp $04; jr nz, .skip */
+        if (gb_read(gb, wTransitionSequenceCounter) != 0x04) {
+            return true;
+        }
+    }
+
+    /* .creditsEnd: ld a, [wDialogState]; ld hl, wC1A8; or [hl]; ld hl, wInventoryAppearing; or [hl]; jr nz, .skip */
+    uint8_t dialog_state = gb_read(gb, wDialogState);
+    uint8_t c1a8 = gb_read(gb, wC1A8);
+    uint8_t inventory_appearing = gb_read(gb, wInventoryAppearing);
+    if ((dialog_state | c1a8 | inventory_appearing) != 0) {
+        return true;
+    }
+
+    /* ld a, [wRoomTransitionState]; and a; jr z, .return */
+    uint8_t room_transition = gb_read(gb, wRoomTransitionState);
+    if (room_transition != 0) {
+        return true;
+    }
+
+    /* .return */
+    return false;
+}
+
+/* ===== ApplyRecoilIfNeeded_03 (03:7FA9) ===== */
+void ApplyRecoilIfNeeded_03(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld a, [hl]; and a; ret z */
+    uint8_t countdown = gb_read(gb, wEntitiesIgnoreHitsCountdownTable + bc);
+    if (countdown == 0) {
+        return;
+    }
+
+    /* dec a; ld [hl], a */
+    countdown--;
+    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, countdown);
+
+    /* call label_3E8E */
+    label_3E8E(gb, bc);
+
+    /* Temporarily replace entity speed by recoil speed */
+    uint8_t orig_speed_x = gb_read(gb, wEntitiesSpeedXTable + bc);
+    uint8_t orig_speed_y = gb_read(gb, wEntitiesSpeedYTable + bc);
+
+    uint8_t recoil_x = gb_read(gb, wEntitiesRecoilVelocityX + bc);
+    uint8_t recoil_y = gb_read(gb, wEntitiesRecoilVelocityY + bc);
+    gb_write(gb, wEntitiesSpeedXTable + bc, recoil_x);
+    gb_write(gb, wEntitiesSpeedYTable + bc, recoil_y);
+
+    /* call UpdateEntityPosWithSpeed_03 */
+    UpdateEntityPosWithSpeed_03(gb, bc);
+
+    /* ld hl, wEntitiesOptions1Table; add hl, bc; ld a, [hl]; and ENTITY_OPT1_ALLOW_OUT_OF_BOUNDS; jr nz, .restoreOriginalSpeed */
+    uint8_t options1 = gb_read(gb, wEntitiesOptions1Table + bc);
+    if ((options1 & ENTITY_OPT1_ALLOW_OUT_OF_BOUNDS) == 0) {
+        /* call ApplyEntityInteractionWithBackground */
+        ApplyEntityInteractionWithBackground(gb, bc);
+    }
+
+    /* .restoreOriginalSpeed: restore original speeds */
+    gb_write(gb, wEntitiesSpeedYTable + bc, orig_speed_y);
+    gb_write(gb, wEntitiesSpeedXTable + bc, orig_speed_x);
+
+    /* call StopEntityRecoilOnCollision */
+    StopEntityRecoilOnCollision(gb, bc);
 }

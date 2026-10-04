@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~75.5%
-* **Number of Verified Functions**: 985
-* **Number of Decompiled Functions**: 785
-* **Number Remaining**: ~227 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Physics & Vector Math)
-* **Current Task**: Batch 88: Bank 3 Entity Distance, Direction, Vector, Speed, and Recoil Physics Functions
-* **Last Completed Task**: Implementation and verification of 10 Bank 3 core physics/math functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, replacing previous stubs/placeholders with exact assembly implementations (`GetEntityXDistanceToLink_03`, `GetEntityYDistanceToLink_03`, `GetEntityDirectionToLink_03`, `GetVectorTowardsLink`, `ApplyVectorTowardsLink`, `AddEntitySpeedToPos_03`, `AddEntityZSpeedToPos_03`, `UpdateEntityPosWithSpeed_03`, `ConfigureEntityRecoil`, `StartIgnoringHitsForEntity`).
-* **Last Update Timestamp**: 2026-10-04T00:18:00+00:00
+* **Current Overall Progress**: ~76.2%
+* **Number of Verified Functions**: 995
+* **Number of Decompiled Functions**: 795
+* **Number Remaining**: ~217 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Physics & Collision)
+* **Current Task**: Batch 89: Bank 3 Entity Collision, Interactivity, Damage Reactions, and Recoil Physics
+* **Last Completed Task**: Implementation and verification of 10 Bank 3 entity collision, interactivity, reaction, and recoil physics functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, removing legacy placeholder stubs from `src/home/entities.c` (`ReturnIfNonInteractive_03`, `ApplyRecoilIfNeeded_03`, `func_003_6C6B`, `func_003_6CC0`, `label_003_6FA7`, `func_003_7565`, `func_003_6F93`, `func_003_6F5C`, `func_003_6DDF`, `CheckLinkCollisionWithEnemy`).
+* **Last Update Timestamp**: 2026-10-04T00:46:00+00:00
 
 ---
 
@@ -691,3 +691,35 @@
   - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 985 verified functions passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Fixed-point 4.4 accumulator math and Bresenham slope division loop verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.
+
+---
+
+## Batch 89 Verification — Bank 3 Entity Collision, Interactivity, Damage Reactions, and Recoil Physics
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:7F78`-`03:7FA8`, `03:7FA9`-`03:7FF4`, `03:6C6B`-`03:6C71`, `03:6CC0`-`03:6CD4`, `03:6FA7`-`03:6FB8`, `03:7565`-`03:7570`, `03:6F93`-`03:6FC9`, `03:6F5C`-`03:6F64`, `03:6DDF`-`03:6E27`, `03:6C72`-`03:6CCD`). Implemented and verified 10 core entity collision, interactivity check, damage reaction, vector propulsion, and recoil physics functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, with declarations in `include/bank3/entities_physics.h` and `include/bank3/entities_collision.h`. Removed obsolete legacy placeholder stubs from `src/home/entities.c`. Added HRAM constant `hIndexOfObjectBelowLink` ($FFE9) in `include/constants/memory.h`. Corrected bitwise logic in `func_003_6C6B` and entity hitbox calculation in `CheckLinkCollisionWithEnemy`. All 995 verified functions passing.
+
+- **Functions Implemented & Verified:**
+  - `ReturnIfNonInteractive_03` (`03:7F78`-`03:7FA8`): Validates entity interactivity before executing handler code. Skips execution if entity is inactive (unless `allow_inactive_entity` is set), if gameplay type is `GAMEPLAY_WORLD_MAP` (7) or anything other than `GAMEPLAY_WORLD` (11) (credits (1) allowed), if transition counter != 4, if dialog state, `wC1A8`, or `wInventoryAppearing` are active, or if room transition state != 0.
+  - `ApplyRecoilIfNeeded_03` (`03:7FA9`-`03:7FF4`): Applies sword hit recoil velocity to entity while ignoring hits countdown is active. If `wEntitiesIgnoreHitsCountdownTable[bc]` is zero, returns immediately. Otherwise decrements countdown, calls `label_3E8E`, temporarily replaces speed X/Y with recoil velocity X/Y, executes `UpdateEntityPosWithSpeed_03`, checks `ENTITY_OPT1_ALLOW_OUT_OF_BOUNDS` flag before calling `ApplyEntityInteractionWithBackground`, restores original speeds, and invokes `StopEntityRecoilOnCollision`.
+  - `func_003_6C6B` (`03:6C6B`-`03:6C71`): Rotates bit 0 of `hFrameCounter ^ c` into CF (`rra`). Returns false (carry clear) on even parity to process collision only on alternating frames, and true (carry set) on odd parity.
+  - `func_003_6CC0` (`03:6CC0`-`03:6CD4`): Checks if entity is harmless (`wEntitiesPhysicsFlagsTable[bc] & ENTITY_PHYSICS_HARMLESS`) or if Link is currently in falling animation state (`hLinkAnimationState` in range `0x4E..0x4F`). Returns true (carry set) to skip inflicting damage to Link; otherwise returns false.
+  - `label_003_6FA7` (`03:6FA7`-`03:6FB8`): Directional horizontal knockback helper for Link. Queries Link X distance and direction relative to entity; applies `+magnitude` to `hLinkSpeedX` if Link is to the right (`dir == 0`) or `-magnitude` if Link is to the left (`dir != 0`); zeroes `hLinkSpeedY`.
+  - `func_003_7565` / `func_003_7565_with_length` (`03:7565`-`03:7570`): Computes vector towards Link scaled to input length (default `0x12`), and assigns resulting Y vector component to `hLinkSpeedY` and X vector component to `hLinkSpeedX`.
+  - `func_003_6F93` (`03:6F93`-`03:6FC9`): Triggers `JINGLE_BUMP`, resets Pegasus boots, sets `wIgnoreLinkCollisionsCountdown = 0x0C`. For `ENTITY_ROLLING_BONES_BAR`, applies magnitude `0x10` via `label_003_6FA7`. Otherwise applies vector speed `0x12` to Link and configures active entity recoil via `ConfigureEntityRecoil(gb, bc, 0x20)`.
+  - `func_003_6F5C` (`03:6F5C`-`03:6F64`): Wrapper invoking `func_003_6F93` and resetting `wEntitiesIgnoreHitsCountdownTable[bc]` to 0.
+  - `func_003_6DDF` (`03:6DDF`-`03:6E27`): Link collision recoil handler. Resets Pegasus boots, sets ignore collisions countdown to `$10`. For `ENTITY_ROLLING_BONES_BAR`, dispatches `label_003_6FA7` with magnitude `$18`. For `ENTITY_FACADE`, sets collision flag. Dispatches `func_003_7565` with length `$18` (Moldorm) or `$14` (default). In side-scrolling rooms, applies horizontal knockback from `Data_003_6E0C` (`{ 0x0C, 0xF4 }`), sets vertical speed to `$F4`, and clears Link physics modifier.
+  - `CheckLinkCollisionWithEnemy` (`03:6C72`-`03:6CCD`): Hitbox collision detector between Link and entity. Returns false if Link is airborne (`hLinkPositionZ > 0`) or non-interactive (`wLinkMotionState >= LINK_MOTION_TYPE_NON_INTERACTIVE`). Reads hitbox X/Y offsets and half-width/height radii from `wEntitiesHitboxPositionTable + (bc * 4)`. Computes absolute unsigned distance deltas along X and Y axes, returning false if either exceeds radius + 4. Evaluates `func_003_6CC0`: if harmless or Link in falling animation, returns true without damage; otherwise applies damage to Link via `ApplyLinkCollisionWithEnemy`.
+
+- **Tests:** Extended `tests/bank3/test_entities_physics.c` with dedicated test suites:
+  - `test_func_003_6C6B`: verifies parity check across multiple frame counter and entity index combinations.
+  - `test_func_003_6CC0`: verifies harmless entity flag and Link falling animation states (0x4E, 0x4F).
+  - `test_label_003_6FA7`: verifies rightward positive knockback and leftward negated knockback for magnitudes 0x10 and 0x18.
+  - `test_func_003_7565`: verifies scaled vector propulsion applied to `hLinkSpeedX` and `hLinkSpeedY`.
+  - `test_func_003_6F93_and_6F5C`: verifies Rolling Bones bar special case, recoil setup, and countdown clearing.
+  - `test_func_003_6DDF`: verifies countdown setup ($10), Moldorm/Facade special cases, and side-scrolling bounce speeds.
+  - `test_ReturnIfNonInteractive`: verifies active/inactive status, world map, credits, transition sequence counter, dialog, C1A8, inventory appearing, and room transition states.
+  - `test_ApplyRecoilIfNeeded`: verifies countdown decrement, position displacement via recoil velocity, speed preservation, and collision stop callback.
+  - `test_CheckLinkCollisionWithEnemy`: verifies airborne Link bypass, non-interactive bypass, out-of-range hitbox rejection, overlapping hitbox collision, harmless entity immunity, and damage application.
+  - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 995 verified functions passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Fixed-point velocity updates and hitbox bounding box tests verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.

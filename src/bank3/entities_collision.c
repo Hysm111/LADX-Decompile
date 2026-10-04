@@ -1,4 +1,5 @@
 #include "bank3/entities_collision.h"
+#include "bank3/entities_physics.h"
 #include "constants/entities.h"
 #include "constants/memory.h"
 #include "constants/rooms.h"
@@ -20,70 +21,51 @@ bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
     if (!gb) return false;
 
     /* If Link is in the air, skip the collision check */
-    /* ldh a, [hLinkPositionZ]; and a; jr nz, CheckLinkCollisionWithProjectile.return */
     if (gb_read_hram(gb, hLinkPositionZ) != 0) {
         return false;
     }
 
-    /* If Link is not interactive, return. */
-    /* ld a, [wLinkMotionState]; cp LINK_MOTION_TYPE_NON_INTERACTIVE; jr nc, CheckLinkCollisionWithProjectile.return */
-    if (gb_read(gb, wLinkMotionState) >= LINK_MOTION_UNSTUCKING) {
+    /* If Link is not interactive, return */
+    if (gb_read(gb, wLinkMotionState) >= LINK_MOTION_TYPE_NON_INTERACTIVE) {
         return false;
     }
 
-    /* push bc; c = (entity index * 4); sla c; sla c; ld hl, wEntitiesHitboxPositionTable; add hl, bc; pop bc */
-    uint8_t c = (bc & 0xFF) << 2;
-    uint16_t hl = wEntitiesHitboxPositionTable + c;
+    /* Hitbox offset table: 4 bytes per entity:
+       byte 0: X offset
+       byte 1: X half-width radius
+       byte 2: Y offset
+       byte 3: Y half-height radius */
+    uint16_t hitbox_addr = (uint16_t)(wEntitiesHitboxPositionTable + ((bc & 0xFF) << 2));
 
-    /* hActiveEntityPosX + wEntitiesHitboxPositionTable[c + 0] */
-    /* ldh a, [hActiveEntityPosX]; add [hl]; push hl; ld hl, hLinkPositionX; sub [hl]; sub $08; cp $80; jr c, .jr_6C98; cpl; inc a */
-    int16_t diff_x = (int16_t)gb_read_hram(gb, hActiveEntityPosX) + gb_read(gb, hl + 0);
-    diff_x -= gb_read_hram(gb, hLinkPositionX);
-    diff_x -= 8;
-    if (diff_x < 0) diff_x = -diff_x;
-    if (diff_x >= 0x80) {
+    /* Check X distance */
+    uint8_t ent_x = (uint8_t)(gb_read_hram(gb, hActiveEntityPosX) + gb_read(gb, hitbox_addr + 0));
+    uint8_t diff_x = (uint8_t)(ent_x - gb_read_hram(gb, hLinkPositionX) - 8);
+    if ((diff_x & 0x80) != 0) {
+        diff_x = (uint8_t)(~diff_x + 1);
+    }
+    uint8_t limit_x = (uint8_t)(gb_read(gb, hitbox_addr + 1) + 4);
+    if (diff_x >= limit_x) {
         return false;
     }
 
-    /* .jr_6C98: pop hl; push af; inc hl; ld a, $04; add [hl]; ld e, a; pop af; cp e; jp nc, jr_003_6CCB */
-    int16_t diff_y = (int16_t)gb_read_hram(gb, hActiveEntityVisualPosY) + gb_read(gb, hl + 1) + 4;
-    diff_y -= gb_read_hram(gb, hLinkPositionY);
-    diff_y -= 8;
-    if (diff_y < 0) diff_y = -diff_y;
-    if (diff_y >= 0x80) {
+    /* Check Y distance */
+    uint8_t ent_y = (uint8_t)(gb_read_hram(gb, hActiveEntityVisualPosY) + gb_read(gb, hitbox_addr + 2));
+    uint8_t diff_y = (uint8_t)(ent_y - gb_read_hram(gb, hLinkPositionY) - 8);
+    if ((diff_y & 0x80) != 0) {
+        diff_y = (uint8_t)(~diff_y + 1);
+    }
+    uint8_t limit_y = (uint8_t)(gb_read(gb, hitbox_addr + 3) + 4);
+    if (diff_y >= limit_y) {
         return false;
     }
 
-    /* inc hl; ldh a, [hActiveEntityVisualPosY]; add [hl]; push hl; ld hl, hLinkPositionY; sub [hl]; sub $08; cp $80; jr c, .jr_6CB5; cpl; inc a */
-    diff_y = (int16_t)gb_read_hram(gb, hActiveEntityVisualPosY) + gb_read(gb, hl + 2) + 4;
-    diff_y -= gb_read_hram(gb, hLinkPositionY);
-    diff_y -= 8;
-    if (diff_y < 0) diff_y = -diff_y;
-    if (diff_y >= 0x80) {
-        return false;
+    /* Collision occurred! Check if harmless or Link in falling animation */
+    if (func_003_6CC0(gb, bc)) {
+        return true;
     }
 
-    /* .jr_6CB5: pop hl; push af; inc hl; ld a, $04; add [hl]; ld e, a; pop af; cp e; jr nc, jr_003_6CCB */
-    diff_y = (int16_t)gb_read_hram(gb, hActiveEntityVisualPosY) + gb_read(gb, hl + 3) + 4;
-    diff_y -= gb_read_hram(gb, hLinkPositionY);
-    diff_y -= 8;
-    if (diff_y < 0) diff_y = -diff_y;
-    if (diff_y >= 0x80) {
-        return false;
-    }
-
-    /* func_003_6CC0: ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld a, [hl]; and ENTITY_PHYSICS_HARMLESS; jr z, jr_003_6CCD */
-    uint8_t physics = gb_read(gb, wEntitiesPhysicsFlagsTable + bc);
-    if ((physics & ENTITY_PHYSICS_HARMLESS) != 0) {
-        /* Harmless entity - no collision */
-        return false;
-    }
-
-    /* jr_003_6CCD: ldh a, [hLinkAnimationState]; sub $4E; cp $02; jr c, jr_003_6CC9 */
-    if (gb_read_hram(gb, hLinkAnimationState) < 0x4E || gb_read_hram(gb, hLinkAnimationState) >= 0x50) {
-        return false;
-    }
-
+    /* Apply damages to Link */
+    ApplyLinkCollisionWithEnemy(gb, bc);
     return true;
 }
 

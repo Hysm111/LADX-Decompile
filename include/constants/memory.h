@@ -281,6 +281,7 @@
 #define hMultiPurposeG               0xFFE8
 #define hRoomBank                    0xFFE8
 #define hMultiPurposeH               0xFFE9
+#define hIndexOfObjectBelowLink      0xFFE9
 #define hSwitchBlockNeedingUpdate    0xFFBB
 #define hActiveEntityStatus                   0xFFEA
 #define hActiveEntityType                     0xFFEB
