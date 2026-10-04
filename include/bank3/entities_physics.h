@@ -40,15 +40,21 @@ void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t bc);
 
 /* GetVectorTowardsLink (03:8508) */
 void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y);
+void GetVectorTowardsLink_with_length(GBState *gb, uint8_t length, uint8_t *val0, uint8_t *val1);
+
+/* ApplyVectorTowardsLink (03:7EC7) */
+void ApplyVectorTowardsLink(GBState *gb, uint16_t bc);
 
 /* GetEntityDirectionToLink_03 (03:8691) - Returns direction to Link */
 uint8_t GetEntityDirectionToLink_03(GBState *gb);
 
 /* GetEntityXDistanceToLink_03 (03:8647) */
 void GetEntityXDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d);
+void GetEntityXDistanceToLink_03_idx(GBState *gb, uint16_t bc, uint8_t *e, uint8_t *d);
 
 /* GetEntityYDistanceToLink_03 (03:8668) */
 void GetEntityYDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d);
+void GetEntityYDistanceToLink_03_idx(GBState *gb, uint16_t bc, uint8_t *e, uint8_t *d);
 
 /* UpdateEntityPosWithSpeed_03 (03:8729) */
 void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t bc);
@@ -65,6 +71,13 @@ bool ReturnIfNonInteractive_03(GBState *gb, bool allowInactiveEntity);
 /* ApplyRecoilIfNeeded_03 (03:8850) */
 void ApplyRecoilIfNeeded_03(GBState *gb, uint16_t bc);
 
+/* ConfigureEntityRecoil (03:6FCC) */
+void ConfigureEntityRecoil(GBState *gb, uint16_t bc, uint8_t recoil_amount);
+
+/* StartIgnoringHitsForEntity (03:73DB) */
+void StartIgnoringHitsForEntity(GBState *gb);
+void StartIgnoringHitsForEntity_idx(GBState *gb, uint16_t bc);
+
 /* Helper Functions (03:4F12+) */
 void func_003_4F12(GBState *gb, uint16_t bc);
 void SetHiddenDroppableOptions1(GBState *gb, uint16_t bc);
@@ -73,8 +86,6 @@ void EntityShiftPosition_shiftBy8(GBState *gb, uint16_t bc, uint16_t sign_table,
 
 /* Trampoline/Callback Stubs (declared in home/entities.h) */
 void ResetPegasusBoots(GBState *gb);
-void StartIgnoringHitsForEntity(GBState *gb);
-void ConfigureEntityRecoil(GBState *gb, uint16_t bc, uint8_t recoil_amount);
 void IncrementEntityState(GBState *gb, uint16_t bc);
 void ClearEntitySpeed(GBState *gb, uint16_t bc);
 void UnloadEntity(GBState *gb, uint16_t bc);

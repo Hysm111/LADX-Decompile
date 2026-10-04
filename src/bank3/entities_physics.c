@@ -1,4 +1,5 @@
 #include "bank3/entities_physics.h"
+#include "bank3/entities_collision.h"
 #include "constants/entities.h"
 #include "constants/memory.h"
 #include "constants/rooms.h"
@@ -145,7 +146,7 @@ void func_003_6B7B(GBState *gb, uint16_t bc) {
     }
 
     /* call AddEntityZSpeedToPos_03 */
-    AddEntitySpeedToPos_03(gb, bc);
+    AddEntityZSpeedToPos_03(gb, bc);
 
     /* ld hl, wEntitiesSpeedZTable; add hl, bc; ld a, [hl]; sub $02; ld [hl], a */
     uint8_t speed_z = gb_read(gb, wEntitiesSpeedZTable + bc);
@@ -342,14 +343,13 @@ void func_003_7565(GBState *gb) {
     if (!gb) return;
 
     /* call GetVectorTowardsLink */
-    uint8_t x, y;
-    GetVectorTowardsLink(gb, &x, &y);
+    GetVectorTowardsLink(gb, NULL, NULL);
 
     /* ldh a, [hMultiPurpose0]; ldh [hLinkSpeedY], a */
-    gb_write_hram(gb, hLinkSpeedY, x);
+    gb_write_hram(gb, hLinkSpeedY, gb_read_hram(gb, hMultiPurpose0));
 
     /* ldh a, [hMultiPurpose1]; ldh [hLinkSpeedX], a */
-    gb_write_hram(gb, hLinkSpeedX, y);
+    gb_write_hram(gb, hLinkSpeedX, gb_read_hram(gb, hMultiPurpose1));
 }
 
 /* ===== func_003_75A2 (03:75A2) ===== */
@@ -460,42 +460,258 @@ void ApplySwordIntersectionWithObjects(GBState *gb, uint16_t bc) {
     (void)bc;
 }
 
-/* ===== GetVectorTowardsLink (03:8508) ===== */
-void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y) {
+/* ===== GetEntityXDistanceToLink_03 (03:7ED9) ===== */
+void GetEntityXDistanceToLink_03_idx(GBState *gb, uint16_t bc, uint8_t *e, uint8_t *d) {
     if (!gb) return;
-    /* Placeholder - gets vector towards Link */
-    (void)x; (void)y;
+    uint8_t dir = DIRECTION_RIGHT;
+    uint8_t link_x = gb_read_hram(gb, hLinkPositionX);
+    uint8_t ent_x = gb_read(gb, wEntitiesPosXTable + bc);
+    uint8_t diff = (uint8_t)(link_x - ent_x);
+    if ((diff & 0x80) != 0) {
+        dir = (uint8_t)(dir + 1); /* DIRECTION_LEFT */
+    }
+    if (e) *e = dir;
+    if (d) *d = diff;
 }
 
-/* ===== GetEntityDirectionToLink_03 (03:8691) ===== */
-uint8_t GetEntityDirectionToLink_03(GBState *gb) {
-    if (!gb) return 0;
-
-    /* call GetEntityXDistanceToLink_03 */
-    uint8_t x_dist, y_dist;
-    GetEntityXDistanceToLink_03(gb, &x_dist, &y_dist); // Placeholder implementation
-    
-    /* For now, return a default direction */
-    return 0;
-}
-
-/* ===== GetEntityXDistanceToLink_03 (03:8647) ===== */
 void GetEntityXDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d) {
     if (!gb) return;
-    /* Placeholder - gets X distance to Link */
-    (void)e; (void)d;
+    uint16_t bc = gb_read(gb, wActiveEntityIndex);
+    GetEntityXDistanceToLink_03_idx(gb, bc, e, d);
 }
 
-/* ===== GetEntityYDistanceToLink_03 (03:8668) ===== */
+/* ===== GetEntityYDistanceToLink_03 (03:7EE9) ===== */
+void GetEntityYDistanceToLink_03_idx(GBState *gb, uint16_t bc, uint8_t *e, uint8_t *d) {
+    if (!gb) return;
+    uint8_t dir = DIRECTION_UP;
+    uint8_t link_y = gb_read_hram(gb, hLinkPositionY);
+    uint8_t ent_y = gb_read(gb, wEntitiesPosYTable + bc);
+    uint8_t diff = (uint8_t)(link_y - ent_y);
+    uint8_t ent_z = gb_read(gb, wEntitiesPosZTable + bc);
+    diff = (uint8_t)(diff + ent_z);
+    if ((diff & 0x80) == 0) {
+        dir = (uint8_t)(dir + 1); /* DIRECTION_DOWN */
+    }
+    if (e) *e = dir;
+    if (d) *d = diff;
+}
+
 void GetEntityYDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d) {
     if (!gb) return;
-    /* Placeholder - gets Y distance to Link */
-    (void)e; (void)d;
+    uint16_t bc = gb_read(gb, wActiveEntityIndex);
+    GetEntityYDistanceToLink_03_idx(gb, bc, e, d);
+}
+
+/* ===== GetEntityDirectionToLink_03 (03:7EFE) ===== */
+uint8_t GetEntityDirectionToLink_03(GBState *gb) {
+    if (!gb) return 0;
+    uint8_t dir_x = 0;
+    uint8_t dist_x = 0;
+    GetEntityXDistanceToLink_03(gb, &dir_x, &dist_x);
+    gb_write_hram(gb, hMultiPurpose0, dir_x);
+
+    uint8_t abs_x = dist_x;
+    if ((abs_x & 0x80) != 0) {
+        abs_x = (uint8_t)(~abs_x + 1);
+    }
+
+    uint8_t dir_y = 0;
+    uint8_t dist_y = 0;
+    GetEntityYDistanceToLink_03(gb, &dir_y, &dist_y);
+    gb_write_hram(gb, hMultiPurpose1, dir_y);
+
+    uint8_t abs_y = dist_y;
+    if ((abs_y & 0x80) != 0) {
+        abs_y = (uint8_t)(~abs_y + 1);
+    }
+
+    uint8_t result_dir;
+    if (abs_y >= abs_x) {
+        result_dir = gb_read_hram(gb, hMultiPurpose1);
+    } else {
+        result_dir = gb_read_hram(gb, hMultiPurpose0);
+    }
+    return result_dir;
+}
+
+/* ===== GetVectorTowardsLink (03:7E45) ===== */
+void GetVectorTowardsLink_with_length(GBState *gb, uint8_t length, uint8_t *val0, uint8_t *val1) {
+    if (!gb) return;
+
+    gb_write_hram(gb, hMultiPurpose1, length);
+    if (length == 0) {
+        gb_write_hram(gb, hMultiPurpose0, 0x00);
+        if (val0) *val0 = 0x00;
+        if (val1) *val1 = 0x00;
+        return;
+    }
+
+    uint8_t dir_y = 0;
+    uint8_t dist_y = 0;
+    GetEntityYDistanceToLink_03(gb, &dir_y, &dist_y);
+    /* dec e; dec e; ld a, e; ldh [hMultiPurpose2], a */
+    uint8_t dy_flag = (uint8_t)(dir_y - 2); /* 0 if UP (dy < 0), 1 if DOWN (dy >= 0) */
+    gb_write_hram(gb, hMultiPurpose2, dy_flag);
+
+    uint8_t abs_y = dist_y;
+    if ((abs_y & 0x80) != 0) {
+        abs_y = (uint8_t)(~abs_y + 1);
+    }
+    gb_write_hram(gb, hMultiPurposeC, abs_y);
+
+    uint8_t dir_x = 0;
+    uint8_t dist_x = 0;
+    GetEntityXDistanceToLink_03(gb, &dir_x, &dist_x);
+    /* ldh [hMultiPurpose3], a (where a is e: 1 if LEFT, 0 if RIGHT) */
+    gb_write_hram(gb, hMultiPurpose3, dir_x);
+
+    uint8_t abs_x = dist_x;
+    if ((abs_x & 0x80) != 0) {
+        abs_x = (uint8_t)(~abs_x + 1);
+    }
+    gb_write_hram(gb, hMultiPurposeD, abs_x);
+
+    uint8_t swapped = 0;
+    /* cp [hl] where a = [hMultiPurposeD] (abs_x) and [hl] = [hMultiPurposeC] (abs_y) */
+    /* if abs_x < abs_y, swap them and swapped = 1 */
+    if (gb_read_hram(gb, hMultiPurposeD) < gb_read_hram(gb, hMultiPurposeC)) {
+        swapped = 1;
+        uint8_t tmp_c = gb_read_hram(gb, hMultiPurposeC);
+        uint8_t tmp_d = gb_read_hram(gb, hMultiPurposeD);
+        gb_write_hram(gb, hMultiPurposeD, tmp_c);
+        gb_write_hram(gb, hMultiPurposeC, tmp_d);
+    }
+
+    uint8_t acc = 0;
+    uint8_t res0 = 0;
+    uint8_t counter = gb_read_hram(gb, hMultiPurpose1);
+    uint8_t small = gb_read_hram(gb, hMultiPurposeC);
+    uint8_t large = gb_read_hram(gb, hMultiPurposeD);
+
+    while (counter > 0) {
+        uint16_t sum = (uint16_t)acc + small;
+        if (sum > 0xFF) {
+            acc = (uint8_t)(sum - large);
+            res0++;
+        } else {
+            uint8_t s = (uint8_t)sum;
+            if (s >= large) {
+                s = (uint8_t)(s - large);
+                res0++;
+            }
+            acc = s;
+        }
+        counter--;
+    }
+    gb_write_hram(gb, hMultiPurposeB, acc);
+    gb_write_hram(gb, hMultiPurpose0, res0);
+
+    /* If X and Y were swapped before, swap back */
+    if (swapped != 0) {
+        uint8_t val_0 = gb_read_hram(gb, hMultiPurpose0);
+        uint8_t val_1 = gb_read_hram(gb, hMultiPurpose1);
+        gb_write_hram(gb, hMultiPurpose0, val_1);
+        gb_write_hram(gb, hMultiPurpose1, val_0);
+    }
+
+    /* If dy < 0 (hMultiPurpose2 == 0), negate Y */
+    if (gb_read_hram(gb, hMultiPurpose2) == 0) {
+        uint8_t y_val = gb_read_hram(gb, hMultiPurpose0);
+        gb_write_hram(gb, hMultiPurpose0, (uint8_t)(~y_val + 1));
+    }
+
+    /* If dx < 0 (hMultiPurpose3 != 0), negate X */
+    if (gb_read_hram(gb, hMultiPurpose3) != 0) {
+        uint8_t x_val = gb_read_hram(gb, hMultiPurpose1);
+        gb_write_hram(gb, hMultiPurpose1, (uint8_t)(~x_val + 1));
+    }
+
+    if (val0) *val0 = gb_read_hram(gb, hMultiPurpose0);
+    if (val1) *val1 = gb_read_hram(gb, hMultiPurpose1);
+}
+
+void GetVectorTowardsLink(GBState *gb, uint8_t *x, uint8_t *y) {
+    if (!gb) return;
+    uint8_t len = gb_read_hram(gb, hMultiPurpose1);
+    if (len == 0) {
+        len = 0x12; /* Default length */
+    }
+    GetVectorTowardsLink_with_length(gb, len, x, y);
+}
+
+/* ===== ApplyVectorTowardsLink (03:7EC7) ===== */
+void ApplyVectorTowardsLink(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+    GetVectorTowardsLink(gb, NULL, NULL);
+    gb_write(gb, wEntitiesSpeedYTable + bc, gb_read_hram(gb, hMultiPurpose0));
+    gb_write(gb, wEntitiesSpeedXTable + bc, gb_read_hram(gb, hMultiPurpose1));
+}
+
+/* ===== AddEntitySpeedToPos_03 (03:7F32) ===== */
+void AddEntitySpeedToPos_03(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+    uint8_t speed = gb_read(gb, wEntitiesSpeedXTable + bc);
+    if (speed == 0) return;
+
+    /* swap a; and $F0 */
+    uint8_t speed_frac = (uint8_t)(((speed << 4) | (speed >> 4)) & 0xF0);
+    uint8_t acc = gb_read(gb, wEntitiesSpeedXAccTable + bc);
+    uint16_t sum = (uint16_t)acc + speed_frac;
+    gb_write(gb, wEntitiesSpeedXAccTable + bc, (uint8_t)sum);
+    uint8_t carry = (sum > 0xFF) ? 1 : 0;
+
+    /* Sign extension for high nibble */
+    uint8_t e = (speed & 0x80) ? 0xF0 : 0x00;
+    uint8_t int_part = (uint8_t)((((speed << 4) | (speed >> 4)) & 0x0F) | e);
+
+    uint8_t pos = gb_read(gb, wEntitiesPosXTable + bc);
+    pos = (uint8_t)(pos + int_part + carry);
+    gb_write(gb, wEntitiesPosXTable + bc, pos);
 }
 
 /* ===== AddEntityZSpeedToPos_03 (03:8790) ===== */
 void AddEntityZSpeedToPos_03(GBState *gb, uint16_t bc) {
     if (!gb) return;
-    /* Placeholder - adds entity Z speed to position */
-    (void)bc;
+    uint8_t speed = gb_read(gb, wEntitiesSpeedZTable + bc);
+    if (speed == 0) return;
+
+    uint8_t speed_frac = (uint8_t)(((speed << 4) | (speed >> 4)) & 0xF0);
+    uint8_t acc = gb_read(gb, wEntitiesSpeedZAccTable + bc);
+    uint16_t sum = (uint16_t)acc + speed_frac;
+    gb_write(gb, wEntitiesSpeedZAccTable + bc, (uint8_t)sum);
+    uint8_t carry = (sum > 0xFF) ? 1 : 0;
+
+    uint8_t e = (speed & 0x80) ? 0xF0 : 0x00;
+    uint8_t int_part = (uint8_t)((((speed << 4) | (speed >> 4)) & 0x0F) | e);
+
+    uint8_t pos = gb_read(gb, wEntitiesPosZTable + bc);
+    pos = (uint8_t)(pos + int_part + carry);
+    gb_write(gb, wEntitiesPosZTable + bc, pos);
+}
+
+/* ===== UpdateEntityPosWithSpeed_03 (03:8729) ===== */
+void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+    AddEntitySpeedToPos_03(gb, bc);
+    AddEntitySpeedToPos_03(gb, (uint16_t)(bc + 0x10));
+}
+
+/* ===== ConfigureEntityRecoil (03:6FCC) ===== */
+void ConfigureEntityRecoil(GBState *gb, uint16_t bc, uint8_t recoil_amount) {
+    if (!gb) return;
+
+    GetVectorTowardsLink_with_length(gb, recoil_amount, NULL, NULL);
+
+    /* ldh a, [hMultiPurpose0]; cpl; inc a; ld hl, wEntitiesRecoilVelocityY; add hl, bc; ld [hl], a */
+    uint8_t vec_y = gb_read_hram(gb, hMultiPurpose0);
+    uint8_t recoil_y = (uint8_t)(~vec_y + 1);
+    gb_write(gb, wEntitiesRecoilVelocityY + bc, recoil_y);
+
+    /* ldh a, [hMultiPurpose1]; cpl; inc a; ld hl, wEntitiesRecoilVelocityX; add hl, bc; ld [hl], a */
+    uint8_t vec_x = gb_read_hram(gb, hMultiPurpose1);
+    uint8_t recoil_x = (uint8_t)(~vec_x + 1);
+    gb_write(gb, wEntitiesRecoilVelocityX + bc, recoil_x);
+
+    /* jp StartIgnoringHitsForEntity */
+    StartIgnoringHitsForEntity_idx(gb, bc);
 }

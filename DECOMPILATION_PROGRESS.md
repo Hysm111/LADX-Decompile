@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~74.8%
-* **Number of Verified Functions**: 975
-* **Number of Decompiled Functions**: 775
-* **Number Remaining**: ~237 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Module Refactoring)
-* **Current Task**: Batch 85: Bank 3 Entity Module Refactoring & Quality Improvements
-* **Last Completed Task**: Refactor monolithic `src/bank3/entities.c` (4,495 lines) into 14 modular source files with corresponding headers, fix duplicate symbols, strict C11 compliance, and all quality issues. Added 14 header files and 14 source modules. All 975+ verified functions passing.
-* **Last Update Timestamp**: 2026-09-25T00:00:00+03:00
+* **Current Overall Progress**: ~75.5%
+* **Number of Verified Functions**: 985
+* **Number of Decompiled Functions**: 785
+* **Number Remaining**: ~227 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Physics & Vector Math)
+* **Current Task**: Batch 88: Bank 3 Entity Distance, Direction, Vector, Speed, and Recoil Physics Functions
+* **Last Completed Task**: Implementation and verification of 10 Bank 3 core physics/math functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, replacing previous stubs/placeholders with exact assembly implementations (`GetEntityXDistanceToLink_03`, `GetEntityYDistanceToLink_03`, `GetEntityDirectionToLink_03`, `GetVectorTowardsLink`, `ApplyVectorTowardsLink`, `AddEntitySpeedToPos_03`, `AddEntityZSpeedToPos_03`, `UpdateEntityPosWithSpeed_03`, `ConfigureEntityRecoil`, `StartIgnoringHitsForEntity`).
+* **Last Update Timestamp**: 2026-10-04T00:18:00+00:00
 
 ---
 
@@ -660,3 +660,34 @@
 - **Tests:** Full Debug build/CTest PASS with assertions enabled; strict C11 `-Wall -Wextra -Werror -pedantic` syntax checks PASS; fresh Debug build/full CTest in a clean directory PASS; `git diff --check` PASS. All 975+ verified functions passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. All cross-bank calls remain callback-modeled. No behavior changes - only code organization and quality improvements. The refactoring preserves all existing VERIFIED function bodies and production callers unchanged.
+
+---
+
+## Batch 88 Verification — Bank 3 Entity Distance, Direction, Vector, Speed, and Recoil Physics Functions
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:7E45`-`03:7F77`, `03:6FCC`-`03:6FE1`, `03:73DB`-`03:73E6`). Implemented and verified 10 core entity physics, distance calculation, vector math, speed accumulation, and recoil configuration functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, with declarations in `include/bank3/entities_physics.h` and `include/bank3/entities_collision.h`. Removed obsolete placeholder stubs from `src/home/entities.c`. Added HRAM constants `hMultiPurposeB` ($FFE2), `hMultiPurposeC` ($FFE3), `hMultiPurposeD` ($FFE4) in `include/constants/memory.h`. Fixed `func_003_6B7B` to call `AddEntityZSpeedToPos_03` instead of `AddEntitySpeedToPos_03`. All 985 verified functions passing.
+
+- **Functions Implemented & Verified:**
+  - `GetEntityXDistanceToLink_03` (`03:7ED9`-`03:7EE8`): Computes Link's horizontal distance from entity (`hLinkPositionX - wEntitiesPosXTable[bc]`). Returns `d = diff`, `e = DIRECTION_RIGHT` (0) if Link is at/to the right of entity, or `e = DIRECTION_LEFT` (1) if Link is to the left. Supports both active-entity and indexed (`_idx`) calls.
+  - `GetEntityYDistanceToLink_03` (`03:7EE9`-`03:7EFD`): Computes Link's vertical distance from entity taking altitude into account (`(hLinkPositionY - wEntitiesPosYTable[bc]) + wEntitiesPosZTable[bc]`). Returns `d = diff`, `e = DIRECTION_UP` (2) if Link is above the entity, or `e = DIRECTION_DOWN` (3) if Link is below/at entity level. Supports both active-entity and indexed (`_idx`) calls.
+  - `GetEntityDirectionToLink_03` (`03:7EFE`-`03:7F24`): Determines entity's cardinal direction towards Link by comparing `abs(dy)` with `abs(dx)`. Stores horizontal direction in `hMultiPurpose0` and vertical direction in `hMultiPurpose1`. If `abs(dy) >= abs(dx)`, vertical direction takes precedence; otherwise horizontal direction is returned.
+  - `GetVectorTowardsLink` / `GetVectorTowardsLink_with_length` (`03:7E45`-`03:7EC6`): Computes normalized vector towards Link scaled to input length. Handles zero-length early return (clearing `hMultiPurpose0`/`1`). Computes absolute dx/dy, determines primary axis, and executes DDA slope division loop using `hMultiPurposeB` accumulator and `hMultiPurposeC`/`D` distance bounds. Inverts sign components based on relative position flags in `hMultiPurpose2`/`hMultiPurpose3`. Outputs vector Y in `hMultiPurpose0` and vector X in `hMultiPurpose1`.
+  - `ApplyVectorTowardsLink` (`03:7EC7`-`03:7ED8`): Calls `GetVectorTowardsLink` and applies the resulting vector components to entity speeds: writes `hMultiPurpose0` (Y) to `wEntitiesSpeedYTable + bc` and `hMultiPurpose1` (X) to `wEntitiesSpeedXTable + bc`.
+  - `AddEntitySpeedToPos_03` (`03:7F32`-`03:7F5D`): Fixed-point 4.4 accumulator speed-to-position update. Reads speed from `wEntitiesSpeedXTable + bc`. If 0, returns immediately without modifying state. Adds speed fraction nibble (`(speed << 4) & 0xF0`) to subpixel accumulator `wEntitiesSpeedXAccTable + bc`. Computes signed integer displacement with sign extension (`0xF0` or `0x00`) and adds integer part plus accumulator carry flag to `wEntitiesPosXTable + bc`.
+  - `AddEntityZSpeedToPos_03` (`03:7F5E`-`03:7F77`): Applies identical fixed-point subpixel accumulator arithmetic to entity vertical altitude: accumulates fractional speed into `wEntitiesSpeedZAccTable + bc` and adds signed integer speed plus carry to `wEntitiesPosZTable + bc`.
+  - `UpdateEntityPosWithSpeed_03` (`03:7F25`-`03:7F31`): Dispatches `AddEntitySpeedToPos_03` for X coordinate (`bc`), then increments pointer by `$10` and dispatches `AddEntitySpeedToPos_03` for Y coordinate (`bc + $10`, mapping to `wEntitiesSpeedYTable`, `wEntitiesSpeedYAccTable`, and `wEntitiesPosYTable`).
+  - `ConfigureEntityRecoil` (`03:6FCC`-`03:6FE1`): Configures entity recoil velocities from sword hit. Calls `GetVectorTowardsLink_with_length` with input recoil amount, negates the resulting Y vector component into `wEntitiesRecoilVelocityY + bc`, negates X vector component into `wEntitiesRecoilVelocityX + bc`, then calls `StartIgnoringHitsForEntity_idx`.
+  - `StartIgnoringHitsForEntity` / `StartIgnoringHitsForEntity_idx` (`03:73DB`-`03:73E6`): Clears `wEntitiesPowerRecoilingTable + bc` to 0 and sets `wEntitiesIgnoreHitsCountdownTable + bc` to `$0A`.
+
+- **Tests:** Added dedicated unit test suite in `tests/bank3/test_entities_physics.c` (registered in `CMakeLists.txt`, `tests/bank3/test_bank3.h`, `tests/test_bank3.c`). Exhaustive tests verify:
+  - `GetEntityXDistanceToLink_03`: left, right, identical positions, and indexed calls.
+  - `GetEntityYDistanceToLink_03`: above, below, same Y, and non-zero altitude Z calculations.
+  - `GetEntityDirectionToLink_03`: all 4 cardinal directions, and 45-degree diagonal vertical precedence.
+  - `GetVectorTowardsLink`: zero length, pure horizontal (left/right), pure vertical (up/down), diagonal, and `ApplyVectorTowardsLink` speed table writes.
+  - `AddEntitySpeedToPos_03`: zero speed, fractional accumulator carry over 2 frames, negative fractional speeds, and sign extension.
+  - `AddEntityZSpeedToPos_03`: zero Z speed, positive and negative Z displacement.
+  - `UpdateEntityPosWithSpeed_03`: simultaneous X and Y fixed-point updates with offsets.
+  - `ConfigureEntityRecoil` & `StartIgnoringHitsForEntity`: recoil negation, countdown setup ($0A), and power recoil reset.
+  - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 985 verified functions passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Fixed-point 4.4 accumulator math and Bresenham slope division loop verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.

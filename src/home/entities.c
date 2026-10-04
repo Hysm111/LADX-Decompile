@@ -1231,36 +1231,10 @@ void ApplyRecoilIfNeeded_03(GBState *gb, uint16_t entity_index) {
     StopEntityRecoilOnCollision(gb, entity_index);
 }
 
-void UpdateEntityPosWithSpeed_03(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-
-    /* Update X position */
-    int16_t pos_x = (int16_t)gb_read(gb, (uint16_t)(wEntitiesPosXSignTable + entity_index)) << 8;
-    pos_x |= gb_read(gb, (uint16_t)(wEntitiesPosXTable + entity_index));
-    int8_t speed_x = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedXTable + entity_index));
-    pos_x += speed_x;
-    gb_write(gb, (uint16_t)(wEntitiesPosXTable + entity_index), (uint8_t)pos_x);
-    gb_write(gb, (uint16_t)(wEntitiesPosXSignTable + entity_index), (uint8_t)(pos_x >> 8));
-
-    /* Update Y position */
-    int16_t pos_y = (int16_t)gb_read(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index)) << 8;
-    pos_y |= gb_read(gb, (uint16_t)(wEntitiesPosYTable + entity_index));
-    int8_t speed_y = (int8_t)gb_read(gb, (uint16_t)(wEntitiesSpeedYTable + entity_index));
-    pos_y += speed_y;
-    gb_write(gb, (uint16_t)(wEntitiesPosYTable + entity_index), (uint8_t)pos_y);
-    gb_write(gb, (uint16_t)(wEntitiesPosYSignTable + entity_index), (uint8_t)(pos_y >> 8));
-}
-
 void func_003_6E2B(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Helper function for EntityStunnedHandler */
     (void)entity_index;
-}
-
-void AddEntitySpeedToPos_03(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Same as UpdateEntityPosWithSpeed_03 */
-    UpdateEntityPosWithSpeed_03(gb, entity_index);
 }
 
 void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index) {
@@ -1275,13 +1249,6 @@ void func_003_51C9(GBState *gb, uint16_t entity_index, const uint8_t *data_ptr, 
     (void)entity_index;
     (void)data_ptr;
     (void)b_val;
-}
-
-void ConfigureEntityRecoil(GBState *gb, uint16_t entity_index, uint8_t a_val) {
-    if (!gb) return;
-    /* Stub: Configures entity recoil after collision */
-    (void)entity_index;
-    (void)a_val;
 }
 
 void CopyLinkFinalPositionToActivePosition(GBState *gb) {

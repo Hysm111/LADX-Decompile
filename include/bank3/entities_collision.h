@@ -33,17 +33,9 @@ void AddEntitySpeedToPos_03(GBState *gb, uint16_t bc);
 /* AddEntityZSpeedToPos_03 (03:8790) */
 void AddEntityZSpeedToPos_03(GBState *gb, uint16_t bc);
 
-/* GetEntityDirectionToLink_03 (03:8691) - Returns direction to Link */
-uint8_t GetEntityDirectionToLink_03(GBState *gb);
-
-/* GetEntityXDistanceToLink_03 (03:8647) */
-void GetEntityXDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d);
-
-/* GetEntityYDistanceToLink_03 (03:8668) */
-void GetEntityYDistanceToLink_03(GBState *gb, uint8_t *e, uint8_t *d);
-
 /* StartIgnoringHitsForEntity (03:73DB) */
 void StartIgnoringHitsForEntity(GBState *gb);
+void StartIgnoringHitsForEntity_idx(GBState *gb, uint16_t bc);
 
 /* ResetPegasusBoots (03:0CB6) */
 void ResetPegasusBoots(GBState *gb);

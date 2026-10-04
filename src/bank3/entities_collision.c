@@ -532,9 +532,18 @@ void func_003_73EB(GBState *gb, uint16_t bc) {
 
 
 /* ===== StartIgnoringHitsForEntity (03:73DB) ===== */
+void StartIgnoringHitsForEntity_idx(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    /* ld hl, wEntitiesPowerRecoilingTable; add hl, bc; ld [hl], b */
+    gb_write(gb, wEntitiesPowerRecoilingTable + bc, 0x00);
+
+    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], $0A */
+    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x0A);
+}
+
 void StartIgnoringHitsForEntity(GBState *gb) {
     if (!gb) return;
-    /* Placeholder implementation */
-    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], $10 */
-    /* This would set the ignore hits countdown for the active entity */
+    uint16_t bc = gb_read(gb, wActiveEntityIndex);
+    StartIgnoringHitsForEntity_idx(gb, bc);
 }

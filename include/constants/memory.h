@@ -269,6 +269,9 @@
 #define hMultiPurpose8               0xFFDF
 #define hMultiPurpose9               0xFFE0
 #define hMultiPurposeA               0xFFE1
+#define hMultiPurposeB               0xFFE2
+#define hMultiPurposeC               0xFFE3
+#define hMultiPurposeD               0xFFE4
 #define hMultiPurposeF               0xFFE6
 #define hFreeWarpDataAddress         0xFFE6
 #define hStaircase                   0xFFAC

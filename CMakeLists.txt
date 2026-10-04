@@ -132,6 +132,7 @@ add_executable(ladx_tests
     tests/bank2/test_link_motion_helpers.c
     tests/bank2/test_room_transition.c
     tests/bank3/test_entities.c
+    tests/bank3/test_entities_physics.c
     tests/test_bank3.c
 )
 
