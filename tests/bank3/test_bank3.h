@@ -3,6 +3,7 @@
 
 void test_bank3_entities(void);
 void test_bank3_entities_physics(void);
+void test_bank3_entities_collision(void);
 
 void run_bank3_tests(void);
 

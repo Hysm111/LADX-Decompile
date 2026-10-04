@@ -1152,12 +1152,6 @@ void LoadRoomEntities(GBState *gb,
 
 /* Bank 3 entity helper callbacks */
 
-void func_003_6E2B(GBState *gb, uint16_t entity_index) {
-    if (!gb) return;
-    /* Stub: Helper function for EntityStunnedHandler */
-    (void)entity_index;
-}
-
 void EntityCheckThrowAtTriggers(GBState *gb, uint16_t entity_index) {
     if (!gb) return;
     /* Stub: Check if thrown entity hit a trigger */

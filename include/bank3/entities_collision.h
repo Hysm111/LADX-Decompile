@@ -4,9 +4,11 @@
 #include "gb.h"
 
 /* Collision and Damage Handlers (03:6C72-03:7267) */
+extern const uint8_t EntityDamagesForGroup[53];
 bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc);
 void ApplyLinkCollisionWithEnemy(GBState *gb, uint16_t bc);
 void DefaultEnemyDamageCollisionHandler(GBState *gb, uint16_t bc);
+void func_003_6E2B(GBState *gb, uint16_t bc);
 void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc);
 
 /* func_003_6B7B is declared in entities_physics.h */

@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~76.2%
-* **Number of Verified Functions**: 995
-* **Number of Decompiled Functions**: 795
-* **Number Remaining**: ~217 functions
-* **Current Subsystem**: ROM Bank 3 (Entity Physics & Collision)
-* **Current Task**: Batch 89: Bank 3 Entity Collision, Interactivity, Damage Reactions, and Recoil Physics
-* **Last Completed Task**: Implementation and verification of 10 Bank 3 entity collision, interactivity, reaction, and recoil physics functions in `src/bank3/entities_physics.c` and `src/bank3/entities_collision.c`, removing legacy placeholder stubs from `src/home/entities.c` (`ReturnIfNonInteractive_03`, `ApplyRecoilIfNeeded_03`, `func_003_6C6B`, `func_003_6CC0`, `label_003_6FA7`, `func_003_7565`, `func_003_6F93`, `func_003_6F5C`, `func_003_6DDF`, `CheckLinkCollisionWithEnemy`).
-* **Last Update Timestamp**: 2026-10-04T00:46:00+00:00
+* **Current Overall Progress**: ~76.4%
+* **Number of Verified Functions**: 998
+* **Number of Decompiled Functions**: 798
+* **Number Remaining**: ~214 functions
+* **Current Subsystem**: ROM Bank 3 (Entity Damage & Collision Handlers)
+* **Current Task**: Batch 90: Bank 3 Entity Damage and Collision Handlers
+* **Last Completed Task**: Implementation and verification of 3 Bank 3 entity damage and collision handling functions (`ApplyLinkCollisionWithEnemy`, `DefaultEnemyDamageCollisionHandler`, `func_003_6E2B`) and the 53-byte `EntityDamagesForGroup` damage data table in `src/bank3/entities_collision.c`, removing legacy placeholder stub `func_003_6E2B` from `src/home/entities.c`.
+* **Last Update Timestamp**: 2026-10-04T01:06:00+00:00
 
 ---
 
@@ -723,3 +723,53 @@
   - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 995 verified functions passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Fixed-point velocity updates and hitbox bounding box tests verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.
+
+---
+
+## Batch 90 Verification — Bank 3 Entity Damage and Collision Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:6CD5`-`03:6E27`, `03:6E28`-`03:6F92`) and `LADX-Disassembly/src/data/entities/damages.asm` (`03:47F1`-`03:4825`). Implemented and verified 3 core entity damage and collision handling functions (`ApplyLinkCollisionWithEnemy`, `DefaultEnemyDamageCollisionHandler`, `func_003_6E2B`) and the 53-byte `EntityDamagesForGroup` nominal damage table in `src/bank3/entities_collision.c`, with declarations in `include/bank3/entities_collision.h`. Removed obsolete `func_003_6E2B` placeholder stub from `src/home/entities.c`. Added constants `MUSIC_OWL` ($22) in `include/constants/audio.h`, `WAVE_SFX_POWER_HIT` ($11) in `include/constants/sfx.h`, `ENTITY_ANTI_FAIRY` ($15), `ENTITY_SPIKED_BEETLE` ($2C), `ENTITY_PAIRODD_PROJECTILE` ($58), `ENTITY_STAR` ($9C), `ENTITY_FLAME_SHOOTER` ($E2) in `include/constants/entities.h`, and `wIsLinkImmuneToCollisionDamage` ($C1C6), `wGuardianAcornCounter` ($D471) in `include/constants/memory.h`. All 998 verified functions passing.
+
+- **Data Tables Implemented:**
+  - `EntityDamagesForGroup` (`03:47F1`-`03:4825`): 53-byte ROM lookup table mapping entity health group (`wEntitiesHealthGroup[bc]`) to nominal damage dealt to Link upon collision.
+  - `Data_003_6F65` / `Data_003_6F69` (`03:6F65`-`03:6F6C`): Directional X and Y knockback speeds applied to Spiked Beetle when flipped by Link collision (`{ 16, -16, 0, 0 }` and `{ 0, 0, -16, 16 }`).
+
+- **Functions Implemented & Verified:**
+  - `ApplyLinkCollisionWithEnemy` (`03:6CD5`-`03:6DDF`): Complete assembly-accurate entity collision and damage dispatcher for Link.
+    - Cheep-Cheep Jumping (`ENTITY_CHEEP_CHEEP_JUMPING`): Queries vertical relative distance via `GetEntityYDistanceToLink_03_idx`. When Link is above (`e == DIRECTION_UP`), Link bounces on the fish (`wIsLinkInTheAir = 2`, `hLinkSpeedY = 0xF0`, `ClearEntitySpeed`, `WAVE_SFX_FLOOR_SWITCH`, entity state becomes `ENTITY_STATUS_ACTIVE`), taking no damage. If Link is not above, skips Goomba check and proceeds to Gel / damage.
+    - Goomba (`ENTITY_GOOMBA`): If Link is airborne (`wIsLinkInTheAir != 0`), evaluates falling condition: if `hLinkCountdown != 0` or falling (top-down: `(hLinkVelocityZ ^ 0x80) & 0x80 == 0`, negative altitude velocity; side-scrolling: `hLinkSpeedY & 0x80 == 0`, positive downward screen speed), Link squishes the Goomba (`hLinkCountdown = 2`, `wEntitiesStateTable[bc] = 2`, transition countdown = `$30`, `WAVE_SFX_FLOOR_SWITCH`, Link bounces: `hLinkVelocityZ = 0x10` top-down or `hLinkSpeedY = 0xF0` side-scrolling) without taking damage. If rising or on ground, Link takes damage.
+    - Gel (`ENTITY_GEL`): Latches onto Link (`transition countdown = $80`, `wEntitiesStateTable[bc] = 4`), taking no instant damage.
+    - Countdown Bypass: Cue Ball (`ENTITY_CUE_BALL`) and Rolling Bones Bar (`ENTITY_ROLLING_BONES_BAR`) bypass `wIgnoreLinkCollisionsCountdown != 0`. All other entities return immediately if countdown is active.
+    - Moblin King (`ENTITY_MOBLIN_KING`): In state 4, transitions to hurt state 8, plays `WAVE_SFX_LINK_HURT`.
+    - Damage Immunity Check: Returns early without damage if `(wInvincibilityCounter | wIsLinkImmuneToCollisionDamage | wLinkPlayingOcarinaCountdown | wDialogGotItem) != 0`.
+    - Nominal Damage Calculation: Reads nominal damage from `EntityDamagesForGroup[wEntitiesHealthGroup[bc]]`. If Link wears the Blue Tunic (`wTunicType == TUNIC_BLUE`), damage is halved (`e >>= 1`). If Link has an active Guardian Acorn (`wActivePowerUp == ACTIVE_POWER_UP_GUARDIAN_ACORN`), damage of 4 is reduced to 0; other damage amounts are halved.
+    - Health & Counters: Adds computed damage to `wSubtractHealthBuffer`, sets `wInvincibilityCounter = $50`, clears `wGuardianAcornCounter = 0`.
+    - Power-Up Loss: If a power-up is active, increments `wPowerUpHits`; upon reaching 3 hits, drops power-up (`wActivePowerUp = 0`) and restores default background music (`wMusicTrackToPlay = hDefaultMusicTrack`) unless in a boss battle or playing owl music.
+    - Recoil Fallthrough: Falls directly into `func_003_6DDF(gb, bc)`.
+  - `DefaultEnemyDamageCollisionHandler` (`03:6E28`-`03:6E2A`): Core enemy collision entry point. Invokes `func_003_6C6B(gb, bc)` to test frame parity (`(hFrameCounter ^ c) & 1`). On odd parity frames, executes Link collision check `CheckLinkCollisionWithEnemy(gb, bc)`. In all frames, proceeds to `func_003_6E2B(gb, bc)` for item/weapon damage handling.
+  - `func_003_6E2B` (`03:6E2B`-`03:6F92`): Comprehensive enemy weapon/item damage collision processor.
+    - Early Rejections: Returns if weapon is inactive (`wC140 == 0`), if entity is flashing (`wEntitiesFlashCountdownTable[bc]` in range `1..$17`), if entity slot already registered a hit this frame (`(wC1AC - 1) == bc`), or if ignoring hits countdown is active (`wEntitiesIgnoreHitsCountdownTable[bc] != 0`).
+    - Hitbox Bounding Box Collision: Computes absolute distance between entity hitbox center and weapon center on both X and Y axes; returns if either distance exceeds the sum of half-radii (`wC141 + radius_x` or `wC143 + radius_y`).
+    - Grabbable Entity: If `wEntitiesPhysicsFlagsTable[bc] & ENTITY_PHYSICS_GRABBABLE`, dispatches `PickableCollectIfNeeded(gb, bc)`.
+    - Sword Collision: If `wSwordCollisionEnabled != 0`, dispatches sword damage handler `ApplySwordDamagesToEnemy(gb, bc)`.
+    - Non-Sword Collision: Saves Pegasus boots status to `hIndexOfObjectBelowLink`, calls `ResetPegasusBoots(gb)`.
+      - Flame Shooter (`ENTITY_FLAME_SHOOTER`): If Link has Level 2 shield and faces UP, Link recoils (`hLinkSpeedY = 4`), sets ignore collision countdown to 8, and increments entity state. Otherwise collision is ignored.
+      - Bouncing Bombite (`ENTITY_BOUNCING_BOMBITE`): In state 2, negates X and Y speeds, sets transition countdown to `$40` and private countdown 1 to `$08`. In other states, executes bump recoil `func_003_6F93(gb)`.
+      - Knight (`ENTITY_KNIGHT`): If `ENTITY_OPT1_SWORD_CLINK_OFF` is set, negates private state 1, calls `func_003_6F5C`, sets private countdown 1 to `$0C`, sets `wC160 = 1`, resets `wSwordCharge = 0`, and produces sword poke VFX/SFX via `label_D15`. Otherwise triggers bump recoil.
+      - Pairodd Projectile (`ENTITY_PAIRODD_PROJECTILE`): Triggers bump recoil and sets `wEntitiesCollisionsTable[bc] = $FF`.
+      - Spiked Beetle (`ENTITY_SPIKED_BEETLE`): If already in state 3, clears ignore hits countdown via `func_003_6F5C`. Otherwise flips beetle: sets state 3, vertical speed Z to `$20`, transition countdown to `$FF`, assigns directional speeds from `Data_003_6F65` and `Data_003_6F69` based on `hLinkDirection`, and calls `func_003_6F5C`.
+      - Star (`ENTITY_STAR`) / Anti-Fairy (`ENTITY_ANTI_FAIRY`): Negates vertical speed if facing vertically or horizontal speed if facing horizontally, then invokes `func_003_6F5C`.
+      - Facade (`ENTITY_FACADE`): Triggers bump recoil and marks collision `$FF`.
+      - Default: Triggers bump recoil `func_003_6F93(gb)`.
+
+- **Tests:** Created dedicated test suite in `tests/bank3/test_entities_collision.c` (registered in `CMakeLists.txt`, `tests/bank3/test_bank3.h`, `tests/test_bank3.c`):
+  - `test_EntityDamagesForGroup`: validates array size (53) and values across boundary indices.
+  - `test_ApplyLinkCollision_CheepCheep`: validates Cheep-Cheep vertical bounce (`wIsLinkInTheAir = 2`, speed Y `$F0`, state 5, floor switch SFX, 0 damage).
+  - `test_ApplyLinkCollision_Goomba`: validates top-down falling stomp (negative velocity Z), side-scrolling falling stomp (positive speed Y), rising airborne rejection (takes damage), and ground collision (takes damage).
+  - `test_ApplyLinkCollision_SpecialEntities`: validates Gel latching (state 4, countdown `$80`), ignore collision countdown blocking regular enemies, Cue Ball / Rolling Bones Bar countdown bypass, and Moblin King state 4 hurt response.
+  - `test_ApplyLinkCollision_DamageCalculations`: validates invincibility counter, ocarina playing, got item dialog, and immunity flag protection; nominal health subtraction; Blue Tunic 50% damage reduction; Guardian Acorn 4 -> 0 reduction and 50% halving; power-up 3-hit expiration and music track restoration; and ignore collisions countdown clearing between consecutive hits.
+  - `test_DefaultEnemyDamageCollisionHandler_Parity`: validates alternating frame parity dispatch of `CheckLinkCollisionWithEnemy`.
+  - `test_func_003_6E2B_Branches`: validates inactive weapon, flashing entity, duplicate hit slot, and ignore hits early returns; Flame Shooter shield block; Bouncing Bombite speed reversal; Knight clink reaction; Spiked Beetle flip physics; and Pairodd projectile collision marking.
+  - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 998 verified functions passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Damage arithmetic, hitbox overlap bounding boxes, and frame parity bitwise rotations verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.

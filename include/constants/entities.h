@@ -188,6 +188,11 @@
 #define ENTITY_SLIME_EYE             0x5B
 #define ENTITY_KNIGHT                0x51
 #define ENTITY_FINAL_NIGHTMARE       0xE6
+#define ENTITY_ANTI_FAIRY            0x15
+#define ENTITY_SPIKED_BEETLE         0x2C
+#define ENTITY_PAIRODD_PROJECTILE    0x58
+#define ENTITY_STAR                  0x9C
+#define ENTITY_FLAME_SHOOTER         0xE2
 #define ENTITY_NONE                  0xFF
 
 #define ENTITY_OPT1_IS_BOSS          0x80

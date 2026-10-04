@@ -669,7 +669,7 @@ static void test_CheckLinkCollisionWithEnemy(void) {
     gb_write(&gb, wInvincibilityCounter, 0x00);
     bool col = CheckLinkCollisionWithEnemy(&gb, bc);
     assert(col == true);
-    assert(gb_read(&gb, wInvincibilityCounter) == 0x40);
+    assert(gb_read(&gb, wInvincibilityCounter) == 0x50);
     assert(gb_read_hram(&gb, hWaveSfx) == WAVE_SFX_LINK_HURT);
 
     /* Case 5: Harmless entity */

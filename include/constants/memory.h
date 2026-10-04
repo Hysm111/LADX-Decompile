@@ -667,5 +667,7 @@
 #define wIgnoreLinkCollisionsCountdown        0xC13E
 #define wLinkGroundStatus                     0xC11F
 #define wInventoryAppearing                   0xC14F
+#define wIsLinkImmuneToCollisionDamage        0xC1C6
+#define wGuardianAcornCounter                 0xD471
 
 #endif /* LADX_CONSTANTS_MEMORY_H */

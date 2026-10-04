@@ -14,7 +14,35 @@
 #include "home/bank.h"
 #include "home/audio.h"
 #include "home/gameplay.h"
+#include "home/vfx.h"
+#include "bank3/entities_droppable.h"
 #include "constants/audio.h"
+
+/* Amount of damages an entity deals when colliding with Link (03:47F1) */
+const uint8_t EntityDamagesForGroup[53] = {
+    0x04, 0x04, 0x08, 0x08, 0x18, 0x08, 0x04, 0x08,
+    0x10, 0x08, 0x10, 0x08, 0x08, 0x04, 0x08, 0x08,
+    0x08, 0x08, 0x08, 0x08, 0x08, 0x0C, 0x00, 0x00,
+    0x08, 0x08, 0x08, 0x0C, 0x0C, 0x14, 0x10, 0x20,
+    0x08, 0x08, 0x04, 0x04, 0x04, 0x04, 0x04, 0x00,
+    0x14, 0x08, 0x04, 0x08, 0x04, 0x04, 0x08, 0x08,
+    0x04, 0x04, 0x04, 0x08, 0x08
+};
+
+/* Directional speed tables for Spiked Beetle collision (03:6F65, 03:6F69) */
+static const uint8_t Data_003_6F65[4] = {
+    0x10, /* RIGHT:  16 */
+    0xF0, /* LEFT:  -16 */
+    0x00, /* UP:      0 */
+    0x00  /* DOWN:    0 */
+};
+
+static const uint8_t Data_003_6F69[4] = {
+    0x00, /* RIGHT:   0 */
+    0x00, /* LEFT:    0 */
+    0xF0, /* UP:    -16 */
+    0x10  /* DOWN:   16 */
+};
 
 /* ===== CheckLinkCollisionWithEnemy (03:6C72) ===== */
 bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
@@ -74,93 +102,73 @@ void ApplyLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
     if (!gb) return;
 
     /* Special case when a cheep-cheep hurts Link */
-    /* ldh a, [hActiveEntityType]; cp ENTITY_CHEEP_CHEEP_JUMPING; jr nz, .cheepCheepEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_CHEEP_CHEEP_JUMPING) {
-        /* call GetEntityYDistanceToLink_03; ld a, e; cp $02; jr nz, .goombaEnd */
-        /* Simplified: just check if close vertically */
-        /* call IncrementEntityState; ld [hl], ENTITY_STATUS_ACTIVE; ld a, $02; ld [wIsLinkInTheAir], a; ld a, $F0; ldh [hLinkSpeedY], a; call ClearEntitySpeed; ld a, WAVE_SFX_FLOOR_SWITCH; ldh [hWaveSfx], a; ret */
-        IncrementEntityState(gb, bc);
-        gb_write(gb, wEntitiesStatusTable + bc, ENTITY_STATUS_ACTIVE);
-        gb_write(gb, wIsLinkInTheAir, 0x02);
-        gb_write_hram(gb, hLinkSpeedY, 0xF0);
-        ClearEntitySpeed(gb, bc);
-        gb_write_hram(gb, hWaveSfx, WAVE_SFX_FLOOR_SWITCH);
-        return;
+        uint8_t dir = 0, dist = 0;
+        GetEntityYDistanceToLink_03_idx(gb, bc, &dir, &dist);
+        if (dir == DIRECTION_UP) {
+            IncrementEntityState(gb, bc);
+            gb_write(gb, wEntitiesStateTable + bc, ENTITY_STATUS_ACTIVE);
+            gb_write(gb, wIsLinkInTheAir, 0x02);
+            gb_write_hram(gb, hLinkSpeedY, 0xF0);
+            ClearEntitySpeed(gb, bc);
+            gb_write_hram(gb, hWaveSfx, WAVE_SFX_FLOOR_SWITCH);
+            return;
+        }
+        goto goombaEnd;
     }
 
     /* Special case when a Goomba hurts Link */
-    /* ldh a, [hActiveEntityType]; cp ENTITY_GOOMBA; jr nz, .goombaEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_GOOMBA) {
-        /* ld a, [wIsLinkInTheAir]; and a; jr z, .goombaEnd */
-        if (gb_read(gb, wIsLinkInTheAir) == 0) {
-            return;
-        }
-        /* ldh a, [hLinkCountdown]; and a; jr nz, .jr_003_6D1B */
-        if (gb_read_hram(gb, hLinkCountdown) != 0) {
-            goto jr_003_6D1B;
-        }
-        /* ldh a, [hIsSideScrolling]; and a; jr nz, .jr_003_6D15 */
-        if (gb_read_hram(gb, hIsSideScrolling) != 0) {
-            goto jr_003_6D15;
-        }
-        /* ldh a, [hLinkVelocityZ]; xor $80; jr .jr_003_6D17 */
-        /* .jr_003_6D15: ldh a, [hLinkSpeedY] */
-    jr_003_6D15:
-        /* .jr_003_6D17: and $80; jr nz, .goombaEnd */
-        if ((gb_read_hram(gb, hLinkSpeedY) & 0x80) != 0) {
-            return;
-        }
+        if (gb_read(gb, wIsLinkInTheAir) != 0) {
+            bool squish = false;
+            if (gb_read_hram(gb, hLinkCountdown) != 0) {
+                squish = true;
+            } else {
+                uint8_t check_val;
+                if (gb_read_hram(gb, hIsSideScrolling) != 0) {
+                    check_val = gb_read_hram(gb, hLinkSpeedY);
+                } else {
+                    check_val = (uint8_t)(gb_read_hram(gb, hLinkVelocityZ) ^ 0x80);
+                }
+                if ((check_val & 0x80) == 0) {
+                    squish = true;
+                }
+            }
 
-    jr_003_6D1B:
-        /* ld a, $02; ldh [hLinkCountdown], a */
-        gb_write_hram(gb, hLinkCountdown, 0x02);
-        /* ld hl, wEntitiesStateTable; add hl, bc; ld [hl], $02 */
-        gb_write(gb, wEntitiesStateTable + bc, 0x02);
-        /* call GetEntityTransitionCountdown; ld [hl], $30 */
-        gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x30);
-        /* ld a, WAVE_SFX_FLOOR_SWITCH; ldh [hWaveSfx], a */
-        gb_write_hram(gb, hWaveSfx, WAVE_SFX_FLOOR_SWITCH);
-        /* ldh a, [hIsSideScrolling]; and a; jr nz, .jr_003_6D38 */
-        if (gb_read_hram(gb, hIsSideScrolling) != 0) {
-            goto jr_003_6D38;
+            if (squish) {
+                gb_write_hram(gb, hLinkCountdown, 0x02);
+                gb_write(gb, wEntitiesStateTable + bc, 0x02);
+                gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x30);
+                gb_write_hram(gb, hWaveSfx, WAVE_SFX_FLOOR_SWITCH);
+                if (gb_read_hram(gb, hIsSideScrolling) != 0) {
+                    gb_write_hram(gb, hLinkSpeedY, 0xF0);
+                } else {
+                    gb_write_hram(gb, hLinkVelocityZ, 0x10);
+                }
+                return;
+            }
         }
-        /* ld a, $10; ldh [hLinkVelocityZ], a; ret */
-        gb_write_hram(gb, hLinkVelocityZ, 0x10);
-        return;
-
-    jr_003_6D38:
-        /* ld a, $F0; ldh [hLinkSpeedY], a; ret */
-        gb_write_hram(gb, hLinkSpeedY, 0xF0);
-        return;
     }
 
+goombaEnd:
     /* Special case when Link collides with a Gel */
-    /* ldh a, [hActiveEntityType]; cp ENTITY_GEL; jr nz, .gelEnd */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_GEL) {
-        /* call GetEntityTransitionCountdown; ld [hl], $80; call IncrementEntityState; ld [hl], $04; ret */
         gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x80);
         IncrementEntityState(gb, bc);
         gb_write(gb, wEntitiesStateTable + bc, 0x04);
         return;
     }
 
-    /* cp ENTITY_CUE_BALL; jr z, .jr_6D5D; cp ENTITY_ROLLING_BONES_BAR; jr z, .jr_6D5D */
-    /* ld a, [wIgnoreLinkCollisionsCountdown]; and a; jp nz, setCarryAndReturn */
-    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_CUE_BALL ||
-        gb_read_hram(gb, hActiveEntityType) == ENTITY_ROLLING_BONES_BAR) {
-        goto jr_6D5D;
+    if (gb_read_hram(gb, hActiveEntityType) != ENTITY_CUE_BALL &&
+        gb_read_hram(gb, hActiveEntityType) != ENTITY_ROLLING_BONES_BAR) {
+        if (gb_read(gb, wIgnoreLinkCollisionsCountdown) != 0) {
+            return;
+        }
     }
 
-    if (gb_read(gb, wIgnoreLinkCollisionsCountdown) != 0) {
-        return;
-    }
-
-jr_6D5D:
-    /* ldh a, [hActiveEntityType]; cp ENTITY_MOBLIN_KING; jr nz, .jr_6D73 */
+    /* Moblin King in state 4 */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_MOBLIN_KING) {
-        /* ldh a, [hActiveEntityState]; cp $04; jr nz, .jr_6D73 */
         if (gb_read_hram(gb, hActiveEntityState) == 0x04) {
-            /* call IncrementEntityState; ld [hl], $08; ld a, WAVE_SFX_LINK_HURT; ldh [hWaveSfx], a; ret */
             IncrementEntityState(gb, bc);
             gb_write(gb, wEntitiesStateTable + bc, 0x08);
             gb_write_hram(gb, hWaveSfx, WAVE_SFX_LINK_HURT);
@@ -168,26 +176,71 @@ jr_6D5D:
         }
     }
 
-    /* ld a, [wInvincibilityCounter]; and a; jp nz, .invincibleEnd */
-    if (gb_read(gb, wInvincibilityCounter) != 0) {
+    /* Link damage immunity check */
+    if ((gb_read(gb, wInvincibilityCounter) |
+         gb_read(gb, wIsLinkImmuneToCollisionDamage) |
+         gb_read(gb, wLinkPlayingOcarinaCountdown) |
+         gb_read(gb, wDialogGotItem)) != 0) {
         return;
     }
 
-    /* Handle default collision - hurt Link */
-    /* This is a simplified version - the actual implementation is complex */
-    /* We'll just apply damage and effects */
     gb_write_hram(gb, hWaveSfx, WAVE_SFX_LINK_HURT);
-    gb_write(gb, wInvincibilityCounter, 0x40);
-    /* Subtract health would be done here */
-    return;
+
+    /* Nominal damage by health group */
+    uint8_t health_group = gb_read(gb, wEntitiesHealthGroup + bc);
+    uint8_t damage = 0;
+    if (health_group < sizeof(EntityDamagesForGroup)) {
+        damage = EntityDamagesForGroup[health_group];
+    }
+
+    if (gb_read(gb, wTunicType) == TUNIC_BLUE) {
+        damage >>= 1;
+    } else if (gb_read(gb, wActivePowerUp) == ACTIVE_POWER_UP_GUARDIAN_ACORN) {
+        if (damage == 4) {
+            damage = 0;
+        } else {
+            damage >>= 1;
+        }
+    }
+
+    gb_write(gb, wSubtractHealthBuffer, (uint8_t)(gb_read(gb, wSubtractHealthBuffer) + damage));
+    gb_write(gb, wInvincibilityCounter, 0x50);
+    gb_write(gb, wGuardianAcornCounter, 0x00);
+
+    if (gb_read(gb, wActivePowerUp) != 0) {
+        uint8_t hits = (uint8_t)(gb_read(gb, wPowerUpHits) + 1);
+        gb_write(gb, wPowerUpHits, hits);
+        if (hits >= 3) {
+            gb_write(gb, wActivePowerUp, 0x00);
+            if (gb_read(gb, wInBossBattle) == 0) {
+                uint8_t def_music = gb_read_hram(gb, hDefaultMusicTrack);
+                if (def_music != MUSIC_OWL) {
+                    gb_write(gb, wMusicTrackToPlay, def_music);
+                }
+                gb_write_hram(gb, hNextDefaultMusicTrack, def_music);
+            }
+        }
+    }
+
+    func_003_6DDF(gb, bc);
 }
 
-/* ===== DefaultEnemyDamageCollisionHandler (03:6E2B) ===== */
+/* ===== DefaultEnemyDamageCollisionHandler (03:6E28) ===== */
 void DefaultEnemyDamageCollisionHandler(GBState *gb, uint16_t bc) {
     if (!gb) return;
 
-    /* call func_003_6C6B */
-    func_003_6C6B(gb, bc);
+    /* call func_003_6C6B: on odd parity frames, check Link collision */
+    if (func_003_6C6B(gb, bc)) {
+        CheckLinkCollisionWithEnemy(gb, bc);
+    }
+
+    /* func_003_6E2B: sword/item damage collision */
+    func_003_6E2B(gb, bc);
+}
+
+/* ===== func_003_6E2B (03:6E2B) ===== */
+void func_003_6E2B(GBState *gb, uint16_t bc) {
+    if (!gb) return;
 
     /* ld a, [wC140]; cp $00; jp z, label_003_73E6 */
     if (gb_read(gb, wC140) == 0) {
@@ -195,45 +248,151 @@ void DefaultEnemyDamageCollisionHandler(GBState *gb, uint16_t bc) {
     }
 
     /* ld hl, wEntitiesFlashCountdownTable; add hl, bc; ld a, [hl]; and a; jr z, .jr_6E40 */
-    if (gb_read(gb, wEntitiesFlashCountdownTable + bc) == 0) {
-        goto jr_6E40;
+    uint8_t flash = gb_read(gb, wEntitiesFlashCountdownTable + bc);
+    if (flash != 0) {
+        /* cp $18; jp c, label_003_73E6 */
+        if (flash < 0x18) {
+            return;
+        }
     }
 
-    /* cp $18; jp c, label_003_73E6 */
-    if (gb_read(gb, wEntitiesFlashCountdownTable + bc) < 0x18) {
-        return;
+    /* .jr_6E40: ld a, [wC1AC]; and a; jr z, .jr_6E4B */
+    uint8_t c1ac = gb_read(gb, wC1AC);
+    if (c1ac != 0) {
+        /* dec a; cp c; jp z, label_003_73E6 */
+        if ((uint8_t)(c1ac - 1) == (uint8_t)(bc & 0xFF)) {
+            return;
+        }
     }
 
-jr_6E40:
-    /* ld a, [wC1AC]; and a; jr z, .jr_6E4B */
-    if (gb_read(gb, wC1AC) == 0) {
-        goto jr_6E4B;
-    }
-
-    /* dec a; cp c; jp z, label_003_73E6 */
-    if ((gb_read(gb, wC1AC) - 1) == (bc & 0xFF)) {
-        return;
-    }
-
-jr_6E4B:
-    /* ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld a, [hl]; and a; jp nz, label_003_73E6 */
+    /* .jr_6E4B: ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld a, [hl]; and a; jp nz, label_003_73E6 */
     if (gb_read(gb, wEntitiesIgnoreHitsCountdownTable + bc) != 0) {
         return;
     }
 
-    /* ld de, hActiveEntityPosX; push bc; sla c; sla c; ld hl, wEntitiesHitboxPositionTable; add hl, bc; pop bc; ld a, [de]; add [hl]; push hl; ld hl, wC140; sub [hl]; cp $80; jr c, .jr_6E6E; cpl; inc a; .jr_6E6E: pop hl; push af; inc hl; ld a, [wC141]; add [hl]; ld e, a; pop af; cp e; jp nc, jr_003_6CCB */
-    /* This is complex collision detection - simplified */
-    /* We'll skip the detailed hitbox collision for now */
+    /* Hitbox check: bounding box comparison against weapon at wC140..wC143 */
+    uint16_t hitbox_addr = (uint16_t)(wEntitiesHitboxPositionTable + ((bc & 0xFF) << 2));
 
-    /* func_003_6CC0: ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld a, [hl]; and ENTITY_PHYSICS_HARMLESS; jr z, jr_003_6CCD */
-    if ((gb_read(gb, wEntitiesPhysicsFlagsTable + bc) & ENTITY_PHYSICS_HARMLESS) == 0) {
-        /* jr_003_6CCD: ldh a, [hLinkAnimationState]; sub $4E; cp $02; jr c, jr_003_6CC9 */
-        if (gb_read_hram(gb, hLinkAnimationState) >= 0x4E && gb_read_hram(gb, hLinkAnimationState) < 0x50) {
-            /* Damage the entity */
-            /* This would call ApplySwordDamagesToEnemy */
-            ApplySwordDamagesToEnemy(gb, bc);
-        }
+    uint8_t ent_x = (uint8_t)(gb_read_hram(gb, hActiveEntityPosX) + gb_read(gb, hitbox_addr + 0));
+    uint8_t diff_x = (uint8_t)(ent_x - gb_read(gb, wC140));
+    if ((diff_x & 0x80) != 0) {
+        diff_x = (uint8_t)(~diff_x + 1);
     }
+    uint8_t limit_x = (uint8_t)(gb_read(gb, wC141) + gb_read(gb, hitbox_addr + 1));
+    if (diff_x >= limit_x) {
+        return;
+    }
+
+    uint8_t ent_y = (uint8_t)(gb_read_hram(gb, hActiveEntityVisualPosY) + gb_read(gb, hitbox_addr + 2));
+    uint8_t diff_y = (uint8_t)(ent_y - gb_read(gb, wC142));
+    if ((diff_y & 0x80) != 0) {
+        diff_y = (uint8_t)(~diff_y + 1);
+    }
+    uint8_t limit_y = (uint8_t)(gb_read(gb, wC143) + gb_read(gb, hitbox_addr + 3));
+    if (diff_y >= limit_y) {
+        return;
+    }
+
+    /* Grabbable entity check */
+    if ((gb_read(gb, wEntitiesPhysicsFlagsTable + bc) & ENTITY_PHYSICS_GRABBABLE) != 0) {
+        PickableCollectIfNeeded(gb, bc);
+        return;
+    }
+
+    /* Sword collision enabled */
+    if (gb_read(gb, wSwordCollisionEnabled) != 0) {
+        ApplySwordDamagesToEnemy(gb, bc);
+        return;
+    }
+
+    /* Save pegasus boots object below Link, reset pegasus boots */
+    gb_write_hram(gb, hIndexOfObjectBelowLink, gb_read(gb, wIsRunningWithPegasusBoots));
+    ResetPegasusBoots(gb);
+
+    uint8_t entity_type = gb_read_hram(gb, hActiveEntityType);
+
+    if (entity_type == ENTITY_FLAME_SHOOTER) {
+        if (gb_read(gb, wShieldLevel) != 2 || gb_read_hram(gb, hLinkDirection) != DIRECTION_UP) {
+            return;
+        }
+        gb_write_hram(gb, hLinkSpeedY, 0x04);
+        gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x08);
+        IncrementEntityState(gb, bc);
+        return;
+    }
+
+    if (entity_type == ENTITY_BOUNCING_BOMBITE) {
+        if (gb_read_hram(gb, hActiveEntityState) != 0x02) {
+            func_003_6F93(gb);
+            return;
+        }
+        uint8_t sx = gb_read(gb, wEntitiesSpeedXTable + bc);
+        gb_write(gb, wEntitiesSpeedXTable + bc, (uint8_t)(~sx + 1));
+        uint8_t sy = gb_read(gb, wEntitiesSpeedYTable + bc);
+        gb_write(gb, wEntitiesSpeedYTable + bc, (uint8_t)(~sy + 1));
+        gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x40);
+        gb_write(gb, wEntitiesPrivateCountdown1Table + bc, 0x08);
+        return;
+    }
+
+    if (entity_type == ENTITY_KNIGHT) {
+        if ((gb_read(gb, wEntitiesOptions1Table + bc) & ENTITY_OPT1_SWORD_CLINK_OFF) == 0) {
+            func_003_6F93(gb);
+            return;
+        }
+        uint8_t ps1 = gb_read(gb, wEntitiesPrivateState1Table + bc);
+        gb_write(gb, wEntitiesPrivateState1Table + bc, (uint8_t)(~ps1 + 1));
+        func_003_6F5C(gb, bc);
+        gb_write(gb, wEntitiesPrivateCountdown1Table + bc, 0x0C);
+        gb_write(gb, wC160, 0x01);
+        gb_write(gb, wSwordCharge, 0x00);
+        gb_write_hram(gb, hMultiPurpose0, gb_read_hram(gb, hActiveEntityPosX));
+        gb_write_hram(gb, hMultiPurpose1, gb_read_hram(gb, hActiveEntityVisualPosY));
+        label_D15(gb);
+        return;
+    }
+
+    if (entity_type == ENTITY_PAIRODD_PROJECTILE) {
+        func_003_6F93(gb);
+        gb_write(gb, wEntitiesCollisionsTable + bc, 0xFF);
+        return;
+    }
+
+    if (entity_type == ENTITY_SPIKED_BEETLE) {
+        if (gb_read(gb, wEntitiesStateTable + bc) == 0x03) {
+            func_003_6F5C(gb, bc);
+            return;
+        }
+        gb_write(gb, wEntitiesStateTable + bc, 0x03);
+        gb_write(gb, wEntitiesSpeedZTable + bc, 0x20);
+        gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0xFF);
+        uint8_t dir = (uint8_t)(gb_read_hram(gb, hLinkDirection) & 0x03);
+        gb_write(gb, wEntitiesSpeedXTable + bc, Data_003_6F65[dir]);
+        gb_write(gb, wEntitiesSpeedYTable + bc, Data_003_6F69[dir]);
+        func_003_6F5C(gb, bc);
+        return;
+    }
+
+    if (entity_type == ENTITY_STAR || entity_type == ENTITY_ANTI_FAIRY) {
+        uint8_t dir = gb_read_hram(gb, hLinkDirection);
+        if ((dir & DIRECTION_VERTICAL_MASK) != 0) {
+            uint8_t sy = gb_read(gb, wEntitiesSpeedYTable + bc);
+            gb_write(gb, wEntitiesSpeedYTable + bc, (uint8_t)(~sy + 1));
+        } else {
+            uint8_t sx = gb_read(gb, wEntitiesSpeedXTable + bc);
+            gb_write(gb, wEntitiesSpeedXTable + bc, (uint8_t)(~sx + 1));
+        }
+        func_003_6F5C(gb, bc);
+        return;
+    }
+
+    if (entity_type == ENTITY_FACADE) {
+        func_003_6F93(gb);
+        gb_write(gb, wEntitiesCollisionsTable + bc, 0xFF);
+        return;
+    }
+
+    func_003_6F93(gb);
 }
 
 /* ===== ApplySwordDamagesToEnemy (03:7267) ===== */

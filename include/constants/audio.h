@@ -27,6 +27,7 @@
 #define MUSIC_OVERWORLD_SWORDLESS       0x1D
 #define MUSIC_SOUTHERN_SHRINE           0x1F
 #define MUSIC_2D_UNDERGROUND            0x21
+#define MUSIC_OWL                       0x22
 #define MUSIC_CAVE                      0x26
 #define MUSIC_MOBLIN_HIDEOUT            0x3E
 #define MUSIC_GHOST_HOUSE               0x48

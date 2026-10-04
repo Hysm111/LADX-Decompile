@@ -36,6 +36,7 @@
 #define WAVE_SFX_FLOOR_SWITCH                   0x0E
 #define WAVE_SFX_TEXT_PRINT                     0x0F
 #define WAVE_SFX_BOSS_DEATH_CRY                 0x10
+#define WAVE_SFX_POWER_HIT                      0x11
 #define WAVE_SFX_OCARINA_NOSONG                 0x15
 #define WAVE_SFX_OWL_HOOT                       0x19
 #define WAVE_SFX_BOSS_HURT                      0x07
