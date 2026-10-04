@@ -17,6 +17,11 @@
 #include "home/vfx.h"
 #include "bank3/entities_droppable.h"
 #include "constants/audio.h"
+#include "constants/vfx.h"
+#include "constants/dialog.h"
+#include "home/dialog.h"
+#include "bank3/entities_init_core.h"
+#include "bank3/entities_handlers.h"
 
 /* Amount of damages an entity deals when colliding with Link (03:47F1) */
 const uint8_t EntityDamagesForGroup[53] = {
@@ -43,6 +48,95 @@ static const uint8_t Data_003_6F69[4] = {
     0xF0, /* UP:    -16 */
     0x10  /* DOWN:   16 */
 };
+
+/* Direction table for Iron Mask (03:6FE4) */
+const uint8_t Data_003_6FE4[4] = {
+    0x00, /* RIGHT: 0 */
+    0x01, /* LEFT:  1 */
+    0x02, /* UP:    2 */
+    0x03  /* DOWN:  3 */
+};
+
+/* Dropped item table for Ghini (03:73E7) */
+const uint8_t Data_003_73E7[4] = {
+    0x2D, 0x2E, 0x38, 0x37
+};
+
+const uint8_t Data_003_43EC[848] = {
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x01, 0x02, 0x01, 0x02, 0x03, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x02, 0x02, 0x02, 0x01, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02, 0x01, 0x01, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x03, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x02, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x04, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x03, 0x01, 0x01, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02, 0x02, 0x02, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x02, 0x02, 0x04, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x04, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x01, 0x01, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x02, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x01, 0x01, 0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x02, 0x02, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x05, 0x02, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x01, 0x04, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x04, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
+    0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x00, 0x06, 0x06, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const uint8_t Data_003_473C[128] = {
+    0x00, 0x01, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x02, 0x01, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x04, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x08, 0x04, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x10, 0x08, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x04, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0xFF, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x04, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0xFF, 0x18, 0xFE, 0x02, 0xFD, 0xFF, 0x00,
+    0x00, 0xFF, 0xFD, 0xFE, 0x00, 0x00, 0x02, 0x00,
+    0x00, 0x01, 0x04, 0xFE, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0xFF, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00,
+    0x00, 0x01, 0x02, 0x40, 0x00, 0x00, 0xFF, 0x00
+};
+
 
 /* ===== CheckLinkCollisionWithEnemy (03:6C72) ===== */
 bool CheckLinkCollisionWithEnemy(GBState *gb, uint16_t bc) {
@@ -301,7 +395,7 @@ void func_003_6E2B(GBState *gb, uint16_t bc) {
 
     /* Sword collision enabled */
     if (gb_read(gb, wSwordCollisionEnabled) != 0) {
-        ApplySwordDamagesToEnemy(gb, bc);
+        EnemyCollidedWithSword(gb, bc);
         return;
     }
 
@@ -395,23 +489,44 @@ void func_003_6E2B(GBState *gb, uint16_t bc) {
     func_003_6F93(gb);
 }
 
-/* ===== ApplySwordDamagesToEnemy (03:7267) ===== */
-void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc) {
+/* ===== EnemyCollidedWithSword (03:6FE8) ===== */
+void EnemyCollidedWithSword(GBState *gb, uint16_t bc) {
     if (!gb) return;
 
-    /* This is a complex function that handles sword damage to enemies */
-    /* Simplified implementation - apply damage based on weapon type */
-    /* The actual implementation has many special cases for different enemy types */
-    
-    /* Special case for Final Nightmare - handled by JP_TABLE */
-    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_FINAL_NIGHTMARE) {
-        /* Handle Final Nightmare forms - simplified */
+    /* Ignore collisions between the flame shooter and the player sword */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_FLAME_SHOOTER) {
         return;
+    }
+
+    /* Special cases for Final Nightmare */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_FINAL_NIGHTMARE) {
+        uint8_t form = gb_read(gb, wFinalNightmareForm);
+        if (form == 0x00) {
+            return;
+        } else if (form == 0x01) {
+            IncrementEntityState(gb, bc);
+            gb_write(gb, wEntitiesStateTable + bc, 0x06);
+            return;
+        } else if (form == 0x02) {
+            if (gb_read(gb, wIsUsingSpinAttack) != 0) {
+                IncrementEntityState(gb, bc);
+                return;
+            }
+            if (gb_read(gb, wC16A) < 0x04) {
+                IncrementEntityState(gb, bc);
+                return;
+            }
+            return;
+        } else if (form == 0x03 || form == 0x04) {
+            /* Falls through to defaultSwordCollision */
+        } else {
+            /* Form 5: standard sword collision */
+            goto standardSwordCollision;
+        }
     }
 
     /* Special case for Buzz Blob */
     if (gb_read_hram(gb, hActiveEntityType) == ENTITY_BUZZ_BLOB) {
-        /* if status == ACTIVE; call IncrementEntityState; ld [hl], $01; call GetEntityTransitionCountdown; ld [hl], $40; ld a, $40; ld [wD464], a; xor a; ld [wSwordAnimationState], a; ld [wC16A], a; ld [wIsUsingSpinAttack], a; ld a, NOISE_SFX_BUZZ_BLOB_ELECTROCUTE; ldh [hNoiseSfx], a; jp ApplyLinkCollisionWithEnemy */
         if (gb_read_hram(gb, hActiveEntityStatus) == ENTITY_STATUS_ACTIVE) {
             IncrementEntityState(gb, bc);
             gb_write(gb, wEntitiesStateTable + bc, 0x01);
@@ -422,18 +537,20 @@ void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc) {
             gb_write(gb, wIsUsingSpinAttack, 0x00);
             gb_write_hram(gb, hNoiseSfx, NOISE_SFX_BUZZ_BLOB_ELECTROCUTE);
             ApplyLinkCollisionWithEnemy(gb, bc);
+            return;
         }
-        return;
     }
 
-    /* Standard sword collision */
+standardSwordCollision:;
+    uint8_t entity_type = gb_read_hram(gb, hActiveEntityType);
+
     /* Special case for Bouncing Bombite */
-    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_BOUNCING_BOMBITE) {
-        /* call GetVectorTowardsLink; negate and set speeds; call IncrementEntityState; ld [hl], $02; call GetEntityTransitionCountdown; ld [hl], $40; call GetEntityPrivateCountdown1; ld [hl], $08; ret */
-        uint8_t x, y;
-        GetVectorTowardsLink(gb, &x, &y);
-        gb_write(gb, wEntitiesSpeedYTable + bc, (uint8_t)(~x + 1));
-        gb_write(gb, wEntitiesSpeedXTable + bc, (uint8_t)(~y + 1));
+    if (entity_type == ENTITY_BOUNCING_BOMBITE) {
+        GetVectorTowardsLink_with_length(gb, 0x30, NULL, NULL);
+        uint8_t recoil_y = (uint8_t)(~gb_read_hram(gb, hMultiPurpose0) + 1);
+        gb_write(gb, wEntitiesSpeedYTable + bc, recoil_y);
+        uint8_t recoil_x = (uint8_t)(~gb_read_hram(gb, hMultiPurpose1) + 1);
+        gb_write(gb, wEntitiesSpeedXTable + bc, recoil_x);
         IncrementEntityState(gb, bc);
         gb_write(gb, wEntitiesStateTable + bc, 0x02);
         gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x40);
@@ -442,51 +559,301 @@ void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc) {
     }
 
     /* Special case for Angler Fish */
-    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_ANGLER_FISH) {
-        /* call func_003_6DDF; ld a, $08; ld [wIgnoreLinkCollisionsCountdown], a; jr .slimeEyeEnd */
+    if (entity_type == ENTITY_ANGLER_FISH) {
         func_003_6DDF(gb, bc);
         gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x08);
-        return;
-    }
-
-    /* Special case for Slime Eye */
-    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_SLIME_EYE) {
-        /* Simplified - has complex state machine */
-        return;
+    } else if (entity_type == ENTITY_SLIME_EYE) {
+        if (gb_read_hram(gb, hMultiPurposeG) != 0) {
+            func_003_6DDF(gb, bc);
+            return;
+        }
+        if (gb_read(gb, wEntitiesPrivateState1Table + bc) != 0x04) {
+            if (gb_read(gb, wIsRunningWithPegasusBoots) != 0) {
+                func_003_6DDF(gb, bc);
+            } else {
+                gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x04);
+                func_003_7565_with_length(gb, 0x10);
+            }
+            goto continueDefaultCollision;
+        } else {
+            if (gb_read(gb, wIsRunningWithPegasusBoots) == 0) {
+                goto continueDefaultCollision;
+            }
+            gb_write(gb, wEntitiesPrivateCountdown2Table + bc, 0x0C);
+            return;
+        }
     }
 
     /* If sword clink is disabled... */
-    if ((gb_read(gb, wEntitiesOptions1Table + bc) & ENTITY_OPT1_SWORD_CLINK_OFF) == 0) {
-        /* Special case for Knight */
-        if (gb_read_hram(gb, hActiveEntityType) == ENTITY_KNIGHT) {
-            /* call label_003_6F04 */
-            /* This is complex - skip for now */
+    if ((gb_read(gb, wEntitiesOptions1Table + bc) & ENTITY_OPT1_SWORD_CLINK_OFF) != 0) {
+        if (entity_type == ENTITY_KNIGHT) {
+            uint8_t ps1 = gb_read(gb, wEntitiesPrivateState1Table + bc);
+            gb_write(gb, wEntitiesPrivateState1Table + bc, (uint8_t)(~ps1 + 1));
+            func_003_6F5C(gb, bc);
+            gb_write(gb, wEntitiesPrivateCountdown1Table + bc, 0x0C);
+            gb_write(gb, wC160, 0x01);
+            gb_write(gb, wSwordCharge, 0x00);
+            gb_write_hram(gb, hMultiPurpose0, gb_read_hram(gb, hActiveEntityPosX));
+            gb_write_hram(gb, hMultiPurpose1, gb_read_hram(gb, hActiveEntityVisualPosY));
+            label_D15(gb);
             return;
         }
 
-        /* Special case for Genie */
-        if (gb_read_hram(gb, hActiveEntityType) == ENTITY_GENIE) {
-            /* ConfigureEntityRecoil with different strength based on tunic/power */
-            uint8_t recoil = 0x20;
+        if (entity_type == ENTITY_GENIE) {
+            uint8_t recoil = SWORD_RECOIL_GENIE_JAR_DEFAULT;
             if (gb_read(gb, wTunicType) == TUNIC_RED || gb_read(gb, wActivePowerUp) == ACTIVE_POWER_UP_PIECE_OF_POWER) {
-                recoil = 0x30;
+                recoil = SWORD_RECOIL_GENIE_JAR_STRONGER;
             }
             ConfigureEntityRecoil(gb, bc, recoil);
+            gb_write(gb, wEntitiesFlashCountdownTable + bc, 0x00);
+        }
 
-            /* Without flashing from damages */
-            gb_write(gb, wEntitiesFlashCountdownTable + bc, 0);
+        gb_write(gb, wC1AC, (uint8_t)((bc & 0xFF) + 1));
+        label_D07(gb);
+        gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x10);
+        gb_write(gb, wEntitiesRecoilVelocityX + bc, 0x00);
+        gb_write(gb, wEntitiesRecoilVelocityY + bc, 0x00);
+        func_003_6DDF(gb, bc);
+        return;
+    }
+
+continueDefaultCollision:
+    entity_type = gb_read_hram(gb, hActiveEntityType);
+
+    if (entity_type == ENTITY_CUE_BALL) {
+        ResetPegasusBoots(gb);
+        goto jr_003_714D;
+    }
+
+    if (entity_type == ENTITY_IRON_MASK) {
+        if (gb_read(gb, wEntitiesPrivateState2Table + bc) == 0) {
+            uint8_t link_dir = (uint8_t)(gb_read_hram(gb, hLinkDirection) & 0x03);
+            if (Data_003_6FE4[link_dir] == gb_read(gb, wEntitiesDirectionTable + bc)) {
+                goto jr_003_714D;
+            }
+            ResetPegasusBoots(gb);
+            gb_write(gb, wIgnoreLinkCollisionsCountdown, 0x10);
+            func_003_7565_with_length(gb, 0x10);
+            ConfigureEntityRecoil(gb, bc, 0x10);
+            gb_write_hram(gb, hMultiPurpose0, gb_read_hram(gb, hActiveEntityPosX));
+            gb_write_hram(gb, hMultiPurpose1, gb_read_hram(gb, hActiveEntityVisualPosY));
+            label_D15(gb);
             return;
         }
     }
 
-    /* Continue default collision */
-    /* ld a, c; inc a; ld [wC1AC], a; call label_D07; ld hl, wEntitiesIgnoreHitsCountdownTable; add hl, bc; ld [hl], $10; ld hl, wEntitiesRecoilVelocityX; add hl, bc; ld [hl], b; ld hl, wEntitiesRecoilVelocityY; add hl, bc; ld [hl], b; jp func_003_6DDF */
-    gb_write(gb, wC1AC, (uint8_t)((bc & 0xFF) + 1));
-    gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x10);
-    gb_write(gb, wEntitiesRecoilVelocityX + bc, 0);
-    gb_write(gb, wEntitiesRecoilVelocityY + bc, 0);
-    func_003_6DDF(gb, bc);
+    if (entity_type == ENTITY_ANTI_FAIRY) {
+        return;
+    }
+
+jr_003_714D:
+    gb_write(gb, wC160, 0x01);
+    if (gb_read(gb, wC16A) == 0x05) {
+        gb_write(gb, wC16D, 0x0C);
+    }
+    gb_write(gb, wSwordCharge, 0x00);
+    ConfigureEntityRecoil(gb, bc, SWORD_RECOIL_DEFAULT);
+    gb_write_hram(gb, hJingle, JINGLE_BUMP);
+
+    if (gb_read(gb, wTunicType) == TUNIC_RED || gb_read(gb, wActivePowerUp) == ACTIVE_POWER_UP_PIECE_OF_POWER) {
+        ApplySwordDamagesToEnemy(gb, bc);
+        gb_write(gb, wEntitiesIgnoreHitsCountdownTable + bc, 0x20);
+        gb_write(gb, wEntitiesPowerRecoilingTable + bc, 0x01);
+        gb_write_hram(gb, hWaveSfx, WAVE_SFX_POWER_HIT);
+        if (gb_read(gb, wEntitiesStatusTable + bc) == ENTITY_STATUS_DYING) {
+            gb_write(gb, wEntitiesPrivateCountdown3Table + bc, 0x40);
+        }
+        return;
+    }
+
+    ApplySwordDamagesToEnemy(gb, bc);
 }
+
+/* ===== ApplySwordDamagesToEnemy (03:719D) ===== */
+void ApplySwordDamagesToEnemy(GBState *gb, uint16_t bc) {
+    if (!gb) return;
+
+    gb_write(gb, wC1AC, (uint8_t)((bc & 0xFF) + 1));
+
+    /* Check power-up, tunic, spin attack, or pegasus boots to boost attack damage type */
+    uint8_t sword_level = gb_read(gb, wSwordLevel);
+    uint8_t tunic_red = (uint8_t)(gb_read(gb, wTunicType) & TUNIC_RED);
+    uint8_t piece_of_power = (uint8_t)(gb_read(gb, wActivePowerUp) & ACTIVE_POWER_UP_PIECE_OF_POWER);
+    uint8_t spin_attack = gb_read(gb, wIsUsingSpinAttack);
+    uint8_t pegasus = gb_read(gb, wIsRunningWithPegasusBoots);
+
+    if ((tunic_red | piece_of_power | spin_attack | pegasus) != 0) {
+        sword_level++;
+    }
+
+    uint8_t damage_type = (uint8_t)(sword_level - 1);
+    gb_write(gb, wAttackDamageType, damage_type);
+
+    uint8_t health_group = gb_read(gb, wEntitiesHealthGroup + bc);
+    if (health_group >= 53) {
+        health_group = 0;
+    }
+
+    uint8_t table_entry = Data_003_43EC[health_group * 16 + (damage_type & 0x0F)];
+    uint8_t damage_index = (uint8_t)(((damage_type & 0x1F) << 3) + (table_entry & 0x07));
+    uint8_t damage = Data_003_473C[damage_index];
+
+    if (damage == 0) {
+        return;
+    }
+
+    /* Special case: Final Nightmare form 4 */
+    if (gb_read_hram(gb, hActiveEntityType) == ENTITY_FINAL_NIGHTMARE) {
+        if (gb_read(gb, wFinalNightmareForm) == 0x04) {
+            func_003_6DDF(gb, bc);
+            if (gb_read(gb, wIsRunningWithPegasusBoots) == 0 && gb_read(gb, wIsUsingSpinAttack) == 0) {
+                return;
+            }
+        }
+    }
+
+    gb_write_hram(gb, hJingle, JINGLE_ENEMY_HIT);
+
+    if ((gb_read(gb, wEntitiesOptions1Table + bc) & ENTITY_OPT1_IS_BOSS) != 0) {
+        gb_write_hram(gb, hWaveSfx, WAVE_SFX_BOSS_HURT);
+    }
+
+    if (gb_read(gb, wEntitiesTypeTable + bc) == ENTITY_CUCCO) {
+        gb_write_hram(gb, hWaveSfx, WAVE_SFX_CUCCO_HURT);
+    }
+
+    /* Special effect damages: burn, stun, morph/fairy */
+    if (damage >= 0xF0) {
+        if (damage == 0xFE) {
+            /* Burn */
+            gb_write_hram(gb, hNoiseSfx, NOISE_SFX_BURSTING_FLAME);
+            StartIgnoringHitsForEntity_idx(gb, bc);
+            gb_write(gb, wEntitiesStatusTable + bc, ENTITY_STATUS_BURNING);
+            gb_write(gb, wEntitiesTransitionCountdownTable + bc, 0x60);
+            uint8_t phys = gb_read(gb, wEntitiesPhysicsFlagsTable + bc);
+            gb_write(gb, wEntitiesPhysicsFlagsTable + bc, (uint8_t)(phys + 2));
+            uint8_t opt1 = gb_read(gb, wEntitiesOptions1Table + bc);
+            gb_write(gb, wEntitiesOptions1Table + bc, (uint8_t)(opt1 & (ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL | ENTITY_OPT1_SWORD_CLINK_OFF | ENTITY_OPT1_IS_BOSS)));
+            return;
+        }
+
+        if (damage == 0xFF) {
+            /* Stun */
+            StartIgnoringHitsForEntity_idx(gb, bc);
+            EntityBecomeStunned(gb, bc);
+            return;
+        }
+
+        if (damage == 0xFD) {
+            /* Morph / turn into fairy */
+            uint8_t type = gb_read(gb, wEntitiesTypeTable + bc);
+            if (type == ENTITY_GIANT_BUZZ_BLOB || type == ENTITY_BUZZ_BLOB) {
+                if (gb_read(gb, wEntitiesPrivateState1Table + bc) != 0) {
+                    return;
+                }
+                uint8_t ps1 = gb_read(gb, wEntitiesPrivateState1Table + bc);
+                gb_write(gb, wEntitiesPrivateState1Table + bc, (uint8_t)(ps1 + 1));
+            } else {
+                gb_write(gb, wEntitiesTypeTable + bc, 0x2F);
+                uint8_t prev_active = gb_read(gb, wActiveEntityIndex);
+                gb_write(gb, wActiveEntityIndex, (uint8_t)(bc & 0xFF));
+                ConfigureNewEntity(gb);
+                gb_write(gb, wActiveEntityIndex, prev_active);
+                gb_write(gb, wEntitiesSlowTransitionCountdownTable + bc, 0x80);
+            }
+            gb_write_hram(gb, hMultiPurpose0, gb_read(gb, wEntitiesPosXTable + bc));
+            gb_write_hram(gb, hMultiPurpose1, (uint8_t)(gb_read(gb, wEntitiesPosYTable + bc) - gb_read(gb, wEntitiesPosZTable + bc)));
+            AddTranscientVfx(gb, TRANSCIENT_VFX_POOF);
+            return;
+        }
+
+        /* Unhandled special effect codes (0xF0-0xFC) return without doing damage */
+        return;
+    }
+
+    /* Standard damage calculation */
+    uint8_t health = gb_read(gb, wEntitiesHealthTable + bc);
+    if (health > damage) {
+        gb_write(gb, wEntitiesHealthTable + bc, (uint8_t)(health - damage));
+    } else {
+        /* Enemy died */
+        gb_write(gb, wEntitiesHealthTable + bc, 0x00);
+        gb_write(gb, wEntitiesStatusTable + bc, ENTITY_STATUS_DYING);
+
+        uint8_t opt1 = gb_read(gb, wEntitiesOptions1Table + bc);
+        if ((opt1 & ENTITY_OPT1_IS_BOSS) != 0) {
+            if ((opt1 & ENTITY_OPT1_IS_MINI_BOSS) == 0) {
+                bool another_boss_active = false;
+                for (int e = 0x0F; e >= 0; e--) {
+                    if (e == (int)(bc & 0xFF)) continue;
+                    if (gb_read(gb, wEntitiesStatusTable + e) == ENTITY_STATUS_ACTIVE) {
+                        if ((gb_read(gb, wEntitiesOptions1Table + e) & ENTITY_OPT1_IS_BOSS) != 0) {
+                            another_boss_active = true;
+                            break;
+                        }
+                    }
+                }
+                if (!another_boss_active) {
+                    label_27F2(gb);
+                }
+            }
+
+            gb_write(gb, wBossAgonySFXCountdown, 0x03);
+            gb_write(gb, wEntitiesPrivateState2Table + bc, 0x00);
+
+            uint8_t type = gb_read(gb, wEntitiesTypeTable + bc);
+            if (type == ENTITY_FACADE) {
+                OpenDialogInTable0(gb, Dialog0B7);
+                gb_write(gb, wMusicTrackToPlay, MUSIC_BOSS_DEFEAT);
+            } else if (type == ENTITY_EVIL_EAGLE) {
+                uint8_t old_y = gb_read_hram(gb, hLinkPositionY);
+                gb_write_hram(gb, hLinkPositionY, 0x10);
+                OpenDialogInTable0(gb, Dialog0B9);
+                gb_write_hram(gb, hLinkPositionY, old_y);
+            }
+        }
+
+        IncrementEntityState(gb, bc);
+        gb_write(gb, wEntitiesStateTable + bc, 0x00);
+        gb_write(gb, wEntitiesPrivateCountdown3Table + bc, 0x2F);
+        gb_write(gb, wEntitiesFlashCountdownTable + bc, 0x00);
+
+        if ((gb_read(gb, wEntitiesOptions1Table + bc) & ENTITY_OPT1_IS_BOSS) == 0) {
+            uint8_t phys = gb_read(gb, wEntitiesPhysicsFlagsTable + bc);
+            gb_write(gb, wEntitiesPhysicsFlagsTable + bc, (uint8_t)((phys & 0xF0) | 0x04));
+        }
+
+        if (gb_read(gb, wEntitiesTypeTable + bc) == ENTITY_GHINI) {
+            for (int e = 0x0F; e >= 0; e--) {
+                if (e == (int)(bc & 0xFF)) continue;
+                uint8_t other_type = gb_read(gb, wEntitiesTypeTable + e);
+                if (other_type == ENTITY_HIDING_GHINI || other_type == ENTITY_GIANT_GHINI) {
+                    if (gb_read(gb, wEntitiesStateTable + e) == 0 &&
+                        gb_read(gb, wEntitiesStatusTable + e) != 0) {
+                        gb_write(gb, wEntitiesStatusTable + e, ENTITY_STATUS_DYING);
+                        gb_write(gb, wEntitiesPrivateCountdown3Table + e, 0x1F);
+                        uint8_t rnd = (uint8_t)(GetRandomByte(gb) & 0x03);
+                        gb_write(gb, wEntitiesDroppedItemTable + e, Data_003_73E7[rnd]);
+                    }
+                }
+            }
+            gb_write(gb, wEntitiesDroppedItemTable + bc, ENTITY_DROPPABLE_RUPEE);
+        }
+    }
+
+    /* jr_003_73B6 */
+    uint8_t ent_type = gb_read(gb, wEntitiesTypeTable + bc);
+    if ((ent_type == ENTITY_FINAL_NIGHTMARE && gb_read(gb, wFinalNightmareForm) == 0x03) ||
+        (ent_type == ENTITY_MOLDORM)) {
+        gb_write(gb, wEntitiesFlashCountdownTable + bc, 0x28);
+        gb_write(gb, wEntitiesPrivateCountdown2Table + bc, 0xC8);
+        return;
+    }
+
+    gb_write(gb, wEntitiesFlashCountdownTable + bc, 0x18);
+    StartIgnoringHitsForEntity_idx(gb, bc);
+}
+
 /* ===== func_003_73EB (03:73EB) - Enemy Collision Handler for Link ===== */
 void func_003_73EB(GBState *gb, uint16_t bc) {
     if (!gb) return;

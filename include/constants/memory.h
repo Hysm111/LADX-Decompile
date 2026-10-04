@@ -193,6 +193,7 @@
 #define wEntitiesRoomTable                    0xC3E0
 #define wEntitiesHealthTable                  0xC360
 #define wEntitiesHealthGroup                  0xC4D0
+#define wEntitiesDroppedItemTable             0xC4E0
 #define wEntitiesHitboxPositionTable          0xD580
 #define wEnemyWasKilled                       0xC113
 #define wInventoryAppearing                   0xC14F

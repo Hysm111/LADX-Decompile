@@ -44,13 +44,13 @@ void ConfigureNewEntity(GBState *gb) {
     /* wEntitiesPhysicsFlagsTable = PhysicsFlagsForEntity[EntityType] */
     /* ld hl, PhysicsFlagsForEntity; add hl, de; ld a, [hl] */
     /* ld hl, wEntitiesPhysicsFlagsTable; add hl, bc; ld [hl], a */
-    uint8_t physics = gb->rom[PhysicsFlagsForEntity + entity_type];
+    uint8_t physics = (gb->rom && ((uint32_t)(PhysicsFlagsForEntity + entity_type) < gb->rom_size)) ? gb->rom[PhysicsFlagsForEntity + entity_type] : 0;
     gb_write(gb, wEntitiesPhysicsFlagsTable + bc, physics);
 
     /* wEntitiesHitboxFlagsTable = HitboxFlagsForEntity[EntityType] */
     /* ld hl, HitboxFlagsForEntity; add hl, de; ld a, [hl] */
     /* ld hl, wEntitiesHitboxFlagsTable; add hl, bc; ld [hl], a */
-    uint8_t hitbox = gb->rom[HitboxFlagsForEntity + entity_type];
+    uint8_t hitbox = (gb->rom && ((uint32_t)(HitboxFlagsForEntity + entity_type) < gb->rom_size)) ? gb->rom[HitboxFlagsForEntity + entity_type] : 0;
     gb_write(gb, wEntitiesHitboxFlagsTable + bc, hitbox);
 
     /* call ConfigureEntityHealth */
@@ -58,7 +58,7 @@ void ConfigureNewEntity(GBState *gb) {
 
     /* ld hl, Options1ForEntity; add hl, de; ld a, [hl] */
     /* ld hl, wEntitiesOptions1Table; add hl, bc; ld [hl], a */
-    uint8_t options1 = gb->rom[Options1ForEntity + entity_type];
+    uint8_t options1 = (gb->rom && ((uint32_t)(Options1ForEntity + entity_type) < gb->rom_size)) ? gb->rom[Options1ForEntity + entity_type] : 0;
     gb_write(gb, wEntitiesOptions1Table + bc, options1);
 
     /* jp ConfigureEntityHitbox */
@@ -68,11 +68,12 @@ void ConfigureNewEntity(GBState *gb) {
 /* ===== ConfigureEntityHealth (03:4895) ===== */
 void ConfigureEntityHealth(GBState *gb, uint16_t bc, uint8_t entity_type, uint8_t d) {
     if (!gb) return;
+    (void)d;
 
     /* push de */
     /* e = HealthGroupForEntity[entity index] */
     /* ld hl, HealthGroupForEntity; add hl, de; ld e, [hl] */
-    uint8_t health_group = gb->rom[HealthGroupForEntity + entity_type];
+    uint8_t health_group = (gb->rom && ((uint32_t)(HealthGroupForEntity + entity_type) < gb->rom_size)) ? gb->rom[HealthGroupForEntity + entity_type] : 0;
 
     /* wEntitiesHealthGroup[entity index] = e */
     /* ld hl, wEntitiesHealthGroup; add hl, bc; ld [hl], e */
@@ -81,7 +82,7 @@ void ConfigureEntityHealth(GBState *gb, uint16_t bc, uint8_t entity_type, uint8_
     /* a = InitialHealthForGroup[health group] */
     /* ld d, b; ld hl, InitialHealthForGroup; add hl, de; ld a, [hl] */
     /* wEntitiesHealthTable[entity index] = a */
-    uint8_t initial_health = gb->rom[InitialHealthForGroup + health_group];
+    uint8_t initial_health = (gb->rom && ((uint32_t)(InitialHealthForGroup + health_group) < gb->rom_size)) ? gb->rom[InitialHealthForGroup + health_group] : 0;
     gb_write(gb, wEntitiesHealthTable + bc, initial_health);
 
     /* pop de; ret */

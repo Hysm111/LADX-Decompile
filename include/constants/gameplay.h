@@ -157,4 +157,9 @@
 #define SWORD_DIRECTION_TOP             0x06
 #define SWORD_DIRECTION_RIGHT_TOP       0x07
 
+/* Sword recoil amounts */
+#define SWORD_RECOIL_GENIE_JAR_DEFAULT  0x20
+#define SWORD_RECOIL_GENIE_JAR_STRONGER 0x30
+#define SWORD_RECOIL_DEFAULT            0x30
+
 #endif /* LADX_CONSTANTS_GAMEPLAY_H */

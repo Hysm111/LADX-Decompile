@@ -5,8 +5,9 @@
 
 /* Values for hJingle */
 #define JINGLE_NONE                             0x00
-#define JINGLE_CHARGING_SWORD                   0x04
 #define JINGLE_PUZZLE_SOLVED                    0x02
+#define JINGLE_ENEMY_HIT                        0x03
+#define JINGLE_CHARGING_SWORD                   0x04
 #define JINGLE_BUMP                             0x09
 #define JINGLE_MOVE_SELECTION                   0x0A
 #define JINGLE_STRONG_BUMP                      0x0B
@@ -40,6 +41,7 @@
 #define WAVE_SFX_OCARINA_NOSONG                 0x15
 #define WAVE_SFX_OWL_HOOT                       0x19
 #define WAVE_SFX_BOSS_HURT                      0x07
+#define WAVE_SFX_CUCCO_HURT                     0x13
 
 /* Values for hNoiseSfx */
 #define NOISE_SFX_NONE                          0x00
@@ -57,6 +59,7 @@
 #define NOISE_SFX_SEA_WAVES                     0x0F
 #define NOISE_SFX_DOOR_CLOSED                   0x10
 #define NOISE_SFX_RUMBLE                        0x11
+#define NOISE_SFX_BURSTING_FLAME                0x12
 #define NOISE_SFX_ENEMY_DESTROYED               0x13
 #define NOISE_SFX_SWORD_SWING_B                 0x14
 #define NOISE_SFX_SWORD_SWING_C                 0x15

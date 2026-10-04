@@ -484,6 +484,548 @@ static void test_func_003_6E2B_Branches(void) {
     printf("  PASSED\n");
 }
 
+
+/* Test Data_003_6FE4, Data_003_73E7, Data_003_473C, Data_003_43EC table values */
+static void test_DataTables_SwordDamage(void) {
+    printf("Testing Data_003_6FE4, Data_003_73E7, Data_003_473C, Data_003_43EC...\n");
+
+    /* Data_003_6FE4 size and values */
+    assert(sizeof(Data_003_6FE4) == 4);
+    assert(Data_003_6FE4[0] == 0x00);
+    assert(Data_003_6FE4[1] == 0x01);
+    assert(Data_003_6FE4[2] == 0x02);
+    assert(Data_003_6FE4[3] == 0x03);
+
+    /* Data_003_73E7 size and values */
+    assert(sizeof(Data_003_73E7) == 4);
+    assert(Data_003_73E7[0] == 0x2D);
+    assert(Data_003_73E7[1] == 0x2E);
+    assert(Data_003_73E7[2] == 0x38);
+    assert(Data_003_73E7[3] == 0x37);
+
+    /* Data_003_473C size and values */
+    assert(sizeof(Data_003_473C) == 128);
+    assert(Data_003_473C[0] == 0x00); /* sword basic, index 0 */
+    assert(Data_003_473C[1] == 0x01); /* sword basic, index 1 */
+    assert(Data_003_473C[2] == 0x02); /* sword basic, index 2 */
+    assert(Data_003_473C[3] == 0x40); /* sword basic, index 3 */
+    assert(Data_003_473C[6] == 0xFF); /* stun */
+    assert(Data_003_473C[8 * 8 + 2] == 0x18); /* boomerang index 2 */
+    assert(Data_003_473C[8 * 8 + 3] == 0xFE); /* boomerang burn */
+    assert(Data_003_473C[8 * 8 + 5] == 0xFD); /* boomerang fairy */
+
+    /* Data_003_43EC size and values */
+    assert(sizeof(Data_003_43EC) == 848);
+    assert(Data_003_43EC[0] == 0x01);
+    assert(Data_003_43EC[1] == 0x01);
+    assert(Data_003_43EC[52 * 16 + 0] == 0x01);
+    assert(Data_003_43EC[52 * 16 + 9] == 0x06);
+
+    printf("  PASSED\n");
+}
+
+/* Test EnemyCollidedWithSword: Special Entities */
+static void test_EnemyCollidedWithSword_SpecialEntities(void) {
+    printf("Testing EnemyCollidedWithSword (Special Entities)...\n");
+
+    GBState gb;
+    uint16_t bc = 0x03;
+
+    /* Case 1: Flame shooter ignores sword collision */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FLAME_SHOOTER);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x01);
+    gb_write(&gb, wC160, 0x00);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x01);
+    assert(gb_read(&gb, wC160) == 0x00);
+
+    /* Case 2: Final Nightmare forms */
+    /* Form 0: returns immediately */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FINAL_NIGHTMARE);
+    gb_write(&gb, wFinalNightmareForm, 0x00);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x02);
+
+    /* Form 1: increments state and writes 0x06 */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FINAL_NIGHTMARE);
+    gb_write(&gb, wFinalNightmareForm, 0x01);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x06);
+
+    /* Form 2: spin attack increments state */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FINAL_NIGHTMARE);
+    gb_write(&gb, wFinalNightmareForm, 0x02);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    gb_write(&gb, wIsUsingSpinAttack, 0x01);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x03);
+
+    /* Form 2: wC16A < 4 increments state */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FINAL_NIGHTMARE);
+    gb_write(&gb, wFinalNightmareForm, 0x02);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    gb_write(&gb, wIsUsingSpinAttack, 0x00);
+    gb_write(&gb, wC16A, 0x03);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x03);
+
+    /* Form 2: wC16A >= 4 and no spin attack returns without increment */
+    gb_init(&gb);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_FINAL_NIGHTMARE);
+    gb_write(&gb, wFinalNightmareForm, 0x02);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    gb_write(&gb, wIsUsingSpinAttack, 0x00);
+    gb_write(&gb, wC16A, 0x04);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x02);
+
+    /* Case 3: Buzz Blob electrocution reaction */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_BUZZ_BLOB);
+    gb_write_hram(&gb, hActiveEntityStatus, ENTITY_STATUS_ACTIVE);
+    gb_write(&gb, wEntitiesStateTable + bc, 0x00);
+    gb_write(&gb, wSwordAnimationState, 0x03);
+    gb_write(&gb, wC16A, 0x02);
+    gb_write(&gb, wIsUsingSpinAttack, 0x01);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x01);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + bc) == 0x40);
+    assert(gb_read(&gb, wD464) == 0x40);
+    assert(gb_read(&gb, wSwordAnimationState) == 0x00);
+    assert(gb_read(&gb, wC16A) == 0x00);
+    assert(gb_read(&gb, wIsUsingSpinAttack) == 0x00);
+    assert(gb_read_hram(&gb, hNoiseSfx) == NOISE_SFX_BUZZ_BLOB_ELECTROCUTE);
+
+    /* Case 4: Bouncing Bombite reaction */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_BOUNCING_BOMBITE);
+    gb_write_hram(&gb, hLinkPositionX, 0x40);
+    gb_write_hram(&gb, hLinkPositionY, 0x40);
+    gb_write(&gb, wEntitiesPosXTable + bc, 0x20);
+    gb_write(&gb, wEntitiesPosYTable + bc, 0x20);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x02);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + bc) == 0x40);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown1Table + bc) == 0x08);
+
+    /* Case 5: Angler Fish countdown */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_ANGLER_FISH);
+    gb_write(&gb, wIgnoreLinkCollisionsCountdown, 0x00);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 0x08);
+
+    /* Case 6: Slime Eye variants */
+    /* hMultiPurposeG != 0 returns immediately */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_SLIME_EYE);
+    gb_write_hram(&gb, hMultiPurposeG, 0x01);
+    gb_write(&gb, wIgnoreLinkCollisionsCountdown, 0x00);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 0x10); /* from func_003_6DDF */
+
+    /* privateState1 == 4 with pegasus boots */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_SLIME_EYE);
+    gb_write_hram(&gb, hMultiPurposeG, 0x00);
+    gb_write(&gb, wEntitiesPrivateState1Table + bc, 0x04);
+    gb_write(&gb, wIsRunningWithPegasusBoots, 0x01);
+    EnemyCollidedWithSword(&gb, bc);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown2Table + bc) == 0x0C);
+
+    /* Case 7: Knight with SWORD_CLINK_OFF */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_KNIGHT);
+    gb_write(&gb, wEntitiesOptions1Table + bc, ENTITY_OPT1_SWORD_CLINK_OFF);
+    gb_write(&gb, wEntitiesPrivateState1Table + bc, 0x04);
+    gb_write(&gb, wSwordCharge, 0x10);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesPrivateState1Table + bc) == (uint8_t)-4);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown1Table + bc) == 0x0C);
+    assert(gb_read(&gb, wC160) == 0x01);
+    assert(gb_read(&gb, wSwordCharge) == 0x00);
+
+    /* Case 8: Genie jar with SWORD_CLINK_OFF */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_GENIE);
+    gb_write(&gb, wEntitiesOptions1Table + bc, ENTITY_OPT1_SWORD_CLINK_OFF);
+    gb_write(&gb, wEntitiesFlashCountdownTable + bc, 0x10);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesFlashCountdownTable + bc) == 0x00);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + bc) == 0x10);
+
+    /* Case 9: Cue Ball resets pegasus boots */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_CUE_BALL);
+    gb_write(&gb, wIsRunningWithPegasusBoots, 0x01);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wIsRunningWithPegasusBoots) == 0x00);
+
+    /* Case 10: Iron Mask: frontal vs rear collision */
+    /* Frontal: Link facing RIGHT (0), Iron Mask facing LEFT (1) -> deflects */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_IRON_MASK);
+    gb_write_hram(&gb, hLinkDirection, DIRECTION_RIGHT);
+    gb_write(&gb, wEntitiesDirectionTable + bc, DIRECTION_LEFT);
+    gb_write(&gb, wEntitiesPrivateState2Table + bc, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wIgnoreLinkCollisionsCountdown) == 0x10);
+    assert(gb_read(&gb, wC1AC) == 0x00); /* Did not call ApplySwordDamagesToEnemy */
+
+    /* Rear: Link facing RIGHT (0), Iron Mask facing RIGHT (0) -> damage dealt */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_IRON_MASK);
+    gb_write_hram(&gb, hLinkDirection, DIRECTION_RIGHT);
+    gb_write(&gb, wEntitiesDirectionTable + bc, DIRECTION_RIGHT);
+    gb_write(&gb, wEntitiesPrivateState2Table + bc, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wC1AC) == (uint8_t)(bc + 1)); /* Proceeded to ApplySwordDamagesToEnemy */
+
+    /* Case 11: Anti-Fairy immune to sword */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, ENTITY_ANTI_FAIRY);
+    gb_write(&gb, wC160, 0x00);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wC160) == 0x00); /* Returns without applying sword reaction */
+
+    printf("  PASSED\n");
+}
+
+/* Test EnemyCollidedWithSword: Default & Power Recoil */
+static void test_EnemyCollidedWithSword_DefaultAndPowerRecoil(void) {
+    printf("Testing EnemyCollidedWithSword (Default & Power Recoil)...\n");
+
+    GBState gb;
+    uint16_t bc = 0x02;
+
+    /* Case 1: Standard sword collision without power boost */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wSwordCharge, 0x20);
+    gb_write(&gb, wC16A, 0x05);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wC160) == 0x01);
+    assert(gb_read(&gb, wC16D) == 0x0C);
+    assert(gb_read(&gb, wSwordCharge) == 0x00);
+    assert(gb_read_hram(&gb, hJingle) == JINGLE_ENEMY_HIT);
+    assert(gb_read(&gb, wEntitiesPowerRecoilingTable + bc) == 0x00);
+
+    /* Case 1b: Damage == 0 retains JINGLE_BUMP set during recoil */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x04); /* damage 0 for sword level 1 */
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read_hram(&gb, hJingle) == JINGLE_BUMP);
+
+    /* Case 2: Power recoil with Red Tunic */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wTunicType, TUNIC_RED);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x10);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + bc) == 0x20);
+    assert(gb_read(&gb, wEntitiesPowerRecoilingTable + bc) == 0x01);
+    assert(gb_read_hram(&gb, hWaveSfx) == WAVE_SFX_POWER_HIT);
+
+    /* Case 3: Power recoil with Piece of Power when entity dies */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write_hram(&gb, hActiveEntityType, 0x00);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wActivePowerUp, ACTIVE_POWER_UP_PIECE_OF_POWER);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x01); /* Will die from sword hit */
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+
+    EnemyCollidedWithSword(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + bc) == ENTITY_STATUS_DYING);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown3Table + bc) == 0x40);
+
+    printf("  PASSED\n");
+}
+
+/* Test ApplySwordDamagesToEnemy: Damage Types & SFX */
+static void test_ApplySwordDamagesToEnemy_DamageTypes(void) {
+    printf("Testing ApplySwordDamagesToEnemy (Damage Types & SFX)...\n");
+
+    GBState gb;
+    uint16_t bc = 0x01;
+
+    /* Case 1: Basic sword level 1 sets attack damage type 0 */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x10);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wC1AC) == (uint8_t)(bc + 1));
+    assert(gb_read(&gb, wAttackDamageType) == 0x00);
+    assert(gb_read_hram(&gb, hJingle) == JINGLE_ENEMY_HIT);
+    /* Health group 0 with damage type 0: entry 1 -> damage 1 */
+    assert(gb_read(&gb, wEntitiesHealthTable + bc) == 0x0F);
+
+    /* Case 2: Sword level 1 + spin attack boosts damage type to 1 (sword +1) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wIsUsingSpinAttack, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x10);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wAttackDamageType) == 0x01);
+    /* Health group 0 with damage type 1: entry 1 -> damage 2 */
+    assert(gb_read(&gb, wEntitiesHealthTable + bc) == 0x0E);
+
+    /* Case 3: Boss entity hurt sfx */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesOptions1Table + bc, ENTITY_OPT1_IS_BOSS);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x20);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read_hram(&gb, hWaveSfx) == WAVE_SFX_BOSS_HURT);
+
+    /* Case 4: Cucco hurt sfx */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesTypeTable + bc, ENTITY_CUCCO);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x20);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read_hram(&gb, hWaveSfx) == WAVE_SFX_CUCCO_HURT);
+
+    /* Case 5: Zero damage entity (health group 9 with sword basic deals 0) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x09);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x10);
+    gb_write_hram(&gb, hJingle, 0x00);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read_hram(&gb, hJingle) == 0x00); /* No hit jingle */
+    assert(gb_read(&gb, wEntitiesHealthTable + bc) == 0x10); /* No damage taken */
+
+    printf("  PASSED\n");
+}
+
+/* Test ApplySwordDamagesToEnemy: Burn, Stun, Morph */
+static void test_ApplySwordDamagesToEnemy_SpecialDamages(void) {
+    printf("Testing ApplySwordDamagesToEnemy (Burn, Stun, Morph)...\n");
+
+    GBState gb;
+    uint16_t bc = 0x02;
+
+    /* Case 1: Burn effect (damage code 0xFE, e.g. magic powder on health group 0) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x0A); /* damage_type = 9 (magic powder) */
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesPhysicsFlagsTable + bc, 0x04);
+    gb_write(&gb, wEntitiesOptions1Table + bc, 0xFF);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read_hram(&gb, hNoiseSfx) == NOISE_SFX_BURSTING_FLAME);
+    assert(gb_read(&gb, wEntitiesStatusTable + bc) == ENTITY_STATUS_BURNING);
+    assert(gb_read(&gb, wEntitiesTransitionCountdownTable + bc) == 0x60);
+    assert(gb_read(&gb, wEntitiesPhysicsFlagsTable + bc) == 0x06); /* +2 */
+    assert(gb_read(&gb, wEntitiesOptions1Table + bc) == (ENTITY_OPT1_EXCLUDED_FROM_KILL_ALL | ENTITY_OPT1_SWORD_CLINK_OFF | ENTITY_OPT1_IS_BOSS));
+
+    /* Case 2: Stun effect (damage code 0xFF, e.g. hookshot type 6 on health group 8) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x07); /* damage_type = 6 (hookshot) */
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x08);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesStatusTable + bc) == ENTITY_STATUS_STUNNED);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown2Table + bc) == 0xFF);
+    assert(gb_read(&gb, wEntitiesSpeedZTable + bc) == 0x00);
+    assert(gb_read(&gb, wEntitiesIgnoreHitsCountdownTable + bc) == 0x0A);
+
+    /* Case 3: Morph / Fairy effect (damage code 0xFD, e.g. magic powder on health group 43) */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x0A); /* damage_type = 9 (magic powder) */
+    gb_write(&gb, wEntitiesHealthGroup + bc, 43);
+    gb_write(&gb, wEntitiesTypeTable + bc, 0x50);
+    gb_write(&gb, wEntitiesPosXTable + bc, 0x30);
+    gb_write(&gb, wEntitiesPosYTable + bc, 0x40);
+    gb_write(&gb, wEntitiesPosZTable + bc, 0x05);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesTypeTable + bc) == 0x2F); /* Transformed into fairy */
+    assert(gb_read(&gb, wEntitiesSlowTransitionCountdownTable + bc) == 0x80);
+    assert(gb_read_hram(&gb, hMultiPurpose0) == 0x30);
+    assert(gb_read_hram(&gb, hMultiPurpose1) == 0x3B); /* 0x40 - 0x05 */
+
+    printf("  PASSED\n");
+}
+
+/* Test ApplySwordDamagesToEnemy: Dying & Defeat */
+static void test_ApplySwordDamagesToEnemy_DyingAndDefeat(void) {
+    printf("Testing ApplySwordDamagesToEnemy (Dying & Boss Defeat)...\n");
+
+    GBState gb;
+    uint16_t bc = 0x01;
+
+    /* Case 1: Standard enemy defeat */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00); /* damage = 1 */
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x01); /* health 1 <= 1 -> dead */
+    gb_write(&gb, wEntitiesStateTable + bc, 0x02);
+    gb_write(&gb, wEntitiesPhysicsFlagsTable + bc, 0x50);
+    gb_write(&gb, wEntitiesOptions1Table + bc, 0x00);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesHealthTable + bc) == 0x00);
+    assert(gb_read(&gb, wEntitiesStatusTable + bc) == ENTITY_STATUS_DYING);
+    assert(gb_read(&gb, wEntitiesStateTable + bc) == 0x00);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown3Table + bc) == 0x2F);
+    assert(gb_read(&gb, wEntitiesFlashCountdownTable + bc) == 0x18);
+    assert(gb_read(&gb, wEntitiesPhysicsFlagsTable + bc) == 0x54); /* (0x50 & 0xF0) | 0x04 */
+
+    /* Case 2: Facade boss defeat */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x01);
+    gb_write(&gb, wEntitiesTypeTable + bc, ENTITY_FACADE);
+    gb_write(&gb, wEntitiesOptions1Table + bc, ENTITY_OPT1_IS_BOSS);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wBossAgonySFXCountdown) == 0x03);
+    assert(gb_read(&gb, wEntitiesPrivateState2Table + bc) == 0x00);
+    assert(gb_read(&gb, wMusicTrackToPlay) == MUSIC_BOSS_DEFEAT);
+
+    /* Case 3: Evil Eagle boss defeat dialog */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x01);
+    gb_write(&gb, wEntitiesTypeTable + bc, ENTITY_EVIL_EAGLE);
+    gb_write(&gb, wEntitiesOptions1Table + bc, ENTITY_OPT1_IS_BOSS);
+    gb_write_hram(&gb, hLinkPositionY, 0x50);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read_hram(&gb, hLinkPositionY) == 0x50); /* Restored after dialog */
+    assert(gb_read(&gb, wBossAgonySFXCountdown) == 0x03);
+
+    /* Case 4: Ghini defeat kills companion Hiding / Giant Ghinis */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x01);
+    gb_write(&gb, wEntitiesTypeTable + bc, ENTITY_GHINI);
+
+    /* Companion in slot 2 */
+    gb_write(&gb, wEntitiesTypeTable + 2, ENTITY_HIDING_GHINI);
+    gb_write(&gb, wEntitiesStateTable + 2, 0x00);
+    gb_write(&gb, wEntitiesStatusTable + 2, ENTITY_STATUS_ACTIVE);
+
+    /* Companion in slot 3 */
+    gb_write(&gb, wEntitiesTypeTable + 3, ENTITY_GIANT_GHINI);
+    gb_write(&gb, wEntitiesStateTable + 3, 0x00);
+    gb_write(&gb, wEntitiesStatusTable + 3, ENTITY_STATUS_ACTIVE);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesDroppedItemTable + bc) == ENTITY_DROPPABLE_RUPEE);
+    assert(gb_read(&gb, wEntitiesStatusTable + 2) == ENTITY_STATUS_DYING);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown3Table + 2) == 0x1F);
+    assert(gb_read(&gb, wEntitiesStatusTable + 3) == ENTITY_STATUS_DYING);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown3Table + 3) == 0x1F);
+
+    /* Case 5: Moldorm survived hit gets longer flash/countdown */
+    gb_init(&gb);
+    gb_write(&gb, wActiveEntityIndex, bc);
+    gb_write(&gb, wSwordLevel, 0x01);
+    gb_write(&gb, wEntitiesHealthGroup + bc, 0x00);
+    gb_write(&gb, wEntitiesHealthTable + bc, 0x10);
+    gb_write(&gb, wEntitiesTypeTable + bc, ENTITY_MOLDORM);
+
+    ApplySwordDamagesToEnemy(&gb, bc);
+
+    assert(gb_read(&gb, wEntitiesFlashCountdownTable + bc) == 0x28);
+    assert(gb_read(&gb, wEntitiesPrivateCountdown2Table + bc) == 0xC8);
+
+    printf("  PASSED\n");
+}
+
 void test_bank3_entities_collision(void) {
     test_EntityDamagesForGroup();
     test_ApplyLinkCollision_CheepCheep();
@@ -492,4 +1034,10 @@ void test_bank3_entities_collision(void) {
     test_ApplyLinkCollision_DamageCalculations();
     test_DefaultEnemyDamageCollisionHandler_Parity();
     test_func_003_6E2B_Branches();
+    test_DataTables_SwordDamage();
+    test_EnemyCollidedWithSword_SpecialEntities();
+    test_EnemyCollidedWithSword_DefaultAndPowerRecoil();
+    test_ApplySwordDamagesToEnemy_DamageTypes();
+    test_ApplySwordDamagesToEnemy_SpecialDamages();
+    test_ApplySwordDamagesToEnemy_DyingAndDefeat();
 }

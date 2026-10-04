@@ -169,7 +169,12 @@
 #define ENTITY_GENIE                 0x5C
 #define ENTITY_FACADE                0x5A
 #define ENTITY_MOLDORM               0x59
+#define ENTITY_HOT_HEAD              0x62
+#define ENTITY_EVIL_EAGLE            0x63
+#define ENTITY_CUCCO                 0x6C
 #define ENTITY_TEXT_DEBUGGER         0x6B
+#define ENTITY_HIDING_GHINI          0x10
+#define ENTITY_GIANT_GHINI           0x11
 #define ENTITY_GHINI                 0x12
 #define ENTITY_LIKE_LIKE             0x23
 #define ENTITY_ARMOS_KNIGHT          0x88

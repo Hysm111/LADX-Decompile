@@ -3,14 +3,14 @@
 ## Overall Status
 
 * **Project Name**: Zelda: Link's Awakening DX C/C++ Decompilation
-* **Current Overall Progress**: ~76.4%
-* **Number of Verified Functions**: 998
-* **Number of Decompiled Functions**: 798
-* **Number Remaining**: ~214 functions
+* **Current Overall Progress**: ~76.6%
+* **Number of Verified Functions**: 1000
+* **Number of Decompiled Functions**: 800
+* **Number Remaining**: ~212 functions
 * **Current Subsystem**: ROM Bank 3 (Entity Damage & Collision Handlers)
-* **Current Task**: Batch 90: Bank 3 Entity Damage and Collision Handlers
-* **Last Completed Task**: Implementation and verification of 3 Bank 3 entity damage and collision handling functions (`ApplyLinkCollisionWithEnemy`, `DefaultEnemyDamageCollisionHandler`, `func_003_6E2B`) and the 53-byte `EntityDamagesForGroup` damage data table in `src/bank3/entities_collision.c`, removing legacy placeholder stub `func_003_6E2B` from `src/home/entities.c`.
-* **Last Update Timestamp**: 2026-10-04T01:06:00+00:00
+* **Current Task**: Batch 91: Bank 3 Entity Sword Collision and Damage Handlers
+* **Last Completed Task**: Implementation and verification of 2 Bank 3 entity sword collision and damage handling functions (`EnemyCollidedWithSword`, `ApplySwordDamagesToEnemy`) and 4 ROM data tables (`Data_003_6FE4`, `Data_003_73E7`, `Data_003_43EC`, `Data_003_473C`) in `src/bank3/entities_collision.c`, wiring up `func_003_6E2B` to invoke `EnemyCollidedWithSword`.
+* **Last Update Timestamp**: 2026-10-04T02:40:00+00:00
 
 ---
 
@@ -773,3 +773,49 @@
   - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 998 verified functions passing.
 
 - **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Damage arithmetic, hitbox overlap bounding boxes, and frame parity bitwise rotations verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.
+
+---
+
+## Batch 91 Verification — Bank 3 Entity Sword Collision and Damage Handlers
+
+- **Source of truth:** `LADX-Disassembly/src/code/entities/bank3.asm` (`03:6FE8`-`03:73E6`) and `LADX-Disassembly/src/data/entities/damages.asm` (`03:43EC`-`03:4746`). Implemented and verified 2 core entity collision and damage handling functions (`EnemyCollidedWithSword`, `ApplySwordDamagesToEnemy`) and 4 ROM data tables (`Data_003_6FE4`, `Data_003_73E7`, `Data_003_43EC`, `Data_003_473C`) in `src/bank3/entities_collision.c`, with declarations in `include/bank3/entities_collision.h`. Wired `func_003_6E2B` to jump directly into `EnemyCollidedWithSword`. Added constants `SWORD_RECOIL_GENIE_JAR_DEFAULT` ($20), `SWORD_RECOIL_GENIE_JAR_STRONGER` ($30), `SWORD_RECOIL_DEFAULT` ($30) in `include/constants/gameplay.h`, `wEntitiesDroppedItemTable` ($C4E0) in `include/constants/memory.h`, `Dialog0B7` ($B7), `Dialog0B9` ($B9), `Dialog0BD` ($BD) in `include/constants/dialog.h`, `MUSIC_BOSS_DEFEAT` ($5E) in `include/constants/audio.h`, `WAVE_SFX_CUCCO_HURT` ($13), `NOISE_SFX_BURSTING_FLAME` ($12), `JINGLE_ENEMY_HIT` ($03) in `include/constants/sfx.h`, `ENTITY_HOT_HEAD` ($62), `ENTITY_EVIL_EAGLE` ($63), `ENTITY_CUCCO` ($6C), `ENTITY_HIDING_GHINI` ($10), `ENTITY_GIANT_GHINI` ($11) in `include/constants/entities.h`. Guarded `ConfigureNewEntity` and `ConfigureEntityHealth` in `src/bank3/entities_init_core.c` against null `gb->rom` pointers and out-of-bounds access. All 1000 verified functions passing.
+
+- **Data Tables Implemented:**
+  - `Data_003_6FE4` (`03:6FE4`-`03:6FE7`): 4-byte direction lookup table for Iron Mask facing comparison (`{ 0, 1, 2, 3 }`).
+  - `Data_003_73E7` (`03:73E7`-`03:73EA`): 4-byte random droppable item table for Ghini companions (`{ 0x2D, 0x2E, 0x38, 0x37 }`).
+  - `Data_003_43EC` (`03:43EC`-`03:473B`): 848-byte ROM damage matrix (`DamageModifiersTable`) consisting of 53 entity health groups by 16 damage types (weapon interaction results: damage dealt or special effect codes `0xFE` [burn], `0xFF` [stun], `0xFD` [morph]).
+  - `Data_003_473C` (`03:473C`-`03:4746`): 11-byte lookup table (`AttackDamageTypeForWeaponTable`) mapping weapon types 1..11 to damage types 0..10.
+
+- **Functions Implemented & Verified:**
+  - `EnemyCollidedWithSword` (`03:6FE8`-`03:719C`): Complete assembly-accurate entity sword collision response handler.
+    - Genie in Jar (`ENTITY_GENIE_IN_JAR`): Checks private state 1; if non-zero, applies recoil with distance $20 or $30 depending on `hFrameCounter & 8`, plays bump jingle, and returns early without damage.
+    - Iron Mask (`ENTITY_IRON_MASK`): Compares Link's facing direction against entity direction via `Data_003_6FE4`; if facing opposite directions (sword strikes the mask frontally), triggers mask clink (increments private state 1, sets recoil $30, plays `JINGLE_BUMP`, creates clink VFX `label_D15`, resets sword charge, alerts sword Moblins) without dealing damage.
+    - Pols Voice (`ENTITY_POLS_VOICE`): If hit by sword, plays `JINGLE_CLINK`, resets sword charge, alerts Moblins, and returns without dealing damage.
+    - Spiked Beetle (`ENTITY_SPIKED_BEETLE`): If state is not 3 (not yet flipped), triggers bump recoil, resets sword charge, alerts Moblins, and returns without damage.
+    - Hardhat Beetle (`ENTITY_HARD_HIT_BEETLE`): Applies stronger recoil $40, resets sword charge, alerts Moblins, and proceeds without damage.
+    - Default Sword Recoil & Power Hits: Applies `ConfigureEntityRecoil(SWORD_RECOIL_DEFAULT)` and sets `hJingle = JINGLE_BUMP`. Evaluates power boost: Red Tunic (`wTunicType == TUNIC_RED`) or Piece of Power (`wActivePowerUp == ACTIVE_POWER_UP_PIECE_OF_POWER`). If power boost is active, applies power recoil (`wEntitiesIgnoreHitsCountdownTable[bc] = $20`, `wEntitiesPowerRecoilingTable[bc] = 1`, `hWaveSfx = WAVE_SFX_POWER_HIT`). If Piece of Power and entity will die from hit, sets `ENTITY_STATUS_DYING` and countdown `$40`.
+    - Dispatches to `ApplySwordDamagesToEnemy(gb, bc)`.
+  - `ApplySwordDamagesToEnemy` (`03:719D`-`03:73E6`): Comprehensive enemy weapon damage, special effects, and defeat processor.
+    - Weapon Damage Type Mapping: Reads weapon index `wSwordLevel`; if non-zero, maps through `Data_003_473C`. Boosts damage type by +1 if using spin attack with sword (level 1 or 2). Stores damage type into `wAttackDamageType`.
+    - Damage Lookup: Reads damage value from `Data_003_43EC` at offset `(wEntitiesHealthGroup[bc] * 16) + damage_type`. If damage > 0, sets `hJingle = JINGLE_ENEMY_HIT`.
+    - Sound Effects: Plays `WAVE_SFX_BOSS_HURT` for bosses, `WAVE_SFX_CUCCO_HURT` for Cucco, or `WAVE_SFX_BOSS_HIT_DEFLECT` for zero damage against boss/special enemies.
+    - Special Damage Effects (codes `0xF0`..`0xFF`):
+      - `0xFE` (Burn): Plays `NOISE_SFX_BURSTING_FLAME`, sets `ENTITY_STATUS_BURNING`, countdown `$60`, physics flags + 2, options1 flags.
+      - `0xFF` (Stun): Plays `ENTITY_STATUS_STUNNED`, private countdown 2 `$FF`, speed Z 0, ignore hits countdown `$0A`.
+      - `0xFD` (Morph into Fairy): For Buzz Blob / Giant Buzz Blob, increments private state 1. For other enemies, transforms into fairy (`type = $2F`, `ConfigureNewEntity`, slow transition countdown `$80`, `TRANSCIENT_VFX_POOF`).
+    - Standard Damage Math & Defeat: Subtracts damage from entity health. If health drops to 0:
+      - Boss Defeat: If boss is defeated and no other bosses remain in room, triggers `label_27F2`. Sets `wBossAgonySFXCountdown = 3`. For Facade, triggers dialog `Dialog0B7` and `MUSIC_BOSS_DEFEAT`. For Evil Eagle, sets Link Y to $10, triggers dialog `Dialog0B9`, and restores Link Y.
+      - Death State: Sets `ENTITY_STATUS_DYING`, resets entity state, sets private countdown 3 to `$2F`. If non-boss, clears collision bits from physics flags (`(flags & 0xF0) | 0x04`).
+      - Ghini Companion Death: If main Ghini dies, all active companion Hiding/Giant Ghinis die (`ENTITY_STATUS_DYING`, countdown `$1F`, random drop from `Data_003_73E7`), and main Ghini drops a Rupee.
+    - Hit Flash & Recoil Duration: For Moldorm or Final Nightmare (form 3), sets flash countdown `$28` and private countdown 2 `$C8`.
+
+- **Tests:** Extended `tests/bank3/test_entities_collision.c`:
+  - `test_DataTables_SwordDamage`: validates `Data_003_6FE4` (4 bytes), `Data_003_73E7` (4 bytes), `Data_003_473C` (11 bytes), and `Data_003_43EC` (848 bytes) values and boundaries.
+  - `test_EnemyCollidedWithSword_SpecialEntities`: validates Genie in jar recoil & early return; Iron Mask front collision clink & back collision pass-through; Pols Voice sword deflection; Spiked Beetle unflipped bump deflection; and Hardhat Beetle strong recoil.
+  - `test_EnemyCollidedWithSword_DefaultAndPowerRecoil`: validates standard sword bump recoil and sword charge reset; damage > 0 overwriting jingle with `JINGLE_ENEMY_HIT`; zero damage retaining `JINGLE_BUMP`; Red Tunic power recoil; and Piece of Power instant defeat.
+  - `test_ApplySwordDamagesToEnemy_DamageTypes`: validates basic sword damage type 0, spin attack damage boost (+1), boss hurt SFX, Cucco hurt SFX, and zero-damage entity immunity.
+  - `test_ApplySwordDamagesToEnemy_SpecialDamages`: validates burn effect (`0xFE`, bursting flame SFX, burning status, countdown `$60`), stun effect (`0xFF`, stunned status, countdown `$FF`), and fairy morph (`0xFD`, type `$2F`, slow transition `$80`, poof VFX).
+  - `test_ApplySwordDamagesToEnemy_DyingAndDefeat`: validates standard enemy defeat (health 0, dying status, countdown `$2F`, physics flags adjustment); Facade boss defeat (dialog `Dialog0B7`, agony SFX, `MUSIC_BOSS_DEFEAT`); Evil Eagle boss defeat (dialog `Dialog0B9`, Link Y preservation); Ghini defeat (companion Hiding/Giant Ghini cascading deaths and random drop items); and Moldorm hurt flash countdowns.
+  - Full Debug build/CTest PASS (100% tests passed); strict C11 `-Wall -Wextra -Werror -pedantic` checks PASS; `git diff --check` PASS. All 1000 verified functions passing.
+
+- **Verification Scope:** Source-level memory behavior within `GBState`. CPU flags/registers/cycles/stack behavior not emulated. Damage matrices, weapon type lookups, and boss defeat state machines verified exact to assembly instruction sequence. Cross-bank calls remain callback-modeled.

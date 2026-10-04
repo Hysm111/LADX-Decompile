@@ -38,6 +38,7 @@
 #define MUSIC_FACE_SHRINE               0x58
 #define MUSIC_TURTLE_ROCK               0x5A
 #define MUSIC_EAGLES_TOWER              0x5B
+#define MUSIC_BOSS_DEFEAT               0x5E
 #define MUSIC_FILE_SELECT_ZELDA         0x60
 #define MUSIC_COLOR_DUNGEON             0x61
 #define MUSIC_ULRIRA                    0x33
